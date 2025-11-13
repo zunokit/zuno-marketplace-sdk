@@ -188,8 +188,9 @@ export class OfferModule extends BaseModule {
   private async extractOfferId(receipt: TransactionReceipt): Promise<string> {
     for (const log of receipt.logs) {
       try {
-        if (log.topics && log.topics.length > 1) {
-          const offerIdHex = log.topics[1];
+        const logData = log as any; // Type assertion for event log
+        if (logData.topics && logData.topics.length > 1) {
+          const offerIdHex = logData.topics[1];
           const offerId = ethers.toBigInt(offerIdHex);
           return offerId.toString();
         }

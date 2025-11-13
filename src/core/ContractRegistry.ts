@@ -74,7 +74,7 @@ export class ContractRegistry {
     // Create contract instance
     const contract = new ethers.Contract(
       contractAddress,
-      abi,
+      abi as any[], // Cast to any[] for ethers compatibility
       signer || provider
     );
 

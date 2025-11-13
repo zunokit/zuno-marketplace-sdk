@@ -3,11 +3,8 @@
  */
 
 import { ethers } from 'ethers';
-import type {
-  TransactionOptions,
-  TransactionResponse,
-  TransactionReceipt,
-} from '../types/entities';
+import type { TransactionReceipt } from '../types/entities';
+import type { TransactionOptions } from '../types/contracts';
 import { ZunoSDKError, ErrorCodes } from './errors';
 
 /**

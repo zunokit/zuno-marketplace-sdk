@@ -160,8 +160,9 @@ export class BundleModule extends BaseModule {
   private async extractBundleId(receipt: TransactionReceipt): Promise<string> {
     for (const log of receipt.logs) {
       try {
-        if (log.topics && log.topics.length > 1) {
-          const bundleIdHex = log.topics[1];
+        const logData = log as any; // Type assertion for event log
+        if (logData.topics && logData.topics.length > 1) {
+          const bundleIdHex = logData.topics[1];
           const bundleId = ethers.toBigInt(bundleIdHex);
           return bundleId.toString();
         }

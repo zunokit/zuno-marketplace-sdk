@@ -19,7 +19,6 @@ import {
   validateTokenId,
   validateAmount,
   validateDuration,
-  ErrorCodes,
 } from '../utils/errors';
 
 /**

@@ -265,8 +265,9 @@ export class AuctionModule extends BaseModule {
   private async extractAuctionId(receipt: TransactionReceipt): Promise<string> {
     for (const log of receipt.logs) {
       try {
-        if (log.topics && log.topics.length > 1) {
-          const auctionIdHex = log.topics[1];
+        const logData = log as any; // Type assertion for event log
+        if (logData.topics && logData.topics.length > 1) {
+          const auctionIdHex = logData.topics[1];
           const auctionId = ethers.toBigInt(auctionIdHex);
           return auctionId.toString();
         }

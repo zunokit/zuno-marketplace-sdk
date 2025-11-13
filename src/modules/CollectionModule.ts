@@ -8,7 +8,6 @@ import type {
   CreateERC1155CollectionParams,
   MintERC721Params,
   MintERC1155Params,
-  TransactionOptions,
   TokenStandard,
 } from '../types/contracts';
 import type { TransactionReceipt } from '../types/entities';
@@ -98,7 +97,7 @@ export class CollectionModule extends BaseModule {
     validateAddress(recipient, 'recipient');
 
     const txManager = this.ensureTxManager();
-    const provider = this.ensureProvider();
+    this.ensureProvider(); // Ensure provider is available
 
     // Get ABI for the collection
     const abi = await this.contractRegistry.getABIByAddress(
@@ -110,7 +109,7 @@ export class CollectionModule extends BaseModule {
     const { ethers } = await import('ethers');
     const collectionContract = new ethers.Contract(
       collectionAddress,
-      abi,
+      abi as any[], // Cast to any[] for ethers compatibility
       this.signer
     );
 
@@ -141,7 +140,7 @@ export class CollectionModule extends BaseModule {
     validateAddress(recipient, 'recipient');
 
     const txManager = this.ensureTxManager();
-    const provider = this.ensureProvider();
+    this.ensureProvider(); // Ensure provider is available
 
     // Get ABI for the collection
     const abi = await this.contractRegistry.getABIByAddress(
@@ -153,7 +152,7 @@ export class CollectionModule extends BaseModule {
     const { ethers } = await import('ethers');
     const collectionContract = new ethers.Contract(
       collectionAddress,
-      abi,
+      abi as any[], // Cast to any[] for ethers compatibility
       this.signer
     );
 
@@ -230,7 +229,7 @@ export class CollectionModule extends BaseModule {
 
     // Create contract instance
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(address, abi, provider);
+    const collectionContract = new ethers.Contract(address, abi as any[], provider);
 
     // Get collection details
     const [name, symbol, totalSupply] = await Promise.all([
@@ -258,10 +257,11 @@ export class CollectionModule extends BaseModule {
       try {
         // The collection address is typically the first indexed parameter
         // or can be found in the log data
-        if (log.topics && log.topics.length > 1) {
+        const logData = log as any; // Type assertion for event log
+        if (logData.topics && logData.topics.length > 1) {
           // Assuming the address is in the first topic (after event signature)
           const { ethers } = await import('ethers');
-          const address = ethers.getAddress('0x' + log.topics[1].slice(26));
+          const address = ethers.getAddress('0x' + logData.topics[1].slice(26));
           return address;
         }
       } catch {
@@ -282,9 +282,10 @@ export class CollectionModule extends BaseModule {
     // Look for Transfer or Minted event in logs
     for (const log of receipt.logs) {
       try {
-        if (log.topics && log.topics.length > 3) {
+        const logData = log as any; // Type assertion for event log
+        if (logData.topics && logData.topics.length > 3) {
           // For ERC721, token ID is typically the 3rd topic
-          const tokenIdHex = log.topics[3];
+          const tokenIdHex = logData.topics[3];
           const { ethers } = await import('ethers');
           const tokenId = ethers.toBigInt(tokenIdHex);
           return tokenId.toString();

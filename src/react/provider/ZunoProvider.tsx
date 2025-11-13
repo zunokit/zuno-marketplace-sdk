@@ -99,6 +99,7 @@ export function ZunoProvider({
     // Add WalletConnect if project ID is provided
     if (config.walletConnectProjectId) {
       connectors.push(
+        // @ts-expect-error - Wagmi connector type compatibility issue
         walletConnect({
           projectId: config.walletConnectProjectId,
           showQrModal: true,
@@ -111,7 +112,7 @@ export function ZunoProvider({
       connectors,
       transports: {
         [chain.id]: http(config.rpcUrl),
-      },
+      } as any, // Type cast for transport compatibility
     });
   });
 
