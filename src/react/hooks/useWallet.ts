@@ -5,7 +5,8 @@
 'use client';
 
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
+import type { Eip1193Provider } from 'ethers';
 import { useZuno } from '../provider/ZunoProvider';
 
 /**
@@ -23,9 +24,9 @@ export function useWallet() {
     if (connector && isConnected) {
       (async () => {
         try {
-          const provider = await connector.getProvider();
+          const provider = (await connector.getProvider()) as Eip1193Provider;
           const { BrowserProvider } = await import('ethers');
-          const ethersProvider = new BrowserProvider(provider as never);
+          const ethersProvider = new BrowserProvider(provider);
           const signer = await ethersProvider.getSigner();
           sdk.updateProvider(ethersProvider, signer);
         } catch (error) {
@@ -35,14 +36,9 @@ export function useWallet() {
     }
   }, [connector, isConnected, sdk]);
 
-  return {
-    address,
-    chainId,
-    isConnected,
-    connector,
-    isPending,
-    connectors,
-    connect: (connectorId?: string) => {
+  // Memoize connect function
+  const handleConnect = useCallback(
+    (connectorId?: string) => {
       const targetConnector = connectorId
         ? connectors.find((c) => c.id === connectorId)
         : connectors[0];
@@ -51,6 +47,17 @@ export function useWallet() {
         connect({ connector: targetConnector });
       }
     },
+    [connectors, connect]
+  );
+
+  return {
+    address,
+    chainId,
+    isConnected,
+    connector,
+    isPending,
+    connectors,
+    connect: handleConnect,
     disconnect,
     switchChain,
   };

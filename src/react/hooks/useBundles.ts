@@ -5,8 +5,25 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { CreateBundleParams } from '../../types/contracts';
+import type { CreateBundleParams, TransactionOptions } from '../../types/contracts';
 import { useZuno } from '../provider/ZunoProvider';
+
+/**
+ * Buy bundle parameters
+ */
+export interface BuyBundleParams {
+  bundleId: string;
+  value?: string;
+  options?: TransactionOptions;
+}
+
+/**
+ * Cancel bundle parameters
+ */
+export interface CancelBundleParams {
+  bundleId: string;
+  options?: TransactionOptions;
+}
 
 /**
  * Hook for bundle operations
@@ -23,8 +40,8 @@ export function useBundles() {
   });
 
   const buyBundle = useMutation({
-    mutationFn: ({ bundleId, value, options }: { bundleId: string; value?: string; options?: unknown }) =>
-      sdk.bundles.buyBundle(bundleId, value, options as never),
+    mutationFn: ({ bundleId, value, options }: BuyBundleParams) =>
+      sdk.bundles.buyBundle(bundleId, value, options),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['bundle', variables.bundleId] });
       queryClient.invalidateQueries({ queryKey: ['bundles'] });
@@ -32,8 +49,8 @@ export function useBundles() {
   });
 
   const cancelBundle = useMutation({
-    mutationFn: ({ bundleId, options }: { bundleId: string; options?: unknown }) =>
-      sdk.bundles.cancelBundle(bundleId, options as never),
+    mutationFn: ({ bundleId, options }: CancelBundleParams) =>
+      sdk.bundles.cancelBundle(bundleId, options),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['bundle', variables.bundleId] });
       queryClient.invalidateQueries({ queryKey: ['bundles'] });

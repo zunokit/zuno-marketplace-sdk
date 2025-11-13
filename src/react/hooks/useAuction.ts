@@ -9,8 +9,17 @@ import type {
   CreateEnglishAuctionParams,
   CreateDutchAuctionParams,
   PlaceBidParams,
+  TransactionOptions,
 } from '../../types/contracts';
 import { useZuno } from '../provider/ZunoProvider';
+
+/**
+ * End auction parameters
+ */
+export interface EndAuctionParams {
+  auctionId: string;
+  options?: TransactionOptions;
+}
 
 /**
  * Hook for auction operations
@@ -44,8 +53,8 @@ export function useAuction() {
   });
 
   const endAuction = useMutation({
-    mutationFn: ({ auctionId, options }: { auctionId: string; options?: unknown }) =>
-      sdk.auction.endAuction(auctionId, options as never),
+    mutationFn: ({ auctionId, options }: EndAuctionParams) =>
+      sdk.auction.endAuction(auctionId, options),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
       queryClient.invalidateQueries({ queryKey: ['auctions'] });

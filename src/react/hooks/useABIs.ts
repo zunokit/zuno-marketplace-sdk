@@ -5,7 +5,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import type { ContractType } from '../../types/contracts';
 import { createABIQueryOptions } from '../../core/ZunoAPIClient';
 import { useZuno } from '../provider/ZunoProvider';
@@ -15,7 +15,7 @@ import { useZuno } from '../provider/ZunoProvider';
  */
 export function useABI(contractType: ContractType, network: string) {
   const sdk = useZuno();
-  const apiClient = (sdk as never)['apiClient'];
+  const apiClient = sdk.getAPIClient();
 
   return useQuery(createABIQueryOptions(apiClient, contractType, network));
 }
@@ -25,13 +25,11 @@ export function useABI(contractType: ContractType, network: string) {
  */
 export function useContractInfo(address?: string, networkId?: string) {
   const sdk = useZuno();
+  const apiClient = sdk.getAPIClient();
 
   return useQuery({
     queryKey: ['contracts', address, networkId],
-    queryFn: async () => {
-      const apiClient = (sdk as never)['apiClient'];
-      return apiClient.getContractInfo(address!, networkId!);
-    },
+    queryFn: () => apiClient.getContractInfo(address!, networkId!),
     enabled: !!address && !!networkId,
   });
 }
@@ -42,17 +40,19 @@ export function useContractInfo(address?: string, networkId?: string) {
 export function usePrefetchABIs() {
   const sdk = useZuno();
   const queryClient = useQueryClient();
+  const apiClient = sdk.getAPIClient();
 
-  const prefetch = async (contractTypes: ContractType[], network: string) => {
-    const apiClient = (sdk as never)['apiClient'];
-
-    await Promise.all(
-      contractTypes.map((type) => {
-        const queryOptions = createABIQueryOptions(apiClient, type, network);
-        return queryClient.prefetchQuery(queryOptions);
-      })
-    );
-  };
+  const prefetch = useCallback(
+    async (contractTypes: ContractType[], network: string) => {
+      await Promise.all(
+        contractTypes.map((type) => {
+          const queryOptions = createABIQueryOptions(apiClient, type, network);
+          return queryClient.prefetchQuery(queryOptions);
+        })
+      );
+    },
+    [apiClient, queryClient]
+  );
 
   return { prefetch };
 }
@@ -63,14 +63,17 @@ export function usePrefetchABIs() {
 export function useABIsCached(contractTypes: ContractType[], network: string) {
   const sdk = useZuno();
   const queryClient = useQueryClient();
+  const apiClient = sdk.getAPIClient();
 
-  const apiClient = (sdk as never)['apiClient'];
-
-  const cached = contractTypes.map((type) => {
-    const queryOptions = createABIQueryOptions(apiClient, type, network);
-    const data = queryClient.getQueryData(queryOptions.queryKey);
-    return { type, cached: data !== undefined };
-  });
+  const cached = useMemo(
+    () =>
+      contractTypes.map((type) => {
+        const queryOptions = createABIQueryOptions(apiClient, type, network);
+        const data = queryClient.getQueryData(queryOptions.queryKey);
+        return { type, cached: data !== undefined };
+      }),
+    [contractTypes, network, apiClient, queryClient]
+  );
 
   return cached;
 }

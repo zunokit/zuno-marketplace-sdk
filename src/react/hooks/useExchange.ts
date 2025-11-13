@@ -5,8 +5,16 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ListNFTParams, BuyNFTParams } from '../../types/contracts';
+import type { ListNFTParams, BuyNFTParams, TransactionOptions } from '../../types/contracts';
 import { useZuno } from '../provider/ZunoProvider';
+
+/**
+ * Cancel listing parameters
+ */
+export interface CancelListingParams {
+  listingId: string;
+  options?: TransactionOptions;
+}
 
 /**
  * Hook for exchange operations (list, buy, cancel)
@@ -30,8 +38,8 @@ export function useExchange() {
   });
 
   const cancelListing = useMutation({
-    mutationFn: ({ listingId, options }: { listingId: string; options?: unknown }) =>
-      sdk.exchange.cancelListing(listingId, options as never),
+    mutationFn: ({ listingId, options }: CancelListingParams) =>
+      sdk.exchange.cancelListing(listingId, options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listings'] });
     },

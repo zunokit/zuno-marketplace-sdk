@@ -8,8 +8,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   MakeOfferParams,
   MakeCollectionOfferParams,
+  TransactionOptions,
 } from '../../types/contracts';
 import { useZuno } from '../provider/ZunoProvider';
+
+/**
+ * Accept/Cancel offer parameters
+ */
+export interface OfferActionParams {
+  offerId: string;
+  options?: TransactionOptions;
+}
 
 /**
  * Hook for offer operations
@@ -34,8 +43,8 @@ export function useOffers() {
   });
 
   const acceptOffer = useMutation({
-    mutationFn: ({ offerId, options }: { offerId: string; options?: unknown }) =>
-      sdk.offers.acceptOffer(offerId, options as never),
+    mutationFn: ({ offerId, options }: OfferActionParams) =>
+      sdk.offers.acceptOffer(offerId, options),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['offer', variables.offerId] });
       queryClient.invalidateQueries({ queryKey: ['offers'] });
@@ -43,8 +52,8 @@ export function useOffers() {
   });
 
   const cancelOffer = useMutation({
-    mutationFn: ({ offerId, options }: { offerId: string; options?: unknown }) =>
-      sdk.offers.cancelOffer(offerId, options as never),
+    mutationFn: ({ offerId, options }: OfferActionParams) =>
+      sdk.offers.cancelOffer(offerId, options),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['offer', variables.offerId] });
       queryClient.invalidateQueries({ queryKey: ['offers'] });

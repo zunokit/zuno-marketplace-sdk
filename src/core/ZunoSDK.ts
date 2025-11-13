@@ -227,6 +227,13 @@ export class ZunoSDK extends EventEmitter {
   }
 
   /**
+   * Get API Client instance (for advanced usage)
+   */
+  getAPIClient(): ZunoAPIClient {
+    return this.apiClient;
+  }
+
+  /**
    * Prefetch ABIs for all contract types
    */
   async prefetchABIs(): Promise<void> {
