@@ -73,6 +73,12 @@ export interface ZunoSDKConfig {
   apiUrl?: string;
 
   /**
+   * ABIs registry URL for fetching contract ABIs
+   * @optional
+   */
+  abisUrl?: string;
+
+  /**
    * Custom RPC URL for blockchain connection
    * @optional
    */

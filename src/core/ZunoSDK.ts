@@ -9,8 +9,6 @@ import { ContractRegistry } from './ContractRegistry';
 import { ExchangeModule } from '../modules/ExchangeModule';
 import { CollectionModule } from '../modules/CollectionModule';
 import { AuctionModule } from '../modules/AuctionModule';
-import { OfferModule } from '../modules/OfferModule';
-import { BundleModule } from '../modules/BundleModule';
 import { EventEmitter } from '../utils/events';
 import { ZunoSDKError, ErrorCodes } from '../utils/errors';
 import type { ZunoSDKConfig, SDKOptions } from '../types/config';
@@ -30,8 +28,6 @@ export class ZunoSDK extends EventEmitter {
   private _exchange?: ExchangeModule;
   private _collection?: CollectionModule;
   private _auction?: AuctionModule;
-  private _offers?: OfferModule;
-  private _bundles?: BundleModule;
 
   constructor(config: ZunoSDKConfig, options?: SDKOptions) {
     super();
@@ -42,7 +38,11 @@ export class ZunoSDK extends EventEmitter {
     this.config = config;
 
     // Initialize API client
-    this.apiClient = new ZunoAPIClient(config.apiKey, config.apiUrl);
+    this.apiClient = new ZunoAPIClient(
+      config.apiKey,
+      config.apiUrl,
+      config.abisUrl
+    );
 
     // Initialize or use provided QueryClient
     this.queryClient = options?.queryClient || this.createDefaultQueryClient();
@@ -128,42 +128,6 @@ export class ZunoSDK extends EventEmitter {
   }
 
   /**
-   * Offers module (NFT & collection offers)
-   */
-  get offers(): OfferModule {
-    if (!this._offers) {
-      this._offers = new OfferModule(
-        this.apiClient,
-        this.contractRegistry,
-        this.queryClient,
-        this.config.network,
-        this.provider,
-        this.signer
-      );
-    }
-
-    return this._offers;
-  }
-
-  /**
-   * Bundles module (multi-NFT bundles)
-   */
-  get bundles(): BundleModule {
-    if (!this._bundles) {
-      this._bundles = new BundleModule(
-        this.apiClient,
-        this.contractRegistry,
-        this.queryClient,
-        this.config.network,
-        this.provider,
-        this.signer
-      );
-    }
-
-    return this._bundles;
-  }
-
-  /**
    * Update provider and signer
    */
   updateProvider(provider: ethers.Provider, signer?: ethers.Signer): void {
@@ -181,14 +145,6 @@ export class ZunoSDK extends EventEmitter {
 
     if (this._auction) {
       this._auction.updateProvider(provider, signer);
-    }
-
-    if (this._offers) {
-      this._offers.updateProvider(provider, signer);
-    }
-
-    if (this._bundles) {
-      this._bundles.updateProvider(provider, signer);
     }
 
     this.emit('providerUpdated', { provider, signer });

@@ -14,8 +14,6 @@ export { ContractRegistry } from './core/ContractRegistry';
 export { ExchangeModule } from './modules/ExchangeModule';
 export { CollectionModule } from './modules/CollectionModule';
 export { AuctionModule } from './modules/AuctionModule';
-export { OfferModule } from './modules/OfferModule';
-export { BundleModule } from './modules/BundleModule';
 export { BaseModule } from './modules/BaseModule';
 
 // Types

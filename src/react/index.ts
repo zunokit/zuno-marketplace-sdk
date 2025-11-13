@@ -21,12 +21,6 @@ export {
   useDutchAuctionPrice,
 } from './hooks/useAuction';
 
-// Hooks - Offers
-export { useOffers, useOffer } from './hooks/useOffers';
-
-// Hooks - Bundles
-export { useBundles, useBundle } from './hooks/useBundles';
-
 // Hooks - ABI Management
 export {
   useABI,

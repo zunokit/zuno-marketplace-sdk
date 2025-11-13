@@ -18,9 +18,10 @@ import type {
 import { ZunoSDKError, ErrorCodes } from '../utils/errors';
 
 /**
- * Default API URL
+ * Default API URLs
  */
 const DEFAULT_API_URL = 'https://api.zuno.com/v1';
+const DEFAULT_ABIS_URL = 'https://abis.zuno.com/api';
 
 /**
  * Query keys factory for TanStack Query
@@ -43,10 +44,12 @@ export const abiQueryKeys = {
  */
 export class ZunoAPIClient {
   private readonly axios: AxiosInstance;
+  private readonly abisAxios: AxiosInstance;
   private readonly apiKey: string;
   private readonly baseUrl: string;
+  private readonly abisUrl: string;
 
-  constructor(apiKey: string, apiUrl?: string) {
+  constructor(apiKey: string, apiUrl?: string, abisUrl?: string) {
     if (!apiKey) {
       throw new ZunoSDKError(
         ErrorCodes.MISSING_API_KEY,
@@ -56,9 +59,21 @@ export class ZunoAPIClient {
 
     this.apiKey = apiKey;
     this.baseUrl = apiUrl || DEFAULT_API_URL;
+    this.abisUrl = abisUrl || DEFAULT_ABIS_URL;
 
+    // Main API axios instance
     this.axios = axios.create({
       baseURL: this.baseUrl,
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': this.apiKey,
+      },
+    });
+
+    // ABIs registry axios instance
+    this.abisAxios = axios.create({
+      baseURL: this.abisUrl,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -73,6 +88,13 @@ export class ZunoAPIClient {
         return Promise.reject(this.handleError(error));
       }
     );
+
+    this.abisAxios.interceptors.response.use(
+      (response) => response,
+      (error: AxiosError) => {
+        return Promise.reject(this.handleError(error));
+      }
+    );
   }
 
   /**
@@ -80,7 +102,7 @@ export class ZunoAPIClient {
    */
   async getABI(contractName: string, network: string): Promise<AbiEntity> {
     try {
-      const response = await this.axios.get<GetABIResponse>(
+      const response = await this.abisAxios.get<GetABIResponse>(
         `/abis/${contractName}`,
         {
           params: { network },
@@ -98,7 +120,7 @@ export class ZunoAPIClient {
    */
   async getABIById(abiId: string): Promise<AbiEntity> {
     try {
-      const response = await this.axios.get<GetABIByIdResponse>(
+      const response = await this.abisAxios.get<GetABIByIdResponse>(
         `/abis/id/${abiId}`
       );
 
@@ -116,7 +138,7 @@ export class ZunoAPIClient {
     networkId: string
   ): Promise<ContractEntity> {
     try {
-      const response = await this.axios.get<GetContractInfoResponse>(
+      const response = await this.abisAxios.get<GetContractInfoResponse>(
         `/contracts/${address}`,
         {
           params: { networkId },
