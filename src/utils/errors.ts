@@ -183,6 +183,74 @@ export function validateDuration(duration: number, paramName = 'duration'): void
 }
 
 /**
+ * Runtime type guard for CreateERC721CollectionParams
+ */
+export function validateCreateERC721CollectionParams(params: unknown): asserts params is {
+  name: string;
+  symbol: string;
+  baseUri?: string;
+  maxSupply?: string;
+  options?: Record<string, any>;
+} {
+  if (!params || typeof params !== 'object') {
+    throw new ZunoSDKError(ErrorCodes.INVALID_PARAMETER, 'Params must be an object');
+  }
+
+  const p = params as any;
+
+  assert(
+    typeof p.name === 'string' && p.name.length > 0,
+    ErrorCodes.INVALID_PARAMETER,
+    'name is required and must be a non-empty string'
+  );
+
+  assert(
+    typeof p.symbol === 'string' && p.symbol.length > 0,
+    ErrorCodes.INVALID_PARAMETER,
+    'symbol is required and must be a non-empty string'
+  );
+
+  if (p.baseUri !== undefined) {
+    assert(
+      typeof p.baseUri === 'string',
+      ErrorCodes.INVALID_PARAMETER,
+      'baseUri must be a string'
+    );
+  }
+
+  if (p.maxSupply !== undefined) {
+    const supply = Number(p.maxSupply);
+    assert(
+      !isNaN(supply) && supply > 0,
+      ErrorCodes.INVALID_PARAMETER,
+      'maxSupply must be a valid number greater than 0'
+    );
+  }
+}
+
+/**
+ * Runtime type guard for ListNFTParams
+ */
+export function validateListNFTParams(params: unknown): asserts params is {
+  collectionAddress: string;
+  tokenId: string;
+  price: string;
+  duration: number;
+  options?: Record<string, any>;
+} {
+  if (!params || typeof params !== 'object') {
+    throw new ZunoSDKError(ErrorCodes.INVALID_PARAMETER, 'Params must be an object');
+  }
+
+  const p = params as any;
+
+  validateAddress(p.collectionAddress, 'collectionAddress');
+  validateTokenId(p.tokenId, 'tokenId');
+  validateAmount(p.price, 'price');
+  validateDuration(p.duration, 'duration');
+}
+
+/**
  * Wrap async function with error handling
  */
 export function wrapError<T extends (...args: unknown[]) => Promise<unknown>>(

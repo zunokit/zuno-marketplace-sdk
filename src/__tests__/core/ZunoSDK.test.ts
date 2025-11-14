@@ -3,7 +3,7 @@
  */
 
 import { ZunoSDK } from '../../core/ZunoSDK';
-import { ZunoSDKError, ErrorCodes } from '../../utils/errors';
+import { ZunoSDKError } from '../../utils/errors';
 
 describe('ZunoSDK', () => {
   describe('initialization', () => {
@@ -33,7 +33,7 @@ describe('ZunoSDK', () => {
           apiKey: '',
           network: 'sepolia',
         });
-      }).toThrow(ErrorCodes.MISSING_API_KEY);
+      }).toThrow('API key is required');
     });
 
     it('should throw error without network', () => {

@@ -169,12 +169,11 @@ export interface TransactionReceipt {
   hash: string;
   blockNumber: number;
   blockHash: string;
-  status: number;
-  from: string;
-  to: string;
+  status: 'success' | 'failed';
   gasUsed: string;
-  effectiveGasPrice: string;
-  logs: unknown[];
+  cumulativeGasUsed: string;
+  logs: readonly unknown[];
+  timestamp: number;
 }
 
 /**

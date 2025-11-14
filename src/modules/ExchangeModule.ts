@@ -6,7 +6,6 @@ import { ethers } from 'ethers';
 import { BaseModule } from './BaseModule';
 import type {
   ListNFTParams,
-  BatchListNFTParams,
   BuyNFTParams,
   BatchBuyNFTParams,
   BatchCancelListingParams,
@@ -20,9 +19,9 @@ import type {
 import {
   validateAddress,
   validateTokenId,
-  validateAmount,
-  validateDuration,
+  validateListNFTParams,
 } from '../utils/errors';
+import { ZunoSDKError, ErrorCodes } from '../utils/errors';
 
 /**
  * ExchangeModule handles marketplace trading operations
@@ -32,13 +31,10 @@ export class ExchangeModule extends BaseModule {
    * List an NFT for sale
    */
   async listNFT(params: ListNFTParams): Promise<TransactionReceipt> {
-    const { collectionAddress, tokenId, price, duration, options } = params;
+    // Runtime validation
+    validateListNFTParams(params);
 
-    // Validate parameters
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateTokenId(tokenId);
-    validateAmount(price, 'price');
-    validateDuration(duration);
+    const { collectionAddress, tokenId, price, duration, options } = params;
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -64,46 +60,7 @@ export class ExchangeModule extends BaseModule {
     );
   }
 
-  /**
-   * Batch list multiple NFTs for sale
-   */
-  async batchListNFT(params: BatchListNFTParams): Promise<TransactionReceipt> {
-    const { collectionAddress, tokenIds, prices, duration, options } = params;
-
-    // Validate parameters
-    validateAddress(collectionAddress, 'collectionAddress');
-    if (tokenIds.length === 0 || prices.length === 0) {
-      throw new Error('Token IDs and prices arrays cannot be empty');
-    }
-    if (tokenIds.length !== prices.length) {
-      throw new Error('Token IDs and prices arrays must have the same length');
-    }
-    validateDuration(duration);
-
-    const txManager = this.ensureTxManager();
-    const provider = this.ensureProvider();
-
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
-      provider,
-      undefined,
-      this.signer
-    );
-
-    // Prepare parameters - contract expects: (address, uint256[], uint256[], uint256)
-    const pricesInWei = prices.map((price) => ethers.parseEther(price));
-
-    // Call contract method
-    return await txManager.sendTransaction(
-      exchangeContract,
-      'batchListNFT',
-      [collectionAddress, tokenIds, pricesInWei, duration],
-      options
-    );
-  }
-
+  
   /**
    * Buy an NFT from a listing
    */
@@ -403,5 +360,24 @@ export class ExchangeModule extends BaseModule {
       status: statusMap[status] || 'active',
       createdAt: new Date(Number(startTime) * 1000).toISOString(),
     };
+  }
+
+  /**
+   * Batch list multiple NFTs using the batchExecute utility
+   */
+  async batchListNFT(
+    paramsArray: ListNFTParams[],
+    options?: { continueOnError?: boolean; maxConcurrency?: number }
+  ): Promise<Array<{ success: boolean; data?: TransactionReceipt; error?: ZunoSDKError }>> {
+    if (!paramsArray.length) {
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'Parameters array cannot be empty');
+    }
+
+    const operations = paramsArray.map(params => () => this.listNFT(params));
+
+    return this.batchExecute(operations, {
+      continueOnError: options?.continueOnError ?? true,
+      maxConcurrency: options?.maxConcurrency ?? 3
+    });
   }
 }

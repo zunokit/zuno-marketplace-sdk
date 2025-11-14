@@ -117,4 +117,54 @@ export abstract class BaseModule {
       details
     );
   }
+
+  /**
+   * Execute multiple operations in parallel (basic batch operation)
+   */
+  protected async batchExecute<T>(
+    operations: Array<() => Promise<T>>,
+    options?: {
+      continueOnError?: boolean;
+      maxConcurrency?: number;
+    }
+  ): Promise<Array<{ success: boolean; data?: T; error?: ZunoSDKError }>> {
+    const { continueOnError = false, maxConcurrency = 5 } = options || {};
+    const results: Array<{ success: boolean; data?: T; error?: ZunoSDKError }> = [];
+
+    // Process in batches to avoid overwhelming the network
+    for (let i = 0; i < operations.length; i += maxConcurrency) {
+      const batch = operations.slice(i, i + maxConcurrency);
+
+      const batchPromises = batch.map(async (operation) => {
+        try {
+          const data = await operation();
+          return { success: true, data };
+        } catch (error) {
+          const zunoError = ZunoSDKError.from(error);
+          if (!continueOnError) {
+            throw zunoError;
+          }
+          return { success: false, error: zunoError };
+        }
+      });
+
+      const batchResults = await Promise.allSettled(batchPromises);
+
+      for (const result of batchResults) {
+        if (result.status === 'fulfilled') {
+          results.push(result.value);
+        } else {
+          if (!continueOnError) {
+            throw result.reason;
+          }
+          results.push({
+            success: false,
+            error: ZunoSDKError.from(result.reason)
+          });
+        }
+      }
+    }
+
+    return results;
+  }
 }

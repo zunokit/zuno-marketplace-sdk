@@ -28,6 +28,8 @@ export class ZunoSDK extends EventEmitter {
   private _exchange?: ExchangeModule;
   private _collection?: CollectionModule;
   private _auction?: AuctionModule;
+  private _offers?: any; // Placeholder for OffersModule
+  private _bundles?: any; // Placeholder for BundlesModule
 
   constructor(config: ZunoSDKConfig, options?: SDKOptions) {
     super();
@@ -61,6 +63,13 @@ export class ZunoSDK extends EventEmitter {
     if (options?.signer) {
       this.signer = options.signer;
     }
+
+    // Auto-prefetch essential ABIs for better performance
+    this.prefetchEssentialABIs().catch((error) => {
+      if (config.debug) {
+        console.warn('[ZunoSDK] Failed to prefetch essential ABIs:', error);
+      }
+    });
 
     // Log initialization in debug mode
     if (config.debug) {
@@ -128,6 +137,38 @@ export class ZunoSDK extends EventEmitter {
   }
 
   /**
+   * Offers module (placeholder for MVP)
+   */
+  get offers(): any {
+    if (!this._offers) {
+      // Placeholder module for MVP
+      this._offers = {
+        makeOffer: async () => { throw new Error('Offers module not implemented yet'); },
+        acceptOffer: async () => { throw new Error('Offers module not implemented yet'); },
+        cancelOffer: async () => { throw new Error('Offers module not implemented yet'); },
+      };
+    }
+
+    return this._offers;
+  }
+
+  /**
+   * Bundles module (placeholder for MVP)
+   */
+  get bundles(): any {
+    if (!this._bundles) {
+      // Placeholder module for MVP
+      this._bundles = {
+        createBundle: async () => { throw new Error('Bundles module not implemented yet'); },
+        buyBundle: async () => { throw new Error('Bundles module not implemented yet'); },
+        cancelBundle: async () => { throw new Error('Bundles module not implemented yet'); },
+      };
+    }
+
+    return this._bundles;
+  }
+
+  /**
    * Update provider and signer
    */
   updateProvider(provider: ethers.Provider, signer?: ethers.Signer): void {
@@ -187,6 +228,28 @@ export class ZunoSDK extends EventEmitter {
    */
   getAPIClient(): ZunoAPIClient {
     return this.apiClient;
+  }
+
+  /**
+   * Prefetch essential ABIs for MVP operations
+   */
+  async prefetchEssentialABIs(): Promise<void> {
+    const essentialContracts = [
+      'ERC721NFTExchange',
+      'ERC721CollectionFactory',
+      'ERC1155CollectionFactory',
+    ] as const;
+
+    const networkId =
+      typeof this.config.network === 'number'
+        ? this.config.network.toString()
+        : this.config.network;
+
+    await this.contractRegistry.prefetchABIs([...essentialContracts], networkId);
+
+    if (this.config.debug) {
+      console.log('[ZunoSDK] Essential ABIs prefetched');
+    }
   }
 
   /**

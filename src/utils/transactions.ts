@@ -6,6 +6,12 @@ import { ethers } from 'ethers';
 import type { TransactionReceipt } from '../types/entities';
 import type { TransactionOptions } from '../types/contracts';
 import { ZunoSDKError, ErrorCodes } from './errors';
+import {
+  withRetry,
+  formatTransactionReceipt,
+  waitForTransactionWithTimeout,
+  buildTransactionOverrides,
+} from './helpers';
 
 /**
  * Transaction Manager for handling contract transactions
@@ -26,7 +32,7 @@ export class TransactionManager {
     contract: ethers.Contract,
     method: string,
     args: unknown[],
-    options?: TransactionOptions
+    options?: TransactionOptions & { maxRetries?: number; confirmations?: number; onSent?: (hash: string) => void; onSuccess?: (receipt: TransactionReceipt) => void }
   ): Promise<TransactionReceipt> {
     if (!this.signer) {
       throw new ZunoSDKError(
@@ -35,134 +41,108 @@ export class TransactionManager {
       );
     }
 
-    try {
-      // Build transaction overrides
-      const overrides: ethers.Overrides = {};
+    // Get contract method
+    const contractWithSigner = contract.connect(this.signer) as ethers.Contract;
+    const contractMethod = contractWithSigner[method];
 
-      if (options?.value) {
-        overrides.value = options.value;
-      }
-
-      if (options?.gasLimit) {
-        overrides.gasLimit = options.gasLimit;
-      }
-
-      if (options?.gasPrice) {
-        overrides.gasPrice = options.gasPrice;
-      }
-
-      if (options?.maxFeePerGas) {
-        overrides.maxFeePerGas = options.maxFeePerGas;
-      }
-
-      if (options?.maxPriorityFeePerGas) {
-        overrides.maxPriorityFeePerGas = options.maxPriorityFeePerGas;
-      }
-
-      if (options?.nonce !== undefined) {
-        overrides.nonce = options.nonce;
-      }
-
-      // Get contract method
-      const contractWithSigner = contract.connect(this.signer) as ethers.Contract;
-      const contractMethod = contractWithSigner[method];
-
-      if (!contractMethod) {
-        throw new ZunoSDKError(
-          ErrorCodes.CONTRACT_CALL_FAILED,
-          `Method ${method} not found on contract`
-        );
-      }
-
-      // Estimate gas if not provided
-      if (!options?.gasLimit) {
-        try {
-          const estimatedGas = await contractMethod.estimateGas(...args, overrides);
-          // Add 20% buffer to estimated gas
-          overrides.gasLimit = (estimatedGas * 120n) / 100n;
-        } catch (error) {
-          // If gas estimation fails, let the transaction proceed without gas limit
-          // The provider will use default gas limit
-          console.warn('Gas estimation failed:', error);
-        }
-      }
-
-      // Send transaction
-      const tx: ethers.ContractTransactionResponse = await contractMethod(
-        ...args,
-        overrides
+    if (!contractMethod) {
+      throw new ZunoSDKError(
+        ErrorCodes.CONTRACT_CALL_FAILED,
+        `Method ${method} not found on contract`
       );
-
-      // Call onSent callback if provided
-      if (options?.onSent) {
-        options.onSent(tx.hash);
-      }
-
-      // Wait for confirmation
-      const confirmations = options?.waitForConfirmations || 1;
-      const receipt = await tx.wait(confirmations);
-
-      if (!receipt) {
-        throw new ZunoSDKError(
-          ErrorCodes.TRANSACTION_FAILED,
-          'Transaction receipt not found'
-        );
-      }
-
-      // Check if transaction was successful
-      if (receipt.status === 0) {
-        throw new ZunoSDKError(
-          ErrorCodes.TRANSACTION_REVERTED,
-          'Transaction was reverted'
-        );
-      }
-
-      // Call onConfirmed callback if provided
-      if (options?.onConfirmed) {
-        options.onConfirmed(receipt);
-      }
-
-      return this.formatReceipt(receipt);
-    } catch (error) {
-      // Call onError callback if provided
-      if (options?.onError && error instanceof Error) {
-        options.onError(error);
-      }
-
-      // Handle specific error types
-      if (error instanceof Error) {
-        const message = error.message.toLowerCase();
-
-        if (message.includes('insufficient funds')) {
-          throw new ZunoSDKError(
-            ErrorCodes.INSUFFICIENT_FUNDS,
-            'Insufficient funds for transaction',
-            undefined,
-            error
-          );
-        }
-
-        if (message.includes('nonce too low')) {
-          throw new ZunoSDKError(
-            ErrorCodes.NONCE_TOO_LOW,
-            'Transaction nonce too low',
-            undefined,
-            error
-          );
-        }
-
-        if (message.includes('gas')) {
-          throw new ZunoSDKError(
-            ErrorCodes.GAS_ESTIMATION_FAILED,
-            'Gas estimation failed',
-            undefined,
-            error
-          );
-        }
-      }
-
-      throw ZunoSDKError.from(error, ErrorCodes.TRANSACTION_FAILED);
     }
+
+    // Build transaction overrides
+    const overrides = await this.buildOverrides(contractMethod, args, options);
+
+    // Send transaction with retry logic
+    return withRetry(
+      async () => {
+        const tx: ethers.ContractTransactionResponse = await contractMethod(
+          ...args,
+          overrides
+        );
+
+        // Call onSent callback if provided
+        if (options?.onSent) {
+          options.onSent(tx.hash);
+        }
+
+        // Wait for transaction receipt
+        const receipt = await waitForTransactionWithTimeout(
+          tx,
+          options?.confirmations
+        );
+
+        // Call onSuccess callback if provided
+        if (options?.onSuccess) {
+          options.onSuccess(receipt);
+        }
+
+        return receipt;
+      },
+      {
+        maxRetries: options?.maxRetries ?? 2,
+        initialDelay: 1000,
+        maxDelay: 10000,
+        backoff: 'exponential',
+      },
+      (error) => this.shouldRetry(error)
+    );
+  }
+
+  /**
+   * Build transaction overrides with gas estimation
+   */
+  private async buildOverrides(
+    contractMethod: ethers.ContractMethod,
+    args: unknown[],
+    options?: TransactionOptions & { maxRetries?: number; confirmations?: number; onSent?: (hash: string) => void; onSuccess?: (receipt: TransactionReceipt) => void }
+  ): Promise<ethers.Overrides> {
+    const overrides = buildTransactionOverrides({
+      value: options?.value,
+      gasLimit: options?.gasLimit ? BigInt(options.gasLimit) : undefined,
+      gasPrice: options?.gasPrice ? BigInt(options.gasPrice) : undefined,
+      maxFeePerGas: options?.maxFeePerGas ? BigInt(options.maxFeePerGas) : undefined,
+      maxPriorityFeePerGas: options?.maxPriorityFeePerGas ? BigInt(options.maxPriorityFeePerGas) : undefined,
+      nonce: options?.nonce,
+    });
+
+    // Estimate gas if not provided
+    if (!options?.gasLimit) {
+      try {
+        const estimatedGas = await contractMethod.estimateGas(...args, overrides);
+        // Add 20% buffer to estimated gas
+        overrides.gasLimit = (estimatedGas * 120n) / 100n;
+      } catch (error) {
+        // If gas estimation fails, let the transaction proceed without gas limit
+        console.warn('Gas estimation failed:', error);
+      }
+    }
+
+    return overrides;
+  }
+
+  /**
+   * Check if error should be retried
+   */
+  private shouldRetry(error: Error): boolean {
+    const nonRetryableErrors = [
+      'insufficient funds',
+      'execution reverted',
+      'invalid opcode',
+      'out of gas',
+      'nonce too high',
+      'underpriced',
+      'user rejected',
+    ];
+
+    const errorMessage = error.message.toLowerCase();
+    const isNonRetryable = nonRetryableErrors.some(pattern =>
+      errorMessage.includes(pattern)
+    );
+
+    return !isNonRetryable;
   }
 
   /**
@@ -191,32 +171,7 @@ export class TransactionManager {
     }
   }
 
-  /**
-   * Format ethers TransactionReceipt to our TransactionReceipt type
-   */
-  private formatReceipt(
-    receipt: ethers.TransactionReceipt
-  ): TransactionReceipt {
-    return {
-      hash: receipt.hash,
-      blockNumber: receipt.blockNumber,
-      blockHash: receipt.blockHash,
-      status: receipt.status || 0,
-      from: receipt.from,
-      to: receipt.to || '',
-      gasUsed: receipt.gasUsed.toString(),
-      effectiveGasPrice: receipt.gasPrice?.toString() || '0',
-      logs: receipt.logs.map((log) => ({
-        address: log.address,
-        topics: log.topics,
-        data: log.data,
-        blockNumber: log.blockNumber,
-        transactionHash: log.transactionHash,
-        logIndex: log.index,
-      })),
-    };
-  }
-
+  
   /**
    * Get current gas price
    */
@@ -268,7 +223,7 @@ export class TransactionManager {
         );
       }
 
-      return this.formatReceipt(receipt);
+      return formatTransactionReceipt(receipt);
     } catch (error) {
       throw ZunoSDKError.from(error, ErrorCodes.TRANSACTION_FAILED);
     }
