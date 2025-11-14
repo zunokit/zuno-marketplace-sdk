@@ -57,7 +57,7 @@ function NFTMarketplace() {
   const handleCreateAuction = async () => {
     try {
       await createEnglishAuction.mutateAsync({
-        nftAddress: '0xdef0...',
+        collectionAddress: '0xdef0...',
         tokenId: '42',
         startingBid: '2.0',
         duration: 604800,

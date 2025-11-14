@@ -86,7 +86,7 @@ export interface Auction {
   id: string;
   type: AuctionType;
   seller: string;
-  nftAddress: string;
+  collectionAddress: string;
   tokenId: string;
   startingBid?: string; // For English auction
   startPrice?: string; // For Dutch auction

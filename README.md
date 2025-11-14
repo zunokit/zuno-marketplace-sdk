@@ -101,14 +101,14 @@ await sdk.collection.mintERC721({ collectionAddress, recipient, tokenUri });
 ### Auction
 
 ```typescript
-await sdk.auction.createEnglishAuction({ nftAddress, tokenId, startingBid, duration });
+await sdk.auction.createEnglishAuction({ collectionAddress, tokenId, startingBid, duration });
 await sdk.auction.placeBid({ auctionId, amount });
 ```
 
 ### Offers & Bundles
 
 ```typescript
-await sdk.offers.makeOffer({ nftAddress, tokenId, price, duration });
+await sdk.offers.makeOffer({ collectionAddress, tokenId, price, duration });
 await sdk.bundles.createBundle({ nfts, price, duration });
 ```
 
@@ -133,7 +133,11 @@ function App() {
 
 ## 📚 Documentation
 
-For complete API documentation, visit [docs.zuno.com](https://docs.zuno.com)
+- **[API Reference](./docs/API.md)** - Complete API documentation with examples
+- **[Migration Guide](./docs/MIGRATION.md)** - Migrate from custom services or older versions
+- **[Examples](./examples/)** - Working code examples for Node.js and React
+
+For additional resources, visit [docs.zuno.com](https://docs.zuno.com)
 
 ## 🛠️ Development
 

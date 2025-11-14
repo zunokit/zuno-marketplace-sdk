@@ -188,7 +188,10 @@ export interface MintERC1155Params {
  * Create English Auction parameters
  */
 export interface CreateEnglishAuctionParams {
-  nftAddress: string;
+  /**
+   * NFT collection contract address
+   */
+  collectionAddress: string;
   tokenId: string;
   amount?: number; // For ERC1155, default 1 for ERC721
   startingBid: string;
@@ -202,7 +205,10 @@ export interface CreateEnglishAuctionParams {
  * Create Dutch Auction parameters
  */
 export interface CreateDutchAuctionParams {
-  nftAddress: string;
+  /**
+   * NFT collection contract address
+   */
+  collectionAddress: string;
   tokenId: string;
   amount?: number; // For ERC1155, default 1 for ERC721
   startPrice: string;
@@ -225,7 +231,10 @@ export interface PlaceBidParams {
  * Make Offer parameters
  */
 export interface MakeOfferParams {
-  nftAddress: string;
+  /**
+   * NFT collection contract address
+   */
+  collectionAddress: string;
   tokenId: string;
   price: string;
   duration: number;

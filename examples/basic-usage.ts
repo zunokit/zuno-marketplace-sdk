@@ -45,7 +45,7 @@ async function basicUsage() {
     // 4. Create English Auction
     console.log('\n🔨 Creating Auction...');
     const auctionResult = await sdk.auction.createEnglishAuction({
-      nftAddress: '0xdef0...',
+      collectionAddress: '0xdef0...',
       tokenId: '42',
       startingBid: '2.0', // 2 ETH starting bid
       duration: 604800, // 7 days
