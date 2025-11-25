@@ -4,6 +4,7 @@
 
 import type { QueryClient } from '@tanstack/react-query';
 import type { ethers } from 'ethers';
+import type { LoggerConfig } from '../utils/logger';
 
 /**
  * Supported blockchain networks
@@ -67,16 +68,11 @@ export interface ZunoSDKConfig {
   network: NetworkType;
 
   /**
-   * Custom API URL
+   * Custom API URL for all Zuno services (ABIs, contracts, networks)
    * @optional
+   * @default 'https://api.zuno.com/v1'
    */
   apiUrl?: string;
-
-  /**
-   * ABIs registry URL for fetching contract ABIs
-   * @optional
-   */
-  abisUrl?: string;
 
   /**
    * Custom RPC URL for blockchain connection
@@ -103,8 +99,15 @@ export interface ZunoSDKConfig {
   retryPolicy?: RetryPolicy;
 
   /**
-   * Enable debug logging
+   * Logger configuration
+   * @optional
+   */
+  logger?: LoggerConfig;
+
+  /**
+   * Enable debug logging (deprecated - use logger.level instead)
    * @default false
+   * @deprecated Use logger.level = 'debug' instead
    */
   debug?: boolean;
 }

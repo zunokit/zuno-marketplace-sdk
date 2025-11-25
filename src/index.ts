@@ -26,6 +26,8 @@ export type * from './types/contracts';
 export { ZunoSDKError, ErrorCodes } from './utils/errors';
 export { EventEmitter } from './utils/events';
 export { TransactionManager } from './utils/transactions';
+export { ZunoLogger, createNoOpLogger } from './utils/logger';
+export type { Logger, LoggerConfig, LogLevel, LogMetadata } from './utils/logger';
 
 // Query factories (for advanced usage)
 export {

@@ -37,15 +37,37 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 | Testnet (Sepolia) | ❌ | Coming soon |
 | Mainnet | ❌ | Coming soon |
 
-## 🆕 What's New in v1.1.4
+## 🆕 What's New in v1.1.5
 
-- **Standardized Response Format** - All mutation methods now return `{ tx, ...data }` for consistency
-- **New Query Methods** - `getActiveListings()`, `getActiveAuctions()`, `getAuctionsBySeller()`
-- **New Mutation Methods** - `updateListingPrice()`, `cancelAuction()`
-- **Better TypeScript Inference** - Improved type inference for all method responses
-- **Listing ID Extraction** - `listNFT()` now returns `{ listingId, tx }` automatically
+### 🔄 Breaking Changes
+- **Unified API Configuration** - Removed `abisUrl`, use single `apiUrl` for all services
 
-> **Migration Note**: If upgrading from v1.1.3, update your code to destructure responses. See [CHANGELOG.md](./CHANGELOG.md) for details.
+### ✨ New Features
+- **Production Logger System** - Structured logging with auto-logging, custom logger support (Sentry, Datadog), and performance optimization
+- **Multiple Log Levels** - `none`, `error`, `warn`, `info`, `debug` with filtering and formatting
+- **Manual Logging** - Access `sdk.logger` for custom messages alongside auto-logging
+- **JSON Output** - Support for monitoring tools with JSON format
+
+### 📖 Examples
+
+```typescript
+// Auto-logging
+const sdk = new ZunoSDK({
+  logger: { level: 'info' }
+});
+
+// Manual logging
+sdk.logger.info('Custom message');
+
+// Custom logger (Sentry)
+logger: {
+  customLogger: {
+    error: (msg) => Sentry.captureException(new Error(msg))
+  }
+}
+```
+
+> **Migration Note**: Remove `abisUrl` from config. Use `logger.level` instead of `debug` flag. See [CHANGELOG.md](./CHANGELOG.md) for details.
 
 ## 📦 Installation
 
@@ -56,6 +78,8 @@ npm install zuno-marketplace-sdk ethers@6 @tanstack/react-query wagmi viem
 ## 🚀 Quick Start
 
 ### React with Next.js
+
+#### Basic Setup
 
 ```tsx
 // app/layout.tsx
@@ -68,8 +92,68 @@ export default function RootLayout({ children }) {
         <ZunoProvider
           config={{
             apiKey: process.env.NEXT_PUBLIC_ZUNO_API_KEY!,
-            network: 'sepolia',
+            network: 'sepolia', // 'mainnet' | 'sepolia' | 'polygon' | 'arbitrum' | number
           }}
+        >
+          {children}
+        </ZunoProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+#### Advanced Setup (Full Configuration)
+
+```tsx
+// app/layout.tsx
+import { ZunoProvider } from 'zuno-marketplace-sdk/react';
+import type { ZunoSDKConfig } from 'zuno-marketplace-sdk';
+
+export default function RootLayout({ children }) {
+  const config: ZunoSDKConfig = {
+    // Required
+    apiKey: process.env.NEXT_PUBLIC_ZUNO_API_KEY!,
+    network: 'sepolia',
+
+    // Optional: Custom endpoints
+    apiUrl: 'https://api.zuno.com/v1',        // Unified API (ABIs, contracts, networks)
+    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY',  // Blockchain RPC
+
+    // Optional: WalletConnect v2
+    walletConnectProjectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID,
+
+    // Optional: Caching configuration
+    cache: {
+      ttl: 300000,      // Cache time-to-live: 5 minutes
+      gcTime: 600000,   // Garbage collection: 10 minutes
+    },
+
+    // Optional: Retry policy for failed requests
+    retryPolicy: {
+      maxRetries: 3,
+      backoff: 'exponential', // 'linear' | 'exponential'
+      initialDelay: 1000,
+    },
+
+    // Optional: Debug mode
+    debug: process.env.NODE_ENV === 'development',
+
+    // Optional: Logger configuration
+    logger: {
+      level: process.env.NODE_ENV === 'development' ? 'debug' : 'error',
+      timestamp: true,
+      modulePrefix: true,
+      logTransactions: true,
+    },
+  };
+
+  return (
+    <html>
+      <body>
+        <ZunoProvider
+          config={config}
+          enableDevTools={true} // React Query DevTools (dev only)
         >
           {children}
         </ZunoProvider>
@@ -209,6 +293,81 @@ function App() {
   const { createEnglishAuction, placeBid } = useAuction();
   const { address, connect } = useWallet();
   // ... use them
+}
+```
+
+## 📝 Logging
+
+The SDK provides a powerful logging system for debugging and monitoring.
+
+### Auto-logging (Recommended)
+
+SDK automatically logs operations when configured:
+
+```typescript
+const sdk = new ZunoSDK({
+  apiKey: 'xxx',
+  network: 'sepolia',
+  logger: {
+    level: 'info',  // 'none' | 'error' | 'warn' | 'info' | 'debug'
+  }
+});
+
+// SDK automatically logs:
+await sdk.exchange.listNFT({ ... });
+// → [INFO] [Exchange] listNFT started
+// → [INFO] [Exchange] Transaction submitted { hash: "0x..." }
+```
+
+### Manual Logging
+
+Access logger for custom messages:
+
+```typescript
+// Via SDK instance
+sdk.logger.info('Custom message', { data: { foo: 'bar' } });
+sdk.logger.warn('Warning message');
+sdk.logger.error('Error occurred');
+
+// Standalone logger
+import { ZunoLogger } from 'zuno-marketplace-sdk';
+
+const logger = new ZunoLogger({
+  level: 'debug',
+  timestamp: true,
+  modulePrefix: true,
+});
+
+logger.info('My custom log');
+```
+
+### Advanced Configuration
+
+```typescript
+logger: {
+  level: 'debug',
+
+  // Output format
+  format: 'json',  // 'text' | 'json' (for monitoring tools)
+  timestamp: true,
+  colors: true,
+  modulePrefix: true,
+
+  // Filters
+  includeModules: ['Exchange', 'Auction'],  // Only these modules
+  excludeModules: ['Collection'],           // Exclude these
+
+  // Features
+  logTransactions: true,      // Auto-log all transactions
+  includeErrorContext: true,  // Include SDK state in errors
+
+  // Custom logger (Sentry, Datadog, etc.)
+  customLogger: {
+    debug: (msg, meta) => console.debug(msg, meta),
+    info: (msg, meta) => myLogger.info(msg, meta),
+    warn: (msg, meta) => Sentry.captureMessage(msg, 'warning'),
+    error: (msg, meta) => Sentry.captureException(new Error(msg)),
+  }
 }
 ```
 

@@ -29,7 +29,7 @@ describe('ZunoAPIClient', () => {
 
     mockedAxios.create.mockReturnValue(mockAxiosInstance);
 
-    client = new ZunoAPIClient('test-api-key', 'https://api.test.com', 'https://abis.test.com');
+    client = new ZunoAPIClient('test-api-key', 'https://api.test.com');
   });
 
   afterEach(() => {
@@ -39,7 +39,7 @@ describe('ZunoAPIClient', () => {
   describe('initialization', () => {
     it('should initialize with valid config', () => {
       expect(client).toBeDefined();
-      expect(mockedAxios.create).toHaveBeenCalledTimes(2);
+      expect(mockedAxios.create).toHaveBeenCalledTimes(1);
     });
 
     it('should throw error without API key', () => {

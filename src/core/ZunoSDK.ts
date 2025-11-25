@@ -11,6 +11,7 @@ import { CollectionModule } from '../modules/CollectionModule';
 import { AuctionModule } from '../modules/AuctionModule';
 import { EventEmitter } from '../utils/events';
 import { ZunoSDKError, ErrorCodes } from '../utils/errors';
+import { ZunoLogger, createNoOpLogger, type Logger } from '../utils/logger';
 import type { ZunoSDKConfig, SDKOptions } from '../types/config';
 
 /**
@@ -23,6 +24,12 @@ export class ZunoSDK extends EventEmitter {
   private readonly queryClient: QueryClient;
   private provider?: ethers.Provider;
   private signer?: ethers.Signer;
+
+  /**
+   * Public logger instance - users can access for custom logging
+   * @example sdk.logger.info('Custom message')
+   */
+  public readonly logger: Logger;
 
   // Feature modules (lazy loaded)
   private _exchange?: ExchangeModule;
@@ -39,11 +46,41 @@ export class ZunoSDK extends EventEmitter {
 
     this.config = config;
 
+    // Initialize logger
+    // Backward compatibility: if debug=true, set logger level to 'debug'
+    const loggerConfig = config.logger || {};
+    if (config.debug && !loggerConfig.level) {
+      loggerConfig.level = 'debug';
+    }
+
+    // Create logger or no-op logger
+    if (loggerConfig.level === 'none' || (!loggerConfig.level && !config.debug)) {
+      this.logger = createNoOpLogger();
+    } else {
+      const zunoLogger = new ZunoLogger(loggerConfig);
+      // Set SDK context for error logging
+      zunoLogger.setContext({
+        network: config.network,
+        apiUrl: config.apiUrl,
+        version: '1.1.5', // Will be updated dynamically
+      });
+      this.logger = zunoLogger;
+    }
+
+    // Log SDK initialization
+    this.logger.info('Zuno SDK initialized', {
+      module: 'SDK',
+      data: {
+        network: config.network,
+        hasProvider: !!options?.provider,
+        hasSigner: !!options?.signer,
+      },
+    });
+
     // Initialize API client
     this.apiClient = new ZunoAPIClient(
       config.apiKey,
-      config.apiUrl,
-      config.abisUrl
+      config.apiUrl
     );
 
     // Initialize or use provided QueryClient
@@ -66,20 +103,11 @@ export class ZunoSDK extends EventEmitter {
 
     // Auto-prefetch essential ABIs for better performance
     this.prefetchEssentialABIs().catch((error) => {
-      if (config.debug) {
-        console.warn('[ZunoSDK] Failed to prefetch essential ABIs:', error);
-      }
-    });
-
-    // Log initialization in debug mode
-    if (config.debug) {
-      console.log('[ZunoSDK] Initialized with config:', {
-        network: config.network,
-        apiUrl: config.apiUrl,
-        hasProvider: !!this.provider,
-        hasSigner: !!this.signer,
+      this.logger.warn('Failed to prefetch essential ABIs', {
+        module: 'SDK',
+        data: { error: error.message },
       });
-    }
+    });
   }
 
   /**
@@ -87,11 +115,17 @@ export class ZunoSDK extends EventEmitter {
    */
   get exchange(): ExchangeModule {
     if (!this._exchange) {
+      // Create module-specific logger
+      const moduleLogger = (this.logger as any).createModuleLogger
+        ? (this.logger as any).createModuleLogger('Exchange')
+        : this.logger;
+
       this._exchange = new ExchangeModule(
         this.apiClient,
         this.contractRegistry,
         this.queryClient,
         this.config.network,
+        moduleLogger,
         this.provider,
         this.signer
       );
@@ -105,11 +139,17 @@ export class ZunoSDK extends EventEmitter {
    */
   get collection(): CollectionModule {
     if (!this._collection) {
+      // Create module-specific logger
+      const moduleLogger = (this.logger as any).createModuleLogger
+        ? (this.logger as any).createModuleLogger('Collection')
+        : this.logger;
+
       this._collection = new CollectionModule(
         this.apiClient,
         this.contractRegistry,
         this.queryClient,
         this.config.network,
+        moduleLogger,
         this.provider,
         this.signer
       );
@@ -123,11 +163,17 @@ export class ZunoSDK extends EventEmitter {
    */
   get auction(): AuctionModule {
     if (!this._auction) {
+      // Create module-specific logger
+      const moduleLogger = (this.logger as any).createModuleLogger
+        ? (this.logger as any).createModuleLogger('Auction')
+        : this.logger;
+
       this._auction = new AuctionModule(
         this.apiClient,
         this.contractRegistry,
         this.queryClient,
         this.config.network,
+        moduleLogger,
         this.provider,
         this.signer
       );

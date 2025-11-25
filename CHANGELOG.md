@@ -5,6 +5,95 @@ All notable changes to the Zuno Marketplace SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2025-11-26
+
+### 🔄 Changed - BREAKING CHANGES
+
+- **Unified API endpoint configuration**
+  - Removed `abisUrl` configuration option
+  - All API calls now use single `apiUrl` endpoint
+  - Simplified SDK configuration with single unified endpoint
+
+**Migration Required:** Remove `abisUrl` from your configuration. All services (ABIs, contracts, networks) now use the unified `apiUrl`.
+
+**Before:**
+```typescript
+const config: ZunoSDKConfig = {
+  apiKey: 'your-api-key',
+  network: 'sepolia',
+  apiUrl: 'https://api.zuno.com/v1',
+  abisUrl: 'https://abis.zuno.com/api',  // ❌ Remove this
+};
+```
+
+**After:**
+```typescript
+const config: ZunoSDKConfig = {
+  apiKey: 'your-api-key',
+  network: 'sepolia',
+  apiUrl: 'https://api.zuno.com/v1',  // ✅ Single unified endpoint
+};
+```
+
+### ✨ Added
+
+- **Production-ready Logger System**
+  - Structured logging with multiple levels (`debug`, `info`, `warn`, `error`, `none`)
+  - Auto-logging for all SDK operations (transactions, errors, module actions)
+  - Manual logging via `sdk.logger` for custom messages
+  - Configurable output formats: text or JSON
+  - Module-specific logging with automatic prefixes
+  - Filter logging by module or action
+  - Custom logger support (Sentry, Datadog, Winston, etc.)
+  - Automatic transaction logging with hash and status
+  - Error context with SDK state for debugging
+  - Performance-optimized: no-op when disabled
+
+**Usage Examples:**
+
+Auto-logging:
+```typescript
+const sdk = new ZunoSDK({
+  logger: { level: 'info' }
+});
+// SDK automatically logs all operations
+```
+
+Manual logging:
+```typescript
+sdk.logger.info('Custom message', { data: {...} });
+```
+
+Custom logger integration:
+```typescript
+logger: {
+  customLogger: {
+    error: (msg) => Sentry.captureException(new Error(msg))
+  }
+}
+```
+
+### ⚡️ Improved
+
+- Simplified SDK architecture with single API client
+- Reduced configuration complexity
+- Better default URL handling
+- Enhanced debugging capabilities with structured logging
+- Better error tracking with automatic context
+
+### 📝 Documentation
+
+- Updated README with simplified configuration examples
+- Removed confusing dual-endpoint setup from examples
+- Added comprehensive logging documentation with examples
+- Documented all logger configuration options
+
+### 🔧 Deprecated
+
+- `debug: boolean` config option - Use `logger.level = 'debug'` instead (backward compatible)
+
+---
+
 ## [1.1.4] - 2025-11-23
 
 ### 🔄 Changed - BREAKING CHANGES

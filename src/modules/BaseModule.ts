@@ -9,6 +9,7 @@ import type { ContractRegistry } from '../core/ContractRegistry';
 import { TransactionManager } from '../utils/transactions';
 import { ZunoSDKError, ErrorCodes } from '../utils/errors';
 import type { NetworkType } from '../types/config';
+import type { Logger } from '../utils/logger';
 
 /**
  * Base class for all SDK modules
@@ -18,6 +19,7 @@ export abstract class BaseModule {
   protected readonly contractRegistry: ContractRegistry;
   protected readonly queryClient: QueryClient;
   protected readonly network: NetworkType;
+  protected readonly logger: Logger;
   protected provider?: ethers.Provider;
   protected signer?: ethers.Signer;
   protected txManager?: TransactionManager;
@@ -27,6 +29,7 @@ export abstract class BaseModule {
     contractRegistry: ContractRegistry,
     queryClient: QueryClient,
     network: NetworkType,
+    logger: Logger,
     provider?: ethers.Provider,
     signer?: ethers.Signer
   ) {
@@ -34,6 +37,7 @@ export abstract class BaseModule {
     this.contractRegistry = contractRegistry;
     this.queryClient = queryClient;
     this.network = network;
+    this.logger = logger;
     this.provider = provider;
     this.signer = signer;
 
