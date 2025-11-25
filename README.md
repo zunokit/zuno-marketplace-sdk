@@ -18,6 +18,25 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 - 🪝 **Modern React** - useCallback, useMemo optimization
 - 📱 **Wallet Support** - WalletConnect, MetaMask, Coinbase Wallet
 
+## 🌐 Platform Support
+
+### Contract & ABI Support
+
+| Feature | Status | Description |
+|---------|:------:|-------------|
+| Zuno ABIs | ✅ | Fully supported with built-in registry |
+| Zuno Contracts | ✅ | Full integration with Zuno marketplace contracts |
+| Other ABIs | ❌ | Not supported yet |
+| Other Contracts | ❌ | Custom contract support not available |
+
+### Network Support
+
+| Network | Status | Description |
+|---------|:------:|-------------|
+| Local Development | ✅ | Full support for local testing |
+| Testnet (Sepolia) | ❌ | Coming soon |
+| Mainnet | ❌ | Coming soon |
+
 ## 🆕 What's New in v1.1.4
 
 - **Standardized Response Format** - All mutation methods now return `{ tx, ...data }` for consistency
