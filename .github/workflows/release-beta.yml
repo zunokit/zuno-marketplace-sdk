@@ -1,9 +1,10 @@
-name: Release
+name: Release Beta
 
 on:
   push:
     branches:
-      - main
+      - develop
+      - develop-claude
 
 permissions:
   contents: write
@@ -12,8 +13,8 @@ permissions:
   id-token: write
 
 jobs:
-  release:
-    name: Release
+  release-beta:
+    name: Release Beta
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -43,8 +44,8 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Release
+      - name: Release Beta
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm run semantic-release
+        run: pnpm run semantic-release --extends ./.releaserc.beta.json
