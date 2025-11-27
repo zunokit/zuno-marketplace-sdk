@@ -5,7 +5,7 @@
 
 import { ZunoSDK } from '../core/ZunoSDK';
 import { ZunoAPIClient } from '../core/ZunoAPIClient';
-import { ZunoSDKError, ErrorCodes } from '../utils/errors';
+import { ZunoSDKError } from '../utils/errors';
 import { ZunoLogger } from '../utils/logger';
 import { ethers } from 'ethers';
 

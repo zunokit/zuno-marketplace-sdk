@@ -2,7 +2,7 @@
  * Logger tests
  */
 
-import { ZunoLogger, createNoOpLogger, type Logger, type LoggerConfig } from '../../utils/logger';
+import { ZunoLogger, createNoOpLogger, type Logger } from '../../utils/logger';
 
 describe('ZunoLogger', () => {
   let consoleSpy: {
