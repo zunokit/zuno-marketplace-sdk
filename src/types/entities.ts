@@ -21,10 +21,15 @@ export interface AbiEntity {
 export interface NetworkEntity {
   id: string;
   name: string;
+  slug: string;
   chainId: number;
-  rpcUrl: string;
-  blockExplorer: string;
-  isTestnet: boolean;
+  type: string;
+  rpcUrl?: string;
+  blockExplorer?: string;
+  isTestnet?: boolean;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**

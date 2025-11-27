@@ -37,3 +37,11 @@ export {
   createContractInfoQueryOptions,
   createNetworksQueryOptions,
 } from './core/ZunoAPIClient';
+
+// Network utilities & constants
+export {
+  SUPPORTED_NETWORKS,
+  getSupportedNetworkNames,
+  isSupportedNetwork,
+  type SupportedNetwork,
+} from './core/ZunoAPIClient';

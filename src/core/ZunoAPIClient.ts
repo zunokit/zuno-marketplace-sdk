@@ -10,7 +10,6 @@ import type {
 } from '../types/entities';
 import type {
   APIResponse,
-  GetABIResponse,
   GetABIByIdResponse,
   GetContractInfoResponse,
   GetNetworksResponse,
@@ -21,6 +20,74 @@ import { ZunoSDKError, ErrorCodes } from '../utils/errors';
  * Default API URL
  */
 const DEFAULT_API_URL = 'https://api.zuno.com/v1';
+
+/**
+ * Supported network names mapped to chain IDs
+ *
+ * Use this to see which networks are supported without making API calls.
+ *
+ * @example
+ * ```typescript
+ * import { SUPPORTED_NETWORKS } from 'zuno-marketplace-sdk';
+ *
+ * console.log(SUPPORTED_NETWORKS.mainnet);  // 1
+ * console.log(SUPPORTED_NETWORKS.polygon);  // 137
+ * console.log(SUPPORTED_NETWORKS.localhost); // 31337
+ * ```
+ */
+export const SUPPORTED_NETWORKS = {
+  // Mainnets
+  mainnet: 1,
+  ethereum: 1,
+  polygon: 137,
+  'polygon-mainnet': 137,
+  arbitrum: 42161,
+  'arbitrum-one': 42161,
+  optimism: 10,
+  'optimism-mainnet': 10,
+  base: 8453,
+  'base-mainnet': 8453,
+  bsc: 56,
+  'binance-smart-chain': 56,
+  avalanche: 43114,
+  'avalanche-c-chain': 43114,
+
+  // Testnets
+  sepolia: 11155111,
+  'ethereum-sepolia': 11155111,
+  goerli: 5,
+  'polygon-mumbai': 80001,
+  mumbai: 80001,
+  'arbitrum-sepolia': 421614,
+  'optimism-sepolia': 11155420,
+  'base-sepolia': 84532,
+  'bsc-testnet': 97,
+
+  // Local development
+  localhost: 31337,
+  hardhat: 31337,
+  anvil: 31337,
+  ganache: 1337,
+} as const;
+
+/**
+ * Type for supported network names
+ */
+export type SupportedNetwork = keyof typeof SUPPORTED_NETWORKS;
+
+/**
+ * Get list of all supported network names
+ */
+export function getSupportedNetworkNames(): SupportedNetwork[] {
+  return Object.keys(SUPPORTED_NETWORKS) as SupportedNetwork[];
+}
+
+/**
+ * Check if a network name is supported
+ */
+export function isSupportedNetwork(network: string): network is SupportedNetwork {
+  return network.toLowerCase() in SUPPORTED_NETWORKS;
+}
 
 /**
  * Query keys factory for TanStack Query
@@ -77,21 +144,78 @@ export class ZunoAPIClient {
   }
 
   /**
-   * Get ABI by contract name and network
+   * Get ABI by contract name and network (chain ID)
+   *
+   * @param contractName - Name of the contract (e.g., 'ERC721NFTExchange')
+   * @param network - Chain ID (number or string) or network name (e.g., 'mainnet', 'sepolia', 'localhost')
+   * @returns ABI entity with full ABI JSON
    */
   async getABI(contractName: string, network: string): Promise<AbiEntity> {
     try {
-      const response = await this.axios.get<GetABIResponse>(
-        `/abis/${contractName}`,
+      // Convert network to chainId if it's a named network
+      const chainId = this.resolveChainId(network);
+
+      // Step 1: Get contract by name filtered by chainId
+      const contractsResponse = await this.axios.get(
+        `/contracts/by-name/${contractName}`,
         {
-          params: { network },
+          params: { chainId },
         }
       );
 
-      return response.data.data;
+      // Extract contracts array from response
+      const contracts = contractsResponse.data.data.contracts;
+      if (!contracts || contracts.length === 0) {
+        throw new ZunoSDKError(
+          ErrorCodes.ABI_NOT_FOUND,
+          `Contract '${contractName}' not found on chain ID ${chainId}`
+        );
+      }
+
+      // Get the first matching contract
+      const contract = contracts[0];
+      const abiId = contract.abiId;
+
+      if (!abiId) {
+        throw new ZunoSDKError(
+          ErrorCodes.ABI_NOT_FOUND,
+          `Contract '${contractName}' has no ABI associated`
+        );
+      }
+
+      // Step 2: Get ABI by ID
+      const abiResponse = await this.axios.get(`/abis/${abiId}`);
+
+      return abiResponse.data.data;
     } catch (error) {
       throw ZunoSDKError.from(error, ErrorCodes.ABI_NOT_FOUND);
     }
+  }
+
+  /**
+   * Resolve network identifier to chain ID
+   *
+   * @param network - Network identifier (chain ID as number/string or network name)
+   * @returns Chain ID as number
+   */
+  private resolveChainId(network: string): number {
+    // If network is already a number, return it
+    if (!isNaN(Number(network))) {
+      return Number(network);
+    }
+
+    // Use the exported network mappings
+    const networkKey = network.toLowerCase() as SupportedNetwork;
+    const chainId = SUPPORTED_NETWORKS[networkKey];
+
+    if (!chainId) {
+      throw new ZunoSDKError(
+        ErrorCodes.INVALID_NETWORK,
+        `Unknown network: ${network}. Supported networks: ${Object.keys(SUPPORTED_NETWORKS).join(', ')}`
+      );
+    }
+
+    return chainId;
   }
 
   /**
