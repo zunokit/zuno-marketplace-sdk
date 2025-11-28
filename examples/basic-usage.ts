@@ -10,7 +10,7 @@ import { ZunoSDK } from '../dist/index.js';
 const sdk = new ZunoSDK({
   apiKey: 'your-api-key',
   network: 'sepolia',
-  abisUrl: 'https://abis.zuno.com/api',
+  apiUrl: 'https://api.zuno.com/v1', // Unified API endpoint
 });
 
 async function basicUsage() {

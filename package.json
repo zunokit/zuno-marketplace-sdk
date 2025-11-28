@@ -1,6 +1,6 @@
 {
   "name": "zuno-marketplace-sdk",
-  "version": "1.3.0-beta-claude-01",
+  "version": "1.3.0-beta.2",
   "description": "All-in-One NFT Marketplace SDK with Wagmi & React Query built-in",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -51,6 +51,7 @@
     "dist",
     "README.md",
     "LICENSE",
+    "CHANGELOG.md",
     "examples/**/*"
   ],
   "scripts": {

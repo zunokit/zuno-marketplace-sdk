@@ -15,112 +15,33 @@ const commonExternal = [
   '@wagmi/connectors',
 ];
 
-export default defineConfig([
-  // Main SDK bundle
-  {
-    entry: ['src/index.ts'],
-    format: ['cjs', 'esm'],
-    dts: true,
-    clean: true,
-    sourcemap: true,
-    minify: false,
-    splitting: false,
-    treeshake: true,
-    external: commonExternal,
-    outDir: 'dist',
+export default defineConfig({
+  entry: {
+    // Main SDK
+    'index': 'src/index.ts',
+    // React integration
+    'react/index': 'src/react/index.ts',
+    // Tree-shakeable modules
+    'exchange/index': 'src/exchange/index.ts',
+    'auction/index': 'src/auction/index.ts',
+    'collection/index': 'src/collection/index.ts',
+    // New v1.3.0 modules
+    'logger/index': 'src/logger/index.ts',
+    'testing/index': 'src/testing/index.ts',
+    'devtools/index': 'src/devtools/index.ts',
   },
-  // React integration bundle
-  {
-    entry: ['src/react/index.ts'],
-    format: ['cjs', 'esm'],
-    dts: true,
-    sourcemap: true,
-    minify: false,
-    splitting: false,
-    treeshake: true,
-    external: commonExternal,
-    outDir: 'dist/react',
-    esbuildOptions(options) {
-      options.banner = {
-        js: '"use client";',
-      };
-    },
+  format: ['cjs', 'esm'],
+  dts: true,
+  clean: true,
+  sourcemap: true,
+  minify: false,
+  splitting: false,
+  treeshake: true,
+  external: [...commonExternal, 'jest'],
+  outDir: 'dist',
+  esbuildOptions(options) {
+    options.banner = {
+      js: '"use client";',
+    };
   },
-  // Tree-shakeable Exchange module
-  {
-    entry: ['src/exchange/index.ts'],
-    format: ['cjs', 'esm'],
-    dts: true,
-    sourcemap: true,
-    minify: false,
-    splitting: false,
-    treeshake: true,
-    external: commonExternal,
-    outDir: 'dist/exchange',
-  },
-  // Tree-shakeable Auction module
-  {
-    entry: ['src/auction/index.ts'],
-    format: ['cjs', 'esm'],
-    dts: true,
-    sourcemap: true,
-    minify: false,
-    splitting: false,
-    treeshake: true,
-    external: commonExternal,
-    outDir: 'dist/auction',
-  },
-  // Tree-shakeable Collection module
-  {
-    entry: ['src/collection/index.ts'],
-    format: ['cjs', 'esm'],
-    dts: true,
-    sourcemap: true,
-    minify: false,
-    splitting: false,
-    treeshake: true,
-    external: commonExternal,
-    outDir: 'dist/collection',
-  },
-  // Pre-configured Logger
-  {
-    entry: ['src/logger/index.ts'],
-    format: ['cjs', 'esm'],
-    dts: true,
-    sourcemap: true,
-    minify: false,
-    splitting: false,
-    treeshake: true,
-    external: commonExternal,
-    outDir: 'dist/logger',
-  },
-  // Testing utilities
-  {
-    entry: ['src/testing/index.ts'],
-    format: ['cjs', 'esm'],
-    dts: true,
-    sourcemap: true,
-    minify: false,
-    splitting: false,
-    treeshake: true,
-    external: [...commonExternal, 'jest'],
-    outDir: 'dist/testing',
-  },
-  // DevTools component
-  {
-    entry: ['src/devtools/index.ts'],
-    format: ['cjs', 'esm'],
-    dts: true,
-    sourcemap: true,
-    minify: false,
-    splitting: false,
-    treeshake: true,
-    external: commonExternal,
-    outDir: 'dist/devtools',
-    esbuildOptions(options) {
-      options.banner = {
-        js: '"use client";',
-      };
-    },
-  },
-]);
+});
