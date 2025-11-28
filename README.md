@@ -37,53 +37,56 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 | Testnet (Sepolia) | ❌ | Coming soon |
 | Mainnet | ❌ | Coming soon |
 
-## 🆕 What's New in v1.2.0
+## 🆕 What's New in v1.3.0
 
 ### ✨ New Features
 
-- **SDK Instance Access** - New `useZunoSDK()` hook for direct SDK access in React components
-- **Logger Access** - New `useZunoLogger()` hook and `getLogger()` for easy logging anywhere
-- **Singleton Pattern** - `ZunoSDK.getInstance()` for non-React contexts (API routes, server components)
-- **Enhanced Errors** - `toUserMessage()` for actionable error messages with context
+- **Tree-shakeable Imports** - Import only what you need for smaller bundles
+- **Testing Utilities** - Official mocks and test helpers (`zuno-marketplace-sdk/testing`)
+- **DevTools Component** - Visual debugging panel for development
+- **Standalone Logger** - Use logger without SDK initialization
 
 ### 📖 Examples
 
 ```typescript
-// React: Access SDK instance directly
-import { useZunoSDK, useZunoLogger } from 'zuno-marketplace-sdk/react';
+// Tree-shakeable imports - smaller bundles
+import { ExchangeModule } from 'zuno-marketplace-sdk/exchange';
+import { AuctionModule } from 'zuno-marketplace-sdk/auction';
 
-function MyComponent() {
-  const sdk = useZunoSDK();
-  const logger = useZunoLogger();
-  
-  logger.info('Component mounted');
-  // Access any SDK feature: sdk.exchange, sdk.auction, etc.
+// Testing utilities - easy mocking
+import { createMockSDK, createMockZunoProvider } from 'zuno-marketplace-sdk/testing';
+
+const mockSdk = createMockSDK();
+const MockProvider = createMockZunoProvider();
+
+// DevTools - visual debugging
+import { ZunoDevTools } from 'zuno-marketplace-sdk/devtools';
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      {process.env.NODE_ENV === 'development' && (
+        <ZunoDevTools config={{ showLogger: true, showCache: true }} />
+      )}
+    </>
+  );
 }
 
-// Non-React: Singleton pattern for API routes, utilities
-import { ZunoSDK, getSdk, getLogger } from 'zuno-marketplace-sdk';
+// Standalone logger - use anywhere
+import { logger, configureLogger } from 'zuno-marketplace-sdk/logger';
 
-// Initialize once in app entry
-ZunoSDK.getInstance({ apiKey: 'xxx', network: 'sepolia' });
-
-// Use anywhere
-const sdk = getSdk();
-const logger = getLogger();
-logger.info('Processing data');
-
-// Enhanced error handling
-try {
-  await sdk.exchange.listNFT(params);
-} catch (error) {
-  if (error instanceof ZunoSDKError) {
-    console.log(error.toUserMessage());
-    // "Failed to list NFT (Contract: ERC721NFTExchange)
-    //  Suggestion: Ensure the NFT is approved"
-  }
-}
+configureLogger({ level: 'debug' });
+logger.info('Application started');
 ```
 
-> **No Breaking Changes** - All v1.2.0 features are additive. See [CHANGELOG.md](./CHANGELOG.md) for details.
+> **No Breaking Changes** - All v1.3.0 features are additive. See [CHANGELOG.md](./CHANGELOG.md) for details.
+
+### Previous: v1.2.0 Highlights
+
+- `useZunoSDK()` / `useZunoLogger()` hooks for React
+- `ZunoSDK.getInstance()` singleton for non-React contexts
+- `toUserMessage()` for user-friendly error messages
 
 ## 📦 Installation
 
