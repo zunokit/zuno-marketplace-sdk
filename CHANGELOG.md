@@ -1,3 +1,111 @@
+## [1.3.0-beta.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v1.2.0-beta-claude-04...v1.3.0-beta.1) (2025-11-28)
+
+### ✨ Features
+
+* **Tree-shakeable Module Imports** - Import only what you need for smaller bundles
+  - `zuno-marketplace-sdk/exchange` - ExchangeModule only
+  - `zuno-marketplace-sdk/auction` - AuctionModule only
+  - `zuno-marketplace-sdk/collection` - CollectionModule only
+
+* **Official Testing Utilities** - First-class testing support
+  - `zuno-marketplace-sdk/testing` - Complete mock factories and test helpers
+  - `createMockSDK()` - Full SDK mock with all modules
+  - `createMockLogger()` - Logger mock with call tracking
+  - `createMockZunoProvider()` - React testing wrapper
+  - Test utilities: `waitFor()`, `createDeferred()`, `expectZunoError()`
+
+* **DevTools Component** - Visual debugging for development
+  - `zuno-marketplace-sdk/devtools` - Floating debug panel
+  - Logs tab - Real-time SDK log viewer
+  - Transactions tab - Transaction history
+  - Cache tab - React Query cache inspector
+  - Network tab - Provider/signer status
+
+* **Pre-configured Logger** - Standalone logger without SDK initialization
+  - `zuno-marketplace-sdk/logger` - Direct logger access
+  - `configureLogger()` - Configure global logger
+  - `logger` proxy - Use anywhere without setup
+
+### 📝 New APIs
+
+**Tree-shakeable Imports:**
+```typescript
+// Import only what you need
+import { ExchangeModule } from 'zuno-marketplace-sdk/exchange';
+import { AuctionModule } from 'zuno-marketplace-sdk/auction';
+import { CollectionModule } from 'zuno-marketplace-sdk/collection';
+```
+
+**Testing Utilities:**
+```typescript
+import { 
+  createMockSDK, 
+  createMockLogger,
+  createMockZunoProvider,
+  waitFor,
+  expectZunoError 
+} from 'zuno-marketplace-sdk/testing';
+
+// Create complete mock SDK
+const mockSdk = createMockSDK({
+  exchange: {
+    listNFT: createMockFn().mockResolvedValue({ listingId: '1' }),
+  },
+});
+
+// React testing
+const MockProvider = createMockZunoProvider();
+render(<MockProvider sdk={mockSdk}><YourComponent /></MockProvider>);
+```
+
+**DevTools:**
+```tsx
+import { ZunoDevTools } from 'zuno-marketplace-sdk/devtools';
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      {process.env.NODE_ENV === 'development' && (
+        <ZunoDevTools 
+          config={{
+            showLogger: true,
+            showTransactions: true,
+            showCache: true,
+            showNetwork: true,
+            position: 'bottom-right',
+          }}
+        />
+      )}
+    </>
+  );
+}
+```
+
+**Standalone Logger:**
+```typescript
+import { logger, configureLogger } from 'zuno-marketplace-sdk/logger';
+
+// Configure once
+configureLogger({ level: 'debug', format: 'json' });
+
+// Use anywhere
+logger.info('Application started');
+logger.error('Something went wrong', { data: { reason: 'timeout' } });
+```
+
+### 🔧 Improvements
+
+* Custom `MockFn` type that works without Jest dependency
+* Consistent return types in useEffect hooks
+* Comprehensive test coverage for new utilities
+
+### 📦 No Breaking Changes
+
+All changes are additive. Existing code continues to work without modification.
+
+---
+
 ## [1.2.0-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v1.2.0-beta-claude.2...v1.2.0-beta-claude.3) (2025-11-28)
 
 ### ✨ Features
