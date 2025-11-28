@@ -1,3 +1,13 @@
+## [1.2.0-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v1.2.0-beta-claude.1...v1.2.0-beta-claude.2) (2025-11-28)
+
+### ✨ Features
+
+* add network utilities and constants to ZunoAPIClient ([3cf9b2f](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/3cf9b2fc3957929c74f69aab1a8703ade346d944))
+
+### 🐛 Bug Fixes
+
+* resolve test timeouts and mock issues in unit and integration tests ([30e9e8a](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/30e9e8aa0a4d5651986280792e2e8fa77f5f3e5b))
+
 ## [1.2.0-beta-claude.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v1.1.5...v1.2.0-beta-claude.1) (2025-11-27)
 
 ### ✨ Features
