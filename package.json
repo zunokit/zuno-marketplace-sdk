@@ -1,6 +1,6 @@
 {
   "name": "zuno-marketplace-sdk",
-  "version": "1.2.0-beta-claude-04",
+  "version": "1.3.0-beta.1",
   "description": "All-in-One NFT Marketplace SDK with Wagmi & React Query built-in",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -15,6 +15,36 @@
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react/index.mjs",
       "require": "./dist/react/index.js"
+    },
+    "./exchange": {
+      "types": "./dist/exchange/index.d.ts",
+      "import": "./dist/exchange/index.mjs",
+      "require": "./dist/exchange/index.js"
+    },
+    "./auction": {
+      "types": "./dist/auction/index.d.ts",
+      "import": "./dist/auction/index.mjs",
+      "require": "./dist/auction/index.js"
+    },
+    "./collection": {
+      "types": "./dist/collection/index.d.ts",
+      "import": "./dist/collection/index.mjs",
+      "require": "./dist/collection/index.js"
+    },
+    "./logger": {
+      "types": "./dist/logger/index.d.ts",
+      "import": "./dist/logger/index.mjs",
+      "require": "./dist/logger/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.mjs",
+      "require": "./dist/testing/index.js"
+    },
+    "./devtools": {
+      "types": "./dist/devtools/index.d.ts",
+      "import": "./dist/devtools/index.mjs",
+      "require": "./dist/devtools/index.js"
     }
   },
   "files": [
