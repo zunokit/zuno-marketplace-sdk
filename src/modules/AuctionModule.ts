@@ -22,6 +22,7 @@ import {
   validateAmount,
   validateDuration,
 } from '../utils/errors';
+import { safeCall } from '../utils/helpers';
 
 /**
  * AuctionModule handles auction creation and bidding operations
@@ -738,31 +739,52 @@ export class AuctionModule extends BaseModule {
   ): Promise<PaginatedResult<Auction>> {
     validateAddress(seller, 'seller');
 
-    // Fetch from both English and Dutch auction contracts
-    const results = await Promise.all([
-      this.getAuctionsBySellerAndType(seller, 'english', page, pageSize),
-      this.getAuctionsBySellerAndType(seller, 'dutch', page, pageSize),
-    ]);
+    const emptyResult: PaginatedResult<Auction> = {
+      items: [],
+      total: 0,
+      page,
+      pageSize,
+      hasMore: false,
+    };
 
-    const [englishAuctions, dutchAuctions] = results;
+    const provider = this.ensureProvider();
+    const txManager = this.ensureTxManager();
 
-    // Combine results
-    const allAuctions = [...englishAuctions.items, ...dutchAuctions.items];
-    const total = englishAuctions.total + dutchAuctions.total;
+    // Use AuctionFactory.getUserAuctions(seller) to get all auction IDs
+    const auctionFactory = await safeCall(
+      () => this.contractRegistry.getContract('AuctionFactory', this.getNetworkId(), provider),
+      null
+    );
+
+    if (!auctionFactory) return emptyResult;
+
+    const auctionIds = await safeCall(
+      () => txManager.callContract<string[]>(auctionFactory, 'getUserAuctions', [seller]),
+      []
+    );
+
+    if (auctionIds.length === 0) return emptyResult;
+
+    const total = auctionIds.length;
+    const skip = (page - 1) * pageSize;
+    const paginatedIds = auctionIds.slice(skip, skip + pageSize);
+
+    // Fetch details for each auction using AuctionFactory.getAuction
+    const auctionsPromises = paginatedIds.map((id) =>
+      safeCall(() => this.getAuctionFromFactory(id), null)
+    );
+    const auctionResults = await Promise.all(auctionsPromises);
+    const items = auctionResults.filter((a): a is Auction => a !== null);
 
     // Sort by creation time (newest first)
-    allAuctions.sort((a, b) => b.startTime - a.startTime);
-
-    // Apply pagination to combined results
-    const startIndex = (page - 1) * pageSize;
-    const paginatedItems = allAuctions.slice(startIndex, startIndex + pageSize);
+    items.sort((a, b) => b.startTime - a.startTime);
 
     return {
-      items: paginatedItems,
+      items,
       total,
       page,
       pageSize,
-      hasMore: startIndex + pageSize < total,
+      hasMore: skip + pageSize < total,
     };
   }
 
@@ -827,64 +849,65 @@ export class AuctionModule extends BaseModule {
   }
 
   /**
-   * Get auctions by seller and type (helper method)
+   * Get auction details from AuctionFactory
    */
-  private async getAuctionsBySellerAndType(
-    seller: string,
-    type: 'english' | 'dutch',
-    page: number,
-    pageSize: number
-  ): Promise<PaginatedResult<Auction>> {
+  private async getAuctionFromFactory(auctionId: string): Promise<Auction> {
     const provider = this.ensureProvider();
     const txManager = this.ensureTxManager();
 
-    const contractType = type === 'english' ? 'EnglishAuctionImplementation' : 'DutchAuctionImplementation';
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider
+    );
 
-    try {
-      const auctionContract = await this.contractRegistry.getContract(
-        contractType,
-        this.getNetworkId(),
-        provider
-      );
+    const auctionData = await txManager.callContract<{
+      auctionId: string;
+      nftContract: string;
+      tokenId: bigint;
+      amount: bigint;
+      seller: string;
+      startPrice: bigint;
+      reservePrice: bigint;
+      startTime: bigint;
+      endTime: bigint;
+      status: number;
+      auctionType: number;
+      highestBidder: string;
+      highestBid: bigint;
+      bidCount: bigint;
+    }>(auctionFactory, 'getAuction', [auctionId]);
 
-      // Get total count
-      const totalCount = await txManager.callContract<bigint>(
-        auctionContract,
-        'getAuctionCountBySeller',
-        [seller]
-      );
+    const statusMap: Record<number, Auction['status']> = {
+      0: 'active',
+      1: 'ended',
+      2: 'cancelled',
+    };
 
-      const total = Number(totalCount);
-      const skip = (page - 1) * pageSize;
+    const type = auctionData.auctionType === 0 ? 'english' : 'dutch';
 
-      // Get paginated auction IDs
-      const auctionIds = await txManager.callContract<string[]>(
-        auctionContract,
-        'getAuctionsBySeller',
-        [seller, skip, pageSize]
-      );
+    const auction: Auction = {
+      id: auctionId,
+      type,
+      seller: auctionData.seller,
+      collectionAddress: auctionData.nftContract,
+      tokenId: auctionData.tokenId.toString(),
+      startTime: Number(auctionData.startTime),
+      endTime: Number(auctionData.endTime),
+      status: statusMap[auctionData.status] || 'active',
+      createdAt: new Date(Number(auctionData.startTime) * 1000).toISOString(),
+    };
 
-      // Fetch details for each auction
-      const auctionsPromises = auctionIds.map((id) => this.getAuction(id));
-      const items = await Promise.all(auctionsPromises);
-
-      return {
-        items,
-        total,
-        page,
-        pageSize,
-        hasMore: skip + pageSize < total,
-      };
-    } catch {
-      // Return empty result if contract method doesn't exist
-      return {
-        items: [],
-        total: 0,
-        page,
-        pageSize,
-        hasMore: false,
-      };
+    if (type === 'english') {
+      auction.startingBid = ethers.formatEther(auctionData.startPrice);
+      auction.currentBid = ethers.formatEther(auctionData.highestBid);
+      auction.highestBidder = auctionData.highestBidder;
+    } else {
+      auction.startPrice = ethers.formatEther(auctionData.startPrice);
+      auction.endPrice = ethers.formatEther(auctionData.reservePrice);
     }
+
+    return auction;
   }
 
   /**

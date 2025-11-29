@@ -5,8 +5,9 @@
 
 'use client';
 
-import React, { useState, useEffect, type ReactNode } from 'react';
+import React, { useState, useEffect, useRef, type ReactNode } from 'react';
 import { WagmiProvider, createConfig, http, useAccount, useWalletClient } from 'wagmi';
+import { reconnect } from 'wagmi/actions';
 import { mainnet, sepolia, polygon, arbitrum, type Chain } from 'wagmi/chains';
 import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -107,6 +108,15 @@ export function ZunoProvider({
       },
     });
   });
+
+  // Auto-reconnect wallet on mount (only once)
+  const hasReconnected = useRef(false);
+  useEffect(() => {
+    if (!hasReconnected.current) {
+      hasReconnected.current = true;
+      reconnect(wagmiConfig);
+    }
+  }, [wagmiConfig]);
 
   return (
     <WagmiProvider config={wagmiConfig}>
