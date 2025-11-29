@@ -287,12 +287,12 @@ export class CollectionModule extends BaseModule {
       );
     }
 
-    // Use minimal ABI for standard ERC721/ERC1155 view functions
-    // These are standard across all collections regardless of implementation
+    // Use minimal ABI for Zuno collection view functions
+    // The contract uses getTotalMinted() instead of standard totalSupply()
     const minimalABI = [
       'function name() view returns (string)',
       'function symbol() view returns (string)',
-      'function totalSupply() view returns (uint256)',
+      'function getTotalMinted() view returns (uint256)',
     ];
 
     // Create contract instance with minimal ABI
@@ -300,16 +300,16 @@ export class CollectionModule extends BaseModule {
     const collectionContract = new ethers.Contract(address, minimalABI, provider);
 
     // Get collection details
-    const [name, symbol, totalSupply] = await Promise.all([
+    const [name, symbol, totalMinted] = await Promise.all([
       collectionContract.name() as Promise<string>,
       collectionContract.symbol() as Promise<string>,
-      collectionContract.totalSupply() as Promise<bigint>,
+      collectionContract.getTotalMinted() as Promise<bigint>,
     ]);
 
     return {
       name,
       symbol,
-      totalSupply: totalSupply.toString(),
+      totalSupply: totalMinted.toString(),
       tokenType,
     };
   }
