@@ -1,3 +1,13 @@
+## [2.0.0-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.1...v2.0.0-beta-claude.2) (2025-11-29)
+
+### ✨ Features
+
+* enable CORS credentials in ZunoAPIClient configuration ([8b63575](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/8b63575ccdd1af4a7c0fe64a85ccd2fbecb55777))
+
+### ♻️ Code Refactoring
+
+* enhance useWallet hook with error handling and type definitions ([6a7997b](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/6a7997bb0ccb57ebfd1fede56b2be95a6b153470))
+
 ## [2.0.0-beta-claude.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v1.2.0-beta-claude.2...v2.0.0-beta-claude.1) (2025-11-29)
 
 ### ⚠ BREAKING CHANGES
