@@ -1,4 +1,61 @@
-## [1.3.0-beta.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v1.2.0-beta-claude-04...v1.3.0-beta.1) (2025-11-28)
+## [1.3.0-beta-claude-02](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v1.3.0-beta-claude-01...v1.3.0-beta-claude-02) (2025-11-29)
+
+### 🐛 Critical Fixes
+
+* **Type Definitions** - Fixed missing `.d.ts` files for `/testing`, `/devtools`, `/logger` sub-paths
+  - All sub-path imports now have complete TypeScript support
+  - IDE autocomplete now works for all entry points
+  - Resolves "Cannot find module" TypeScript errors
+
+* **tsup Configuration** - Consolidated build config for consistency
+  - Simplified from 126 lines to 46 lines (63% reduction)
+  - Single entry point configuration ensures all modules get `.d.ts` files
+  - Improved maintainability with DRY principle
+
+* **Examples** - Updated to use current API
+  - Replaced deprecated `abisUrl` with `apiUrl` in `examples/basic-usage.ts`
+  - Added helpful comments for API endpoint configuration
+
+* **Package Distribution** - Added CHANGELOG.md to published package
+  - Users can now access version history
+  - Included in `package.json` files array
+
+### 📊 Technical Details
+
+**Before (v1.3.0-beta.1):**
+```
+dist/testing/  → NO .d.ts files ❌
+dist/devtools/ → NO .d.ts files ❌
+dist/logger/   → NO .d.ts files ❌
+```
+
+**After (v1.3.0-beta-claude-02):**
+```
+dist/testing/index.d.ts  ✅
+dist/devtools/index.d.ts ✅
+dist/logger/index.d.ts   ✅
++ .d.mts versions for all sub-paths
+```
+
+### 🎯 Impact
+
+- **TypeScript Support**: Full type safety for all 8 entry points
+- **Package Size**: 405.8 kB (includes all type definitions + CHANGELOG)
+- **Files**: 63 files (up from 35 - now includes all `.d.ts` and `.d.mts` files)
+- **Breaking Changes**: None - fully backward compatible
+
+### 📦 Migration from beta.1
+
+No code changes required. Just update:
+```bash
+npm install zuno-marketplace-sdk@1.3.0-beta-claude-02
+```
+
+All imports that failed in beta.1 now work with full TypeScript support.
+
+---
+
+## [1.3.0-beta-claude-01](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v1.2.0-beta-claude-04...v1.3.0-beta-claude-01) (2025-11-28)
 
 ### ✨ Features
 

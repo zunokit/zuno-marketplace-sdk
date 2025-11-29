@@ -1,5 +1,5 @@
 /**
- * Tests for logger utilities
+ * Comprehensive tests for logger utilities
  */
 
 import {
@@ -9,6 +9,7 @@ import {
   resetLogger,
   logger,
   ZunoLogger,
+  createNoOpLogger,
 } from '../logger';
 
 describe('Logger Utilities', () => {
@@ -35,6 +36,20 @@ describe('Logger Utilities', () => {
       log.info('info message');
       log.warn('warn message');
       log.error('error message');
+    });
+
+    it('should create logger with default config when no options provided', () => {
+      const log = createLogger();
+
+      expect(log).toBeDefined();
+      expect(log.debug).toBeDefined();
+    });
+
+    it('should create independent logger instances', () => {
+      const log1 = createLogger({ level: 'debug' });
+      const log2 = createLogger({ level: 'error' });
+
+      expect(log1).not.toBe(log2);
     });
   });
 
@@ -131,6 +146,176 @@ describe('Logger Utilities', () => {
 
       // Should not throw after update
       log.debug('debug message');
+    });
+
+    it('should support timestamp option', () => {
+      const logWithTimestamp = new ZunoLogger({ level: 'debug', timestamp: true });
+      const logWithoutTimestamp = new ZunoLogger({ level: 'debug', timestamp: false });
+
+      // Both should work without throwing
+      logWithTimestamp.info('with timestamp');
+      logWithoutTimestamp.info('without timestamp');
+    });
+
+    it('should support colors option', () => {
+      const logWithColors = new ZunoLogger({ level: 'debug', colors: true });
+      const logWithoutColors = new ZunoLogger({ level: 'debug', colors: false });
+
+      // Both should work without throwing
+      logWithColors.info('with colors');
+      logWithoutColors.info('without colors');
+    });
+
+    it('should support modulePrefix option', () => {
+      const log = new ZunoLogger({ level: 'debug', modulePrefix: true });
+      const moduleLogger = log.createModuleLogger('TestModule');
+
+      // Should not throw
+      moduleLogger.info('test message');
+    });
+
+    it('should log transactions when enabled', () => {
+      const log = new ZunoLogger({ level: 'debug', logTransactions: true });
+
+      // Should not throw
+      log.logTransaction('listNFT', '0x123...abc', { module: 'Exchange' });
+    });
+
+    it('should not log transactions when disabled', () => {
+      const log = new ZunoLogger({ level: 'debug', logTransactions: false });
+
+      // Should not throw
+      log.logTransaction('listNFT', '0x123...abc', { module: 'Exchange' });
+    });
+
+    it('should set context for error logging', () => {
+      const log = new ZunoLogger({ level: 'debug', includeErrorContext: true });
+
+      log.setContext({ network: 'sepolia', version: '1.0.0' });
+
+      // Should not throw
+      log.error('test error');
+    });
+
+    it('should support custom logger', () => {
+      const customLogs: string[] = [];
+      const customLogger = {
+        debug: (msg: string) => customLogs.push(`DEBUG: ${msg}`),
+        info: (msg: string) => customLogs.push(`INFO: ${msg}`),
+        warn: (msg: string) => customLogs.push(`WARN: ${msg}`),
+        error: (msg: string) => customLogs.push(`ERROR: ${msg}`),
+      };
+
+      const log = new ZunoLogger({ level: 'debug', customLogger });
+
+      log.info('test message');
+
+      expect(customLogs).toContain('INFO: test message');
+    });
+  });
+
+  describe('createNoOpLogger', () => {
+    it('should create a logger that does nothing', () => {
+      const noOpLogger = createNoOpLogger();
+
+      expect(noOpLogger).toBeDefined();
+      expect(noOpLogger.debug).toBeDefined();
+      expect(noOpLogger.info).toBeDefined();
+      expect(noOpLogger.warn).toBeDefined();
+      expect(noOpLogger.error).toBeDefined();
+
+      // Should not throw
+      noOpLogger.debug('test');
+      noOpLogger.info('test');
+      noOpLogger.warn('test');
+      noOpLogger.error('test');
+    });
+  });
+
+  describe('Log levels', () => {
+    it('should respect none level', () => {
+      const log = new ZunoLogger({ level: 'none' });
+
+      // All levels should be no-ops
+      log.debug('debug');
+      log.info('info');
+      log.warn('warn');
+      log.error('error');
+    });
+
+    it('should respect error level', () => {
+      const log = new ZunoLogger({ level: 'error' });
+
+      // Only error should log, others should be no-ops
+      log.debug('debug');
+      log.info('info');
+      log.warn('warn');
+      log.error('error');
+    });
+
+    it('should respect warn level', () => {
+      const log = new ZunoLogger({ level: 'warn' });
+
+      // warn and error should log
+      log.debug('debug');
+      log.info('info');
+      log.warn('warn');
+      log.error('error');
+    });
+
+    it('should respect info level', () => {
+      const log = new ZunoLogger({ level: 'info' });
+
+      // info, warn, and error should log
+      log.debug('debug');
+      log.info('info');
+      log.warn('warn');
+      log.error('error');
+    });
+
+    it('should respect debug level', () => {
+      const log = new ZunoLogger({ level: 'debug' });
+
+      // All levels should log
+      log.debug('debug');
+      log.info('info');
+      log.warn('warn');
+      log.error('error');
+    });
+  });
+
+  describe('Module filtering', () => {
+    it('should include only specified modules', () => {
+      const log = new ZunoLogger({
+        level: 'debug',
+        includeModules: ['Exchange'],
+      });
+
+      // Should not throw
+      log.info('test', { module: 'Exchange' });
+      log.info('test', { module: 'Auction' });
+    });
+
+    it('should exclude specified modules', () => {
+      const log = new ZunoLogger({
+        level: 'debug',
+        excludeModules: ['Debug'],
+      });
+
+      // Should not throw
+      log.info('test', { module: 'Exchange' });
+      log.info('test', { module: 'Debug' });
+    });
+
+    it('should filter by action', () => {
+      const log = new ZunoLogger({
+        level: 'debug',
+        includeActions: ['listNFT', 'buyNFT'],
+      });
+
+      // Should not throw
+      log.info('test', { action: 'listNFT' });
+      log.info('test', { action: 'transfer' });
     });
   });
 });
