@@ -1,3 +1,9 @@
+## [2.0.0-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.2...v2.0.0-beta-claude.3) (2025-11-29)
+
+### 🐛 Bug Fixes
+
+* add getContractByName method and fix CORS withCredentials ([e18ca12](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e18ca1203f1647120b4a8acc49d1f86179a088fe))
+
 ## [2.0.0-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.1...v2.0.0-beta-claude.2) (2025-11-29)
 
 ### ✨ Features
