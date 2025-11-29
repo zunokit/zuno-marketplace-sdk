@@ -1,3 +1,9 @@
+## [2.0.0-beta-claude.8](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.7...v2.0.0-beta-claude.8) (2025-11-29)
+
+### 🐛 Bug Fixes
+
+* auto-create provider from rpcUrl and make DevTools resilient ([0dc480f](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/0dc480f502f9fe4d78d978d1a653c64c540e6a2e))
+
 ## [2.0.0-beta-claude.7](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.6...v2.0.0-beta-claude.7) (2025-11-29)
 
 ### 🐛 Bug Fixes
