@@ -1,3 +1,9 @@
+## [2.0.0-beta-claude.6](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.5...v2.0.0-beta-claude.6) (2025-11-29)
+
+### ✨ Features
+
+* enhance extractCollectionAddress method with improved logging and event handling ([779c429](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/779c4299f94bfb26c3aa5b9f70bceea29481e1ff))
+
 ## [2.0.0-beta-claude.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.4...v2.0.0-beta-claude.5) (2025-11-29)
 
 ### ✨ Features
