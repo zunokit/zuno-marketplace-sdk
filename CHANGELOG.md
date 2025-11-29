@@ -1,3 +1,9 @@
+## [2.0.0-beta-claude.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.4...v2.0.0-beta-claude.5) (2025-11-29)
+
+### ✨ Features
+
+* enhance CollectionParams and CollectionModule with new minting parameters ([c7a555e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/c7a555e2bff66e9d36af4dd2fbbc59c52f189188))
+
 ## [2.0.0-beta-claude.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.3...v2.0.0-beta-claude.4) (2025-11-29)
 
 ### ♻️ Code Refactoring
