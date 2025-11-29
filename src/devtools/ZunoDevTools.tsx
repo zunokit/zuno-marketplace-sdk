@@ -4,8 +4,9 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { QueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Logger, LogMetadata } from '../utils/logger';
+import { useZuno } from '../react/provider/ZunoContextProvider';
 
 export interface DevToolsConfig {
   /** Show transaction history panel */
@@ -27,10 +28,6 @@ export interface DevToolsConfig {
 }
 
 export interface ZunoDevToolsProps {
-  /** SDK instance for accessing state */
-  sdk?: any;
-  /** Query client for cache inspection */
-  queryClient?: QueryClient;
   /** Custom logger to intercept */
   logger?: Logger;
   /** DevTools configuration */
@@ -220,8 +217,12 @@ const styles = {
  * }
  * ```
  */
-export function ZunoDevTools({ sdk, queryClient, logger, config: userConfig }: ZunoDevToolsProps) {
+export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) {
   const config = { ...DEFAULT_CONFIG, ...userConfig };
+
+  // Get SDK and QueryClient from hooks
+  const sdk = useZuno();
+  const queryClient = useQueryClient();
 
   const [collapsed, setCollapsed] = useState(config.defaultCollapsed);
   const [activeTab, setActiveTab] = useState<'logs' | 'transactions' | 'cache' | 'network'>('logs');
@@ -229,16 +230,17 @@ export function ZunoDevTools({ sdk, queryClient, logger, config: userConfig }: Z
   const [transactions, setTransactions] = useState<TransactionEntry[]>([]);
   const [cacheEntries, setCacheEntries] = useState<{ key: string; state: string }[]>([]);
 
-  // Intercept logger if provided
+  // Intercept SDK logger automatically
   useEffect(() => {
-    if (!logger) return;
+    const sdkLogger = logger || sdk.logger;
+    if (!sdkLogger) return;
 
     let logId = 0;
     const originalMethods = {
-      debug: logger.debug,
-      info: logger.info,
-      warn: logger.warn,
-      error: logger.error,
+      debug: sdkLogger.debug.bind(sdkLogger),
+      info: sdkLogger.info.bind(sdkLogger),
+      warn: sdkLogger.warn.bind(sdkLogger),
+      error: sdkLogger.error.bind(sdkLogger),
     };
 
     const createInterceptor = (level: LogEntry['level']) => (message: string, meta?: LogMetadata) => {
@@ -249,21 +251,21 @@ export function ZunoDevTools({ sdk, queryClient, logger, config: userConfig }: Z
         ].slice(0, config.maxLogEntries);
         return newLogs;
       });
-      originalMethods[level].call(logger, message, meta);
+      originalMethods[level](message, meta);
     };
 
-    logger.debug = createInterceptor('debug');
-    logger.info = createInterceptor('info');
-    logger.warn = createInterceptor('warn');
-    logger.error = createInterceptor('error');
+    sdkLogger.debug = createInterceptor('debug');
+    sdkLogger.info = createInterceptor('info');
+    sdkLogger.warn = createInterceptor('warn');
+    sdkLogger.error = createInterceptor('error');
 
     return () => {
-      logger.debug = originalMethods.debug;
-      logger.info = originalMethods.info;
-      logger.warn = originalMethods.warn;
-      logger.error = originalMethods.error;
+      sdkLogger.debug = originalMethods.debug;
+      sdkLogger.info = originalMethods.info;
+      sdkLogger.warn = originalMethods.warn;
+      sdkLogger.error = originalMethods.error;
     };
-  }, [logger, config.maxLogEntries]);
+  }, [sdk, logger, config.maxLogEntries]);
 
   // Refresh cache entries
   const refreshCache = useCallback(() => {
@@ -292,9 +294,9 @@ export function ZunoDevTools({ sdk, queryClient, logger, config: userConfig }: Z
   const clearTransactions = () => setTransactions([]);
 
   // Get network info from SDK
-  const networkInfo = sdk?.getConfig?.() || { network: 'unknown' };
-  const hasProvider = !!sdk?.getProvider?.();
-  const hasSigner = !!sdk?.getSigner?.();
+  const networkInfo = sdk.getConfig();
+  const hasProvider = !!sdk.getProvider();
+  const hasSigner = !!sdk.getSigner();
 
   if (collapsed) {
     return (
