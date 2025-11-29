@@ -14,7 +14,6 @@ import type {
   ContractType,
 } from '../types/contracts';
 import type { TransactionReceipt } from '../types/entities';
-import type { InterfaceAbi } from 'ethers';
 import { validateAddress, ErrorCodes } from '../utils/errors';
 
 /**
