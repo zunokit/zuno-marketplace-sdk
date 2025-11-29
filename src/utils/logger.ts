@@ -3,6 +3,8 @@
  * Provides structured logging with multiple levels and custom logger support
  */
 
+import { logStore } from './logStore';
+
 /**
  * Log levels in priority order
  */
@@ -112,19 +114,6 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 };
 
 /**
- * Console colors for different log levels (ANSI codes)
- */
-const COLORS = {
-  debug: '\x1b[36m', // Cyan
-  info: '\x1b[32m', // Green
-  warn: '\x1b[33m', // Yellow
-  error: '\x1b[31m', // Red
-  reset: '\x1b[0m', // Reset
-  bold: '\x1b[1m', // Bold
-  dim: '\x1b[2m', // Dim
-};
-
-/**
  * Default logger configuration
  */
 const DEFAULT_CONFIG: Required<Omit<LoggerConfig, 'customLogger' | 'includeModules' | 'excludeModules' | 'includeActions'>> = {
@@ -143,7 +132,7 @@ const DEFAULT_CONFIG: Required<Omit<LoggerConfig, 'customLogger' | 'includeModul
 export class ZunoLogger implements Logger {
   private config: Required<LoggerConfig>;
   private customLogger?: Logger;
-  private sdkContext?: any;
+  private _sdkContext?: unknown;
 
   constructor(config: LoggerConfig = {}) {
     this.config = {
@@ -159,8 +148,15 @@ export class ZunoLogger implements Logger {
   /**
    * Set SDK context for error logging
    */
-  setContext(context: any): void {
-    this.sdkContext = context;
+  setContext(context: unknown): void {
+    this._sdkContext = context;
+  }
+
+  /**
+   * Get SDK context
+   */
+  getContext(): unknown {
+    return this._sdkContext;
   }
 
   /**
@@ -193,53 +189,6 @@ export class ZunoLogger implements Logger {
   }
 
   /**
-   * Format log message
-   */
-  private formatMessage(level: LogLevel, message: string, meta?: LogMetadata): string {
-    if (this.config.format === 'json') {
-      return JSON.stringify({
-        level,
-        message,
-        ...meta,
-        timestamp: this.config.timestamp ? Date.now() : undefined,
-      });
-    }
-
-    const parts: string[] = [];
-
-    // Timestamp
-    if (this.config.timestamp) {
-      const timestamp = new Date().toISOString();
-      parts.push(this.config.colors ? `${COLORS.dim}[${timestamp}]${COLORS.reset}` : `[${timestamp}]`);
-    }
-
-    // Level
-    const levelUpper = level.toUpperCase();
-    if (this.config.colors && level !== 'none') {
-      const color = COLORS[level as keyof typeof COLORS];
-      parts.push(`${color}[${levelUpper}]${COLORS.reset}`);
-    } else {
-      parts.push(`[${levelUpper}]`);
-    }
-
-    // Module
-    if (this.config.modulePrefix && meta?.module) {
-      parts.push(this.config.colors ? `${COLORS.bold}[${meta.module}]${COLORS.reset}` : `[${meta.module}]`);
-    }
-
-    // Message
-    parts.push(message);
-
-    // Metadata
-    if (meta?.data) {
-      const dataStr = typeof meta.data === 'object' ? JSON.stringify(meta.data) : String(meta.data);
-      parts.push(this.config.colors ? `${COLORS.dim}${dataStr}${COLORS.reset}` : dataStr);
-    }
-
-    return parts.join(' ');
-  }
-
-  /**
    * Log a message
    */
   private log(level: LogLevel, message: string, meta?: LogMetadata): void {
@@ -259,32 +208,18 @@ export class ZunoLogger implements Logger {
       timestamp: meta?.timestamp || Date.now(),
     };
 
+    // Always push to logStore for DevTools
+    if (level !== 'none') {
+      logStore.add(level as 'debug' | 'info' | 'warn' | 'error', message, {
+        module: enrichedMeta.module,
+        data: enrichedMeta.data,
+      });
+    }
+
     // Custom logger takes precedence
     if (this.customLogger && level !== 'none') {
       this.customLogger[level as keyof Logger](message, enrichedMeta);
       return;
-    }
-
-    // Default console logging
-    const formattedMessage = this.formatMessage(level, message, enrichedMeta);
-
-    switch (level) {
-      case 'debug':
-        console.debug(formattedMessage);
-        break;
-      case 'info':
-        console.info(formattedMessage);
-        break;
-      case 'warn':
-        console.warn(formattedMessage);
-        break;
-      case 'error':
-        console.error(formattedMessage);
-        // Include SDK context for errors
-        if (this.config.includeErrorContext && this.sdkContext) {
-          console.error('SDK Context:', this.sdkContext);
-        }
-        break;
     }
   }
 

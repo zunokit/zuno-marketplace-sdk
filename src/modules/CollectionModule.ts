@@ -21,13 +21,20 @@ import { safeCall } from '../utils/helpers';
  * CollectionModule handles NFT collection creation and minting
  */
 export class CollectionModule extends BaseModule {
+  private log(message: string, data?: unknown) {
+    this.logger.debug(message, { module: 'Collection', data });
+  }
+
   /**
    * Create a new ERC721 collection
    */
   async createERC721Collection(
     params: CreateERC721CollectionParams
   ): Promise<{ address: string; tx: TransactionReceipt }> {
-    return this.createCollection(params, 'ERC721CollectionFactory', 'createERC721Collection');
+    this.log('createERC721Collection started', { name: params.name, symbol: params.symbol });
+    const result = await this.createCollection(params, 'ERC721CollectionFactory', 'createERC721Collection');
+    this.log('createERC721Collection completed', { address: result.address, txHash: result.tx.hash });
+    return result;
   }
 
   /**
@@ -36,7 +43,10 @@ export class CollectionModule extends BaseModule {
   async createERC1155Collection(
     params: CreateERC1155CollectionParams
   ): Promise<{ address: string; tx: TransactionReceipt }> {
-    return this.createCollection(params, 'ERC1155CollectionFactory', 'createERC1155Collection');
+    this.log('createERC1155Collection started', { name: params.name, symbol: params.symbol });
+    const result = await this.createCollection(params, 'ERC1155CollectionFactory', 'createERC1155Collection');
+    this.log('createERC1155Collection completed', { address: result.address, txHash: result.tx.hash });
+    return result;
   }
 
   /**
@@ -53,6 +63,7 @@ export class CollectionModule extends BaseModule {
     const provider = this.ensureProvider();
     this.ensureSigner();
 
+    this.log('Getting factory contract', { factoryType });
     const factoryContract = await this.contractRegistry.getContract(
       factoryType,
       this.getNetworkId(),
@@ -62,6 +73,7 @@ export class CollectionModule extends BaseModule {
     );
 
     const contractParams = await this.buildCollectionParams(collectionParams);
+    this.log('Sending transaction', { methodName });
 
     const receipt = await txManager.sendTransaction(
       factoryContract,
@@ -71,6 +83,7 @@ export class CollectionModule extends BaseModule {
     );
 
     const address = await this.extractCollectionAddress(receipt);
+    this.log('Collection address extracted', { address });
 
     return { address, tx: receipt };
   }
@@ -106,42 +119,25 @@ export class CollectionModule extends BaseModule {
     params: MintERC721Params
   ): Promise<{ tokenId: string; tx: TransactionReceipt }> {
     const { collectionAddress, recipient, value, options } = params;
+    this.log('mintERC721 started', { collectionAddress, recipient, value });
 
     validateAddress(collectionAddress, 'collectionAddress');
     validateAddress(recipient, 'recipient');
 
     const txManager = this.ensureTxManager();
-    this.ensureProvider(); // Ensure provider is available
+    this.ensureProvider();
 
-    // Minimal ABI for ERC721 mint function
-    const mintABI = [
-      'function mint(address to) payable',
-    ];
-
-    // Create contract instance
+    const mintABI = ['function mint(address to) payable'];
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(
-      collectionAddress,
-      mintABI,
-      this.signer
-    );
+    const collectionContract = new ethers.Contract(collectionAddress, mintABI, this.signer);
 
-    // Prepare transaction options with value (for payable mint)
-    const txOptions = {
-      ...options,
-      value: value || options?.value,
-    };
+    const txOptions = { ...options, value: value || options?.value };
 
-    // Mint NFT - contract expects: (address to) payable
-    const receipt = await txManager.sendTransaction(
-      collectionContract,
-      'mint',
-      [recipient],
-      txOptions
-    );
+    this.log('Sending mint transaction');
+    const receipt = await txManager.sendTransaction(collectionContract, 'mint', [recipient], txOptions);
 
-    // Extract token ID from event logs
     const tokenId = await this.extractTokenId(receipt);
+    this.log('mintERC721 completed', { tokenId, txHash: receipt.hash });
 
     return { tokenId, tx: receipt };
   }
@@ -153,6 +149,7 @@ export class CollectionModule extends BaseModule {
     params: BatchMintERC721Params
   ): Promise<{ tx: TransactionReceipt }> {
     const { collectionAddress, recipient, amount, value, options } = params;
+    this.log('batchMintERC721 started', { collectionAddress, recipient, amount, value });
 
     validateAddress(collectionAddress, 'collectionAddress');
     validateAddress(recipient, 'recipient');
@@ -162,34 +159,17 @@ export class CollectionModule extends BaseModule {
     }
 
     const txManager = this.ensureTxManager();
-    this.ensureProvider(); // Ensure provider is available
+    this.ensureProvider();
 
-    // Minimal ABI for ERC721 batch mint function
-    const batchMintABI = [
-      'function batchMintERC721(address to, uint256 amount) payable',
-    ];
-
-    // Create contract instance
+    const batchMintABI = ['function batchMintERC721(address to, uint256 amount) payable'];
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(
-      collectionAddress,
-      batchMintABI,
-      this.signer
-    );
+    const collectionContract = new ethers.Contract(collectionAddress, batchMintABI, this.signer);
 
-    // Prepare transaction options with value (for payable mint)
-    const txOptions = {
-      ...options,
-      value: value || options?.value,
-    };
+    const txOptions = { ...options, value: value || options?.value };
 
-    // Batch mint NFTs - contract expects: (address to, uint256 amount) payable
-    const receipt = await txManager.sendTransaction(
-      collectionContract,
-      'batchMintERC721',
-      [recipient, amount],
-      txOptions
-    );
+    this.log('Sending batch mint transaction', { amount });
+    const receipt = await txManager.sendTransaction(collectionContract, 'batchMintERC721', [recipient, amount], txOptions);
+    this.log('batchMintERC721 completed', { txHash: receipt.hash });
 
     return { tx: receipt };
   }
@@ -200,35 +180,22 @@ export class CollectionModule extends BaseModule {
   async mintERC1155(
     params: MintERC1155Params
   ): Promise<{ tx: TransactionReceipt }> {
-    const { collectionAddress, recipient, tokenId, amount, data, options } =
-      params;
+    const { collectionAddress, recipient, tokenId, amount, data, options } = params;
+    this.log('mintERC1155 started', { collectionAddress, recipient, tokenId, amount });
 
     validateAddress(collectionAddress, 'collectionAddress');
     validateAddress(recipient, 'recipient');
 
     const txManager = this.ensureTxManager();
-    this.ensureProvider(); // Ensure provider is available
+    this.ensureProvider();
 
-    // Minimal ABI for ERC1155 mint function
-    const mintABI = [
-      'function mint(address to, uint256 id, uint256 amount, bytes data) payable',
-    ];
-
-    // Create contract instance
+    const mintABI = ['function mint(address to, uint256 id, uint256 amount, bytes data) payable'];
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(
-      collectionAddress,
-      mintABI,
-      this.signer
-    );
+    const collectionContract = new ethers.Contract(collectionAddress, mintABI, this.signer);
 
-    // Mint NFT
-    const tx = await txManager.sendTransaction(
-      collectionContract,
-      'mint',
-      [recipient, tokenId, amount, data || '0x'],
-      options
-    );
+    this.log('Sending mint transaction');
+    const tx = await txManager.sendTransaction(collectionContract, 'mint', [recipient, tokenId, amount, data || '0x'], options);
+    this.log('mintERC1155 completed', { txHash: tx.hash });
 
     return { tx };
   }
@@ -240,25 +207,18 @@ export class CollectionModule extends BaseModule {
     isValid: boolean;
     tokenType: TokenStandard;
   }> {
+    this.log('verifyCollection started', { address });
     validateAddress(address);
 
     const provider = this.ensureProvider();
 
     try {
-      const tokenType = await this.contractRegistry.verifyTokenStandard(
-        address,
-        provider
-      );
-
-      return {
-        isValid: tokenType !== 'Unknown',
-        tokenType,
-      };
+      const tokenType = await this.contractRegistry.verifyTokenStandard(address, provider);
+      this.log('verifyCollection completed', { address, tokenType, isValid: tokenType !== 'Unknown' });
+      return { isValid: tokenType !== 'Unknown', tokenType };
     } catch {
-      return {
-        isValid: false,
-        tokenType: 'Unknown',
-      };
+      this.log('verifyCollection failed', { address });
+      return { isValid: false, tokenType: 'Unknown' };
     }
   }
 
@@ -277,14 +237,17 @@ export class CollectionModule extends BaseModule {
     mintLimitPerWallet: number;
     owner: string;
   }> {
+    this.log('getCollectionInfo started', { address });
     validateAddress(address);
 
     const provider = this.ensureProvider();
 
     const tokenType = await this.contractRegistry.verifyTokenStandard(address, provider);
     if (tokenType === 'Unknown') {
+      this.log('getCollectionInfo failed - unknown token standard', { address });
       throw this.error(ErrorCodes.CONTRACT_CALL_FAILED, 'Unable to detect token standard');
     }
+    this.log('Token standard detected', { address, tokenType });
 
     const minimalABI = [
       'function name() view returns (string)',
@@ -320,13 +283,16 @@ export class CollectionModule extends BaseModule {
       maxSupply = mintInfo[8].toString();
       mintPrice = ethers.formatEther(mintInfo[4]);
       mintLimitPerWallet = Number(mintInfo[10]);
+      this.log('getMintInfo success', { totalSupply, maxSupply, mintPrice, mintLimitPerWallet });
     } else {
+      this.log('getMintInfo not available, using fallback');
       totalSupply = await safeCall(
         () => contract.getTotalMinted().then((v: bigint) => v.toString()),
         await safeCall(() => contract.totalSupply().then((v: bigint) => v.toString()), '0')
       );
     }
 
+    this.log('getCollectionInfo completed', { name, symbol, totalSupply, maxSupply, owner });
     return {
       name,
       symbol,

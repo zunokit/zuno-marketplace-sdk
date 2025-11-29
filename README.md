@@ -391,74 +391,98 @@ export default function RootLayout({ children }) {
 }
 ```
 
-## 📝 Logging
+## 📝 Logging & DevTools
 
-The SDK provides a powerful logging system for debugging and monitoring.
+The SDK provides a powerful logging system with built-in DevTools integration. All logs are captured in-memory and displayed in the Zuno DevTools panel - no need to open browser console (F12).
 
-### Auto-logging (Recommended)
+### Zuno DevTools (Recommended)
 
-SDK automatically logs operations when configured:
+Add DevTools to your app to view all SDK logs in a floating panel:
+
+```tsx
+import { ZunoDevTools } from 'zuno-marketplace-sdk/devtools';
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      {process.env.NODE_ENV === 'development' && (
+        <ZunoDevTools 
+          config={{
+            showLogger: true,      // Show logs panel
+            showTransactions: true, // Show transactions
+            showCache: true,       // Show React Query cache
+            showNetwork: true,     // Show network status
+            position: 'bottom-right',
+            maxLogEntries: 200,
+          }} 
+        />
+      )}
+    </>
+  );
+}
+```
+
+### Log Store API
+
+Access logs programmatically:
+
+```typescript
+import { logStore } from 'zuno-marketplace-sdk';
+
+// Get all logs
+const logs = logStore.getAll();
+
+// Subscribe to new logs
+const unsubscribe = logStore.subscribe((logs) => {
+  console.log('New logs:', logs);
+});
+
+// Clear all logs
+logStore.clear();
+```
+
+### Logger Configuration
 
 ```typescript
 const sdk = new ZunoSDK({
   apiKey: 'xxx',
   network: 'sepolia',
   logger: {
-    level: 'info',  // 'none' | 'error' | 'warn' | 'info' | 'debug'
+    level: 'debug',  // 'none' | 'error' | 'warn' | 'info' | 'debug'
+    timestamp: true,
+    modulePrefix: true,
+    logTransactions: true,
   }
 });
 
-// SDK automatically logs:
+// All SDK operations are automatically logged to DevTools:
 await sdk.exchange.listNFT({ ... });
-// → [INFO] [Exchange] listNFT started
-// → [INFO] [Exchange] Transaction submitted { hash: "0x..." }
+// → Appears in DevTools Logs panel
 ```
 
 ### Manual Logging
 
-Access logger for custom messages:
-
 ```typescript
 // Via SDK instance
-sdk.logger.info('Custom message', { data: { foo: 'bar' } });
+sdk.logger.info('Custom message', { module: 'MyModule', data: { foo: 'bar' } });
 sdk.logger.warn('Warning message');
 sdk.logger.error('Error occurred');
 
 // Standalone logger
 import { ZunoLogger } from 'zuno-marketplace-sdk';
 
-const logger = new ZunoLogger({
-  level: 'debug',
-  timestamp: true,
-  modulePrefix: true,
-});
-
-logger.info('My custom log');
+const logger = new ZunoLogger({ level: 'debug' });
+logger.info('My log'); // → Also appears in DevTools
 ```
 
-### Advanced Configuration
+### Custom Logger Integration
 
 ```typescript
 logger: {
   level: 'debug',
-
-  // Output format
-  format: 'json',  // 'text' | 'json' (for monitoring tools)
-  timestamp: true,
-  colors: true,
-  modulePrefix: true,
-
-  // Filters
-  includeModules: ['Exchange', 'Auction'],  // Only these modules
-  excludeModules: ['Collection'],           // Exclude these
-
-  // Features
-  logTransactions: true,      // Auto-log all transactions
-  includeErrorContext: true,  // Include SDK state in errors
-
-  // Custom logger (Sentry, Datadog, etc.)
   customLogger: {
-    debug: (msg, meta) => console.debug(msg, meta),
+    debug: (msg, meta) => Sentry.addBreadcrumb({ message: msg }),
     info: (msg, meta) => myLogger.info(msg, meta),
     warn: (msg, meta) => Sentry.captureMessage(msg, 'warning'),
     error: (msg, meta) => Sentry.captureException(new Error(msg)),

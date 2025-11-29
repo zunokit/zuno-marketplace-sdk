@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Logger, LogMetadata } from '../utils/logger';
+import { logStore, type LogEntry } from '../utils/logStore';
 import { ZunoContext } from '../react/provider/ZunoContextProvider';
 
 export interface DevToolsConfig {
@@ -28,18 +28,8 @@ export interface DevToolsConfig {
 }
 
 export interface ZunoDevToolsProps {
-  /** Custom logger to intercept */
-  logger?: Logger;
   /** DevTools configuration */
   config?: DevToolsConfig;
-}
-
-interface LogEntry {
-  id: number;
-  level: 'debug' | 'info' | 'warn' | 'error';
-  message: string;
-  timestamp: Date;
-  meta?: LogMetadata;
 }
 
 interface TransactionEntry {
@@ -217,7 +207,7 @@ const styles = {
  * }
  * ```
  */
-export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) {
+export function ZunoDevTools({ config: userConfig }: ZunoDevToolsProps) {
   const config = { ...DEFAULT_CONFIG, ...userConfig };
 
   // Get SDK from context (safe - returns null if not in provider)
@@ -231,42 +221,11 @@ export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) 
   const [transactions, setTransactions] = useState<TransactionEntry[]>([]);
   const [cacheEntries, setCacheEntries] = useState<{ key: string; state: string }[]>([]);
 
-  // Intercept SDK logger automatically
+  // Subscribe to logStore
   useEffect(() => {
-    const sdkLogger = logger || sdk?.logger;
-    if (!sdkLogger) return;
-
-    let logId = 0;
-    const originalMethods = {
-      debug: sdkLogger.debug.bind(sdkLogger),
-      info: sdkLogger.info.bind(sdkLogger),
-      warn: sdkLogger.warn.bind(sdkLogger),
-      error: sdkLogger.error.bind(sdkLogger),
-    };
-
-    const createInterceptor = (level: LogEntry['level']) => (message: string, meta?: LogMetadata) => {
-      setLogs((prev) => {
-        const newLogs = [
-          { id: logId++, level, message, timestamp: new Date(), meta },
-          ...prev,
-        ].slice(0, config.maxLogEntries);
-        return newLogs;
-      });
-      originalMethods[level](message, meta);
-    };
-
-    sdkLogger.debug = createInterceptor('debug');
-    sdkLogger.info = createInterceptor('info');
-    sdkLogger.warn = createInterceptor('warn');
-    sdkLogger.error = createInterceptor('error');
-
-    return () => {
-      sdkLogger.debug = originalMethods.debug;
-      sdkLogger.info = originalMethods.info;
-      sdkLogger.warn = originalMethods.warn;
-      sdkLogger.error = originalMethods.error;
-    };
-  }, [sdk, logger, config.maxLogEntries]);
+    logStore.setMaxEntries(config.maxLogEntries);
+    return logStore.subscribe(setLogs);
+  }, [config.maxLogEntries]);
 
   // Refresh cache entries
   const refreshCache = useCallback(() => {
@@ -291,7 +250,7 @@ export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) 
   }, [activeTab, refreshCache]);
 
   // Clear logs
-  const clearLogs = () => setLogs([]);
+  const clearLogs = () => logStore.clear();
   const clearTransactions = () => setTransactions([]);
 
   // Get network info from SDK
@@ -363,8 +322,8 @@ export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) 
                   <span style={{ color: log.level === 'error' ? '#ff4757' : log.level === 'warn' ? '#ffa502' : '#e0e0e0' }}>
                     [{log.level.toUpperCase()}]
                   </span>{' '}
+                  {log.module && <span style={{ color: '#00d9ff' }}>[{log.module}] </span>}
                   {log.message}
-                  {log.meta?.module && <span style={{ color: '#00d9ff' }}> [{log.meta.module}]</span>}
                 </div>
               ))
             )}
