@@ -1,3 +1,13 @@
+## [2.0.0-beta-claude.7](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.6...v2.0.0-beta-claude.7) (2025-11-29)
+
+### 🐛 Bug Fixes
+
+* getCollectionInfo use minimal ABI instead of fetching from API ([e3333fc](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e3333fc127b4b7c9d4efb29495a1d6bfe0e291af))
+* remove unused InterfaceAbi import ([3d70d2b](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/3d70d2b9ad82dac87b918e124bdce6473dfa44f5))
+* use implementation ABI from zuno-abis API for collections ([8161354](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/8161354cf4489e440adbdb0ea489c01748d85223))
+* use minimal ABI for collection operations (implementation ABIs not in API yet) ([bcf4df0](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/bcf4df0b9d9387ed6703d62954fa1b207f01c142))
+* ZunoDevTools auto-capture SDK logger and use hooks for sdk/queryClient ([8b299a1](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/8b299a1216d66f709e789069e898f665300a7cfc))
+
 ## [2.0.0-beta-claude.6](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0-beta-claude.5...v2.0.0-beta-claude.6) (2025-11-29)
 
 ### ✨ Features
