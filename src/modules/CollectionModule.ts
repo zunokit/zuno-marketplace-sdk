@@ -15,6 +15,7 @@ import type {
 } from '../types/contracts';
 import type { TransactionReceipt } from '../types/entities';
 import { validateAddress, ErrorCodes } from '../utils/errors';
+import { safeCall } from '../utils/helpers';
 
 /**
  * CollectionModule handles NFT collection creation and minting
@@ -269,48 +270,74 @@ export class CollectionModule extends BaseModule {
     symbol: string;
     totalSupply: string;
     tokenType: TokenStandard;
+    description: string;
+    maxSupply: string;
+    mintPrice: string;
+    royaltyFee: number;
+    mintLimitPerWallet: number;
+    owner: string;
   }> {
     validateAddress(address);
 
     const provider = this.ensureProvider();
 
-    // Verify token standard first
-    const tokenType = await this.contractRegistry.verifyTokenStandard(
-      address,
-      provider
-    );
-
+    const tokenType = await this.contractRegistry.verifyTokenStandard(address, provider);
     if (tokenType === 'Unknown') {
-      throw this.error(
-        ErrorCodes.CONTRACT_CALL_FAILED,
-        'Unable to detect token standard'
-      );
+      throw this.error(ErrorCodes.CONTRACT_CALL_FAILED, 'Unable to detect token standard');
     }
 
-    // Use minimal ABI for Zuno collection view functions
-    // The contract uses getTotalMinted() instead of standard totalSupply()
     const minimalABI = [
       'function name() view returns (string)',
       'function symbol() view returns (string)',
+      'function getDescription() view returns (string)',
+      'function getRoyaltyFee() view returns (uint256)',
+      'function owner() view returns (address)',
+      'function getMintInfo(address) view returns (uint256,uint256,uint256,uint8,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool)',
       'function getTotalMinted() view returns (uint256)',
+      'function totalSupply() view returns (uint256)',
     ];
 
-    // Create contract instance with minimal ABI
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(address, minimalABI, provider);
+    const contract = new ethers.Contract(address, minimalABI, provider);
 
-    // Get collection details
-    const [name, symbol, totalMinted] = await Promise.all([
-      collectionContract.name() as Promise<string>,
-      collectionContract.symbol() as Promise<string>,
-      collectionContract.getTotalMinted() as Promise<bigint>,
+    const [name, symbol, description, royaltyFee, owner] = await Promise.all([
+      safeCall(() => contract.name(), 'Unknown Collection'),
+      safeCall(() => contract.symbol(), 'UNKNOWN'),
+      safeCall(() => contract.getDescription(), ''),
+      safeCall(() => contract.getRoyaltyFee().then((v: bigint) => Number(v)), 0),
+      safeCall(() => contract.owner(), ''),
     ]);
+
+    let totalSupply = '0';
+    let maxSupply = '0';
+    let mintPrice = '0';
+    let mintLimitPerWallet = 0;
+
+    // getMintInfo returns all mint data in one call (Zuno collections)
+    const mintInfo = await safeCall(() => contract.getMintInfo(ethers.ZeroAddress), null);
+    if (mintInfo) {
+      totalSupply = mintInfo[7].toString();
+      maxSupply = mintInfo[8].toString();
+      mintPrice = ethers.formatEther(mintInfo[4]);
+      mintLimitPerWallet = Number(mintInfo[10]);
+    } else {
+      totalSupply = await safeCall(
+        () => contract.getTotalMinted().then((v: bigint) => v.toString()),
+        await safeCall(() => contract.totalSupply().then((v: bigint) => v.toString()), '0')
+      );
+    }
 
     return {
       name,
       symbol,
-      totalSupply: totalMinted.toString(),
+      totalSupply,
       tokenType,
+      description,
+      maxSupply,
+      mintPrice,
+      royaltyFee,
+      mintLimitPerWallet,
+      owner,
     };
   }
 
