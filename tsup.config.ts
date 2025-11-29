@@ -19,16 +19,15 @@ export default defineConfig({
   entry: {
     // Main SDK
     'index': 'src/index.ts',
-    // React integration
+    // React integration (includes DevTools)
     'react/index': 'src/react/index.ts',
     // Tree-shakeable modules
     'exchange/index': 'src/exchange/index.ts',
     'auction/index': 'src/auction/index.ts',
     'collection/index': 'src/collection/index.ts',
-    // New v1.3.0 modules
+    // Utility modules
     'logger/index': 'src/logger/index.ts',
     'testing/index': 'src/testing/index.ts',
-    'devtools/index': 'src/devtools/index.ts',
   },
   format: ['cjs', 'esm'],
   dts: true,

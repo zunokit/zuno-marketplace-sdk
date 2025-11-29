@@ -5,9 +5,9 @@
 
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { logStore, type LogEntry } from '../utils/logStore';
-import { transactionStore, type TransactionEntry } from '../utils/transactionStore';
-import { ZunoContext } from '../react/provider/ZunoContextProvider';
+import { logStore, type LogEntry } from '../../utils/logStore';
+import { transactionStore, type TransactionEntry } from '../../utils/transactionStore';
+import { ZunoContext } from '../provider/ZunoContextProvider';
 
 export interface DevToolsConfig {
   /** Show transaction history panel */

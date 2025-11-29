@@ -42,3 +42,7 @@ export {
 export { useWallet } from './hooks/useWallet';
 export { useBalance } from './hooks/useBalance';
 export { useApprove } from './hooks/useApprove';
+
+// DevTools
+export { ZunoDevTools } from './components/ZunoDevTools';
+export type { ZunoDevToolsProps, DevToolsConfig } from './components/ZunoDevTools';
