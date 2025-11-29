@@ -688,22 +688,39 @@ export class AuctionModule extends BaseModule {
     page = 1,
     pageSize = 20
   ): Promise<PaginatedResult<Auction>> {
-    // Fetch from both English and Dutch auction contracts
-    const [englishAuctions, dutchAuctions] = await Promise.all([
-      this.getActiveAuctionsByType('english', page, pageSize),
-      this.getActiveAuctionsByType('dutch', page, pageSize),
-    ]);
+    const provider = this.ensureProvider();
+    const txManager = this.ensureTxManager();
+    const emptyResult: PaginatedResult<Auction> = { items: [], total: 0, page, pageSize, hasMore: false };
 
-    // Combine results
-    const allAuctions = [...englishAuctions.items, ...dutchAuctions.items];
-    const total = englishAuctions.total + dutchAuctions.total;
+    // Get all auction IDs from AuctionFactory
+    const auctionFactory = await safeCall(
+      () => this.contractRegistry.getContract('AuctionFactory', this.getNetworkId(), provider),
+      null
+    );
+    if (!auctionFactory) return emptyResult;
+
+    const auctionIds = await safeCall(
+      () => txManager.callContract<string[]>(auctionFactory, 'getAllAuctions', []),
+      []
+    );
+    if (auctionIds.length === 0) return emptyResult;
+
+    // Fetch details for all auctions
+    const auctionsPromises = auctionIds.map((id) =>
+      safeCall(() => this.getAuctionFromFactory(id), null)
+    );
+    const auctionResults = await Promise.all(auctionsPromises);
+    
+    // Filter to only active auctions
+    const activeAuctions = auctionResults
+      .filter((a): a is Auction => a !== null && a.status === 'active');
 
     // Sort by creation time (newest first)
-    allAuctions.sort((a, b) => b.startTime - a.startTime);
+    activeAuctions.sort((a, b) => b.startTime - a.startTime);
 
-    // Apply pagination to combined results
+    const total = activeAuctions.length;
     const startIndex = (page - 1) * pageSize;
-    const paginatedItems = allAuctions.slice(startIndex, startIndex + pageSize);
+    const paginatedItems = activeAuctions.slice(startIndex, startIndex + pageSize);
 
     return {
       items: paginatedItems,
@@ -799,46 +816,6 @@ export class AuctionModule extends BaseModule {
       pageSize,
       hasMore: skip + pageSize < total,
     };
-  }
-
-  /**
-   * Get active auctions by type (helper method)
-   */
-  private async getActiveAuctionsByType(
-    type: 'english' | 'dutch',
-    page: number,
-    pageSize: number
-  ): Promise<PaginatedResult<Auction>> {
-    const provider = this.ensureProvider();
-    const txManager = this.ensureTxManager();
-    const emptyResult: PaginatedResult<Auction> = { items: [], total: 0, page, pageSize, hasMore: false };
-
-    const contractType = type === 'english' ? 'EnglishAuctionImplementation' : 'DutchAuctionImplementation';
-
-    const auctionContract = await safeCall(
-      () => this.contractRegistry.getContract(contractType, this.getNetworkId(), provider),
-      null
-    );
-    if (!auctionContract) return emptyResult;
-
-    const totalCount = await safeCall(
-      () => txManager.callContract<bigint>(auctionContract, 'getActiveAuctionCount', []),
-      0n
-    );
-
-    const total = Number(totalCount);
-    const skip = (page - 1) * pageSize;
-
-    const auctionIds = await safeCall(
-      () => txManager.callContract<string[]>(auctionContract, 'getActiveAuctions', [skip, pageSize]),
-      []
-    );
-
-    const auctionsPromises = auctionIds.map((id) => safeCall(() => this.getAuction(id), null));
-    const auctionResults = await Promise.all(auctionsPromises);
-    const items = auctionResults.filter((a): a is Auction => a !== null);
-
-    return { items, total, page, pageSize, hasMore: skip + pageSize < total };
   }
 
   /**
