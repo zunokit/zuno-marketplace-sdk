@@ -136,7 +136,7 @@ export class AuctionModule extends BaseModule {
         0, // AuctionType.ENGLISH = 0
         sellerAddress,
       ],
-      options
+      { ...options, module: 'Auction' }
     );
 
     // Extract auction ID from logs
@@ -235,7 +235,7 @@ export class AuctionModule extends BaseModule {
         1, // AuctionType.DUTCH = 1
         sellerAddress,
       ],
-      options
+      { ...options, module: 'Auction' }
     );
 
     // Extract auction ID from logs
@@ -298,6 +298,7 @@ export class AuctionModule extends BaseModule {
       {
         ...options,
         value: amountWei.toString(),
+        module: 'Auction',
       }
     );
 
@@ -349,7 +350,7 @@ export class AuctionModule extends BaseModule {
         auctionContract,
         'cancelAuction',
         [auctionId],
-        options
+        { ...options, module: 'Auction' }
       );
     } catch {
       // Try Dutch auction
@@ -365,7 +366,7 @@ export class AuctionModule extends BaseModule {
         auctionContract,
         'cancelAuction',
         [auctionId],
-        options
+        { ...options, module: 'Auction' }
       );
     }
 
@@ -418,7 +419,7 @@ export class AuctionModule extends BaseModule {
         auctionContract,
         'settleAuction',
         [auctionId],
-        options
+        { ...options, module: 'Auction' }
       );
     } catch {
       // Try Dutch auction
@@ -434,7 +435,7 @@ export class AuctionModule extends BaseModule {
         auctionContract,
         'settleAuction',
         [auctionId],
-        options
+        { ...options, module: 'Auction' }
       );
     }
 

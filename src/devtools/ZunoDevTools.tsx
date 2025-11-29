@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { logStore, type LogEntry } from '../utils/logStore';
+import { transactionStore, type TransactionEntry } from '../utils/transactionStore';
 import { ZunoContext } from '../react/provider/ZunoContextProvider';
 
 export interface DevToolsConfig {
@@ -30,15 +31,6 @@ export interface DevToolsConfig {
 export interface ZunoDevToolsProps {
   /** DevTools configuration */
   config?: DevToolsConfig;
-}
-
-interface TransactionEntry {
-  id: number;
-  hash: string;
-  action: string;
-  status: 'pending' | 'success' | 'failed';
-  timestamp: Date;
-  gasUsed?: string;
 }
 
 const DEFAULT_CONFIG: Required<DevToolsConfig> = {
@@ -227,6 +219,12 @@ export function ZunoDevTools({ config: userConfig }: ZunoDevToolsProps) {
     return logStore.subscribe(setLogs);
   }, [config.maxLogEntries]);
 
+  // Subscribe to transactionStore
+  useEffect(() => {
+    transactionStore.setMaxEntries(config.maxTransactions);
+    return transactionStore.subscribe(setTransactions);
+  }, [config.maxTransactions]);
+
   // Refresh cache entries
   const refreshCache = useCallback(() => {
     if (!queryClient) return;
@@ -251,7 +249,7 @@ export function ZunoDevTools({ config: userConfig }: ZunoDevToolsProps) {
 
   // Clear logs
   const clearLogs = () => logStore.clear();
-  const clearTransactions = () => setTransactions([]);
+  const clearTransactions = () => transactionStore.clear();
 
   // Get network info from SDK
   const networkInfo = sdk?.getConfig() ?? { network: 'unknown', apiKey: '' };
@@ -314,7 +312,12 @@ export function ZunoDevTools({ config: userConfig }: ZunoDevToolsProps) {
               </button>
             </div>
             {logs.length === 0 ? (
-              <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>No logs yet</div>
+              <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
+                <div>No logs yet</div>
+                <div style={{ fontSize: '10px', marginTop: '8px', color: '#555' }}>
+                  Enable logging: {`{ debug: true }`} or {`{ logger: { level: 'debug' } }`}
+                </div>
+              </div>
             ) : (
               logs.map((log) => (
                 <div key={log.id} style={styles.logEntry(log.level)}>
@@ -338,17 +341,28 @@ export function ZunoDevTools({ config: userConfig }: ZunoDevToolsProps) {
               </button>
             </div>
             {transactions.length === 0 ? (
-              <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>No transactions yet</div>
+              <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
+                <div>No transactions yet</div>
+                <div style={{ fontSize: '10px', marginTop: '8px', color: '#555' }}>
+                  Transactions will appear when SDK methods are called
+                </div>
+              </div>
             ) : (
               transactions.map((tx) => (
                 <div key={tx.id} style={styles.cacheEntry}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>{tx.action}</span>
+                    <span style={{ color: '#00d9ff' }}>[{tx.module}]</span>
                     <span style={styles.txStatus(tx.status)}>{tx.status}</span>
                   </div>
+                  <div style={{ marginBottom: '4px' }}>{tx.action}</div>
                   <div style={{ fontSize: '10px', color: '#666' }}>
                     {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
                   </div>
+                  {tx.error && (
+                    <div style={{ fontSize: '10px', color: '#ff4757', marginTop: '4px' }}>
+                      {tx.error}
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -377,6 +391,11 @@ export function ZunoDevTools({ config: userConfig }: ZunoDevToolsProps) {
 
         {activeTab === 'network' && (
           <>
+            {!sdk && (
+              <div style={{ color: '#ffa502', padding: '12px', backgroundColor: '#3d3d1f', borderRadius: '4px', marginBottom: '12px', fontSize: '11px' }}>
+                SDK not found in context. Make sure DevTools is inside ZunoProvider.
+              </div>
+            )}
             <div style={styles.networkStatus(hasProvider)}>
               <span style={styles.dot(hasProvider ? '#2ed573' : '#ff4757')} />
               <span>Provider: {hasProvider ? 'Connected' : 'Not Connected'}</span>
@@ -391,7 +410,9 @@ export function ZunoDevTools({ config: userConfig }: ZunoDevToolsProps) {
             </div>
             <div style={styles.cacheEntry}>
               <div style={{ marginBottom: '4px', color: '#888' }}>API Key</div>
-              <div style={{ color: '#2ed573' }}>{networkInfo.apiKey ? '••••••••' : 'Not Set'}</div>
+              <div style={{ color: networkInfo.apiKey ? '#2ed573' : '#ff4757' }}>
+                {networkInfo.apiKey ? '••••••••' + networkInfo.apiKey.slice(-4) : 'Not Set'}
+              </div>
             </div>
           </>
         )}

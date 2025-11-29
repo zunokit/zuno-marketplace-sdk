@@ -79,7 +79,7 @@ export class CollectionModule extends BaseModule {
       factoryContract,
       methodName,
       [contractParams],
-      options
+      { ...options, module: 'Collection' }
     );
 
     const address = await this.extractCollectionAddress(receipt);
@@ -134,7 +134,7 @@ export class CollectionModule extends BaseModule {
     const txOptions = { ...options, value: value || options?.value };
 
     this.log('Sending mint transaction');
-    const receipt = await txManager.sendTransaction(collectionContract, 'mint', [recipient], txOptions);
+    const receipt = await txManager.sendTransaction(collectionContract, 'mint', [recipient], { ...txOptions, module: 'Collection' });
 
     const tokenId = await this.extractTokenId(receipt);
     this.log('mintERC721 completed', { tokenId, txHash: receipt.hash });
@@ -168,7 +168,7 @@ export class CollectionModule extends BaseModule {
     const txOptions = { ...options, value: value || options?.value };
 
     this.log('Sending batch mint transaction', { amount });
-    const receipt = await txManager.sendTransaction(collectionContract, 'batchMintERC721', [recipient, amount], txOptions);
+    const receipt = await txManager.sendTransaction(collectionContract, 'batchMintERC721', [recipient, amount], { ...txOptions, module: 'Collection' });
     this.log('batchMintERC721 completed', { txHash: receipt.hash });
 
     return { tx: receipt };
@@ -194,7 +194,7 @@ export class CollectionModule extends BaseModule {
     const collectionContract = new ethers.Contract(collectionAddress, mintABI, this.signer);
 
     this.log('Sending mint transaction');
-    const tx = await txManager.sendTransaction(collectionContract, 'mint', [recipient, tokenId, amount, data || '0x'], options);
+    const tx = await txManager.sendTransaction(collectionContract, 'mint', [recipient, tokenId, amount, data || '0x'], { ...options, module: 'Collection' });
     this.log('mintERC1155 completed', { txHash: tx.hash });
 
     return { tx };

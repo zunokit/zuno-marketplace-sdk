@@ -56,7 +56,7 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'listNFT',
       [collectionAddress, tokenId, priceInWei, duration],
-      options
+      { ...options, module: 'Exchange' }
     );
 
     // Extract listing ID from transaction logs
@@ -97,7 +97,7 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'buyNFT',
       [listingId],
-      txOptions
+      { ...txOptions, module: 'Exchange' }
     );
 
     return { tx };
@@ -136,7 +136,7 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'batchBuyNFT',
       [listingIds],
-      txOptions
+      { ...txOptions, module: 'Exchange' }
     );
 
     return { tx };
@@ -168,7 +168,7 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'cancelListing',
       [listingId],
-      options
+      { ...options, module: 'Exchange' }
     );
 
     return { tx };
@@ -203,7 +203,7 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'batchCancelListing',
       [listingIds],
-      options
+      { ...options, module: 'Exchange' }
     );
 
     return { tx };

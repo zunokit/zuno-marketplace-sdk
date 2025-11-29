@@ -12,6 +12,7 @@ import {
   waitForTransactionWithTimeout,
   buildTransactionOverrides,
 } from './helpers';
+import { transactionStore } from './transactionStore';
 
 /**
  * Transaction Manager for handling contract transactions
@@ -32,7 +33,7 @@ export class TransactionManager {
     contract: ethers.Contract,
     method: string,
     args: unknown[],
-    options?: TransactionOptions & { maxRetries?: number; confirmations?: number; onSent?: (hash: string) => void; onSuccess?: (receipt: TransactionReceipt) => void }
+    options?: TransactionOptions & { maxRetries?: number; confirmations?: number; onSent?: (hash: string) => void; onSuccess?: (receipt: TransactionReceipt) => void; module?: string }
   ): Promise<TransactionReceipt> {
     if (!this.signer) {
       throw new ZunoSDKError(
@@ -55,6 +56,8 @@ export class TransactionManager {
     // Build transaction overrides
     const overrides = await this.buildOverrides(contractMethod, args, options);
 
+    let txId: string | null = null;
+
     // Send transaction with retry logic
     return withRetry(
       async () => {
@@ -62,6 +65,14 @@ export class TransactionManager {
           ...args,
           overrides
         );
+
+        // Track transaction in store
+        txId = transactionStore.add({
+          hash: tx.hash,
+          action: method,
+          module: options?.module || 'Unknown',
+          status: 'pending',
+        });
 
         // Call onSent callback if provided
         if (options?.onSent) {
@@ -73,6 +84,14 @@ export class TransactionManager {
           tx,
           options?.confirmations
         );
+
+        // Update transaction status
+        if (txId) {
+          transactionStore.update(txId, {
+            status: 'success',
+            gasUsed: receipt.gasUsed?.toString(),
+          });
+        }
 
         // Call onSuccess callback if provided
         if (options?.onSuccess) {
@@ -87,7 +106,16 @@ export class TransactionManager {
         maxDelay: 10000,
         backoff: 'exponential',
       },
-      (error) => this.shouldRetry(error)
+      (error) => {
+        // Update transaction status on failure
+        if (txId) {
+          transactionStore.update(txId, {
+            status: 'failed',
+            error: error.message,
+          });
+        }
+        return this.shouldRetry(error);
+      }
     );
   }
 
