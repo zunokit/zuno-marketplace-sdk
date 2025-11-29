@@ -462,23 +462,108 @@ export class CollectionModule extends BaseModule {
 
     const provider = this.ensureProvider();
     const { ethers } = await import('ethers');
+    const tokensMap = new Map<string, number>();
 
-    const logs = await provider.getLogs({
-      address: collectionAddress,
-      topics: [
-        ethers.id('Minted(address,uint256,uint256)'),
-        ethers.zeroPadValue(userAddress, 32),
-      ],
-      fromBlock: 0,
-      toBlock: 'latest',
-    });
+    // 1. Check custom Minted event (Zuno collections)
+    const mintedLogs = await safeCall(
+      () => provider.getLogs({
+        address: collectionAddress,
+        topics: [
+          ethers.id('Minted(address,uint256,uint256)'),
+          ethers.zeroPadValue(userAddress, 32),
+        ],
+        fromBlock: 0,
+        toBlock: 'latest',
+      }),
+      []
+    );
+    this.log('Minted logs found', { count: mintedLogs.length });
 
-    const tokens = logs.map(log => ({
-      tokenId: ethers.toBigInt(log.topics[2]).toString(),
-      amount: Number(ethers.toBigInt(log.data)),
-    }));
+    for (const log of mintedLogs) {
+      const tokenId = ethers.toBigInt(log.topics[2]).toString();
+      const amount = Number(ethers.toBigInt(log.data));
+      tokensMap.set(tokenId, (tokensMap.get(tokenId) || 0) + amount);
+    }
 
-    this.log('getUserMintedTokens completed', { count: tokens.length });
+    // 2. Check ERC-1155 TransferSingle events (mint = from zero address to user)
+    // TransferSingle(operator, from, to, id, value) - from=zero means mint
+    const transferSingleLogs = await safeCall(
+      () => provider.getLogs({
+        address: collectionAddress,
+        topics: [
+          ethers.id('TransferSingle(address,address,address,uint256,uint256)'),
+          null, // operator (any)
+          ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = zero (mint)
+          ethers.zeroPadValue(userAddress, 32), // to = user
+        ],
+        fromBlock: 0,
+        toBlock: 'latest',
+      }),
+      []
+    );
+    this.log('TransferSingle (mint) logs found', { count: transferSingleLogs.length });
+
+    for (const log of transferSingleLogs) {
+      // data contains: id (uint256), value (uint256)
+      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(['uint256', 'uint256'], log.data);
+      const tokenId = decoded[0].toString();
+      const amount = Number(decoded[1]);
+      tokensMap.set(tokenId, (tokensMap.get(tokenId) || 0) + amount);
+    }
+
+    // 3. Check ERC-1155 TransferBatch events (mint = from zero address to user)
+    // TransferBatch(operator, from, to, ids[], values[])
+    const transferBatchLogs = await safeCall(
+      () => provider.getLogs({
+        address: collectionAddress,
+        topics: [
+          ethers.id('TransferBatch(address,address,address,uint256[],uint256[])'),
+          null, // operator (any)
+          ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = zero (mint)
+          ethers.zeroPadValue(userAddress, 32), // to = user
+        ],
+        fromBlock: 0,
+        toBlock: 'latest',
+      }),
+      []
+    );
+    this.log('TransferBatch (mint) logs found', { count: transferBatchLogs.length });
+
+    for (const log of transferBatchLogs) {
+      // data contains: ids (uint256[]), values (uint256[])
+      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(['uint256[]', 'uint256[]'], log.data);
+      const ids = decoded[0] as bigint[];
+      const values = decoded[1] as bigint[];
+      for (let i = 0; i < ids.length; i++) {
+        const tokenId = ids[i].toString();
+        const amount = Number(values[i]);
+        tokensMap.set(tokenId, (tokensMap.get(tokenId) || 0) + amount);
+      }
+    }
+
+    // 4. Check ERC-721 Transfer events (mint = from zero address to user)
+    const erc721TransferLogs = await safeCall(
+      () => provider.getLogs({
+        address: collectionAddress,
+        topics: [
+          ethers.id('Transfer(address,address,uint256)'),
+          ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = zero (mint)
+          ethers.zeroPadValue(userAddress, 32), // to = user
+        ],
+        fromBlock: 0,
+        toBlock: 'latest',
+      }),
+      []
+    );
+    this.log('ERC721 Transfer (mint) logs found', { count: erc721TransferLogs.length });
+
+    for (const log of erc721TransferLogs) {
+      const tokenId = ethers.toBigInt(log.topics[3]).toString();
+      tokensMap.set(tokenId, 1); // ERC-721 always amount = 1
+    }
+
+    const tokens = Array.from(tokensMap.entries()).map(([tokenId, amount]) => ({ tokenId, amount }));
+    this.log('getUserMintedTokens completed', { count: tokens.length, tokens });
     return tokens;
   }
 

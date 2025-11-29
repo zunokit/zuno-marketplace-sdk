@@ -871,17 +871,6 @@ export class AuctionModule extends BaseModule {
       bidCount: bigint;
     }>(auctionFactory, 'getAuction', [auctionId]);
 
-    // Direct console.log for debugging
-    console.log('[SDK DEBUG] getAuctionFromFactory raw data', { 
-      auctionId, 
-      status: auctionData.status, 
-      statusType: typeof auctionData.status,
-      startTime: Number(auctionData.startTime),
-      endTime: Number(auctionData.endTime),
-      now: Math.floor(Date.now() / 1000),
-      isActive: Number(auctionData.endTime) > Math.floor(Date.now() / 1000)
-    });
-
     // Contract enum: CREATED=0, ACTIVE=1, ENDED=2, CANCELLED=3, SETTLED=4
     const statusMap: Record<number, Auction['status']> = {
       0: 'active',     // CREATED - treat as active
