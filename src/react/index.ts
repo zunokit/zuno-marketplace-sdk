@@ -27,6 +27,7 @@ export {
   useAuction,
   useAuctionDetails,
   useDutchAuctionPrice,
+  usePendingRefund,
 } from './hooks/useAuction';
 
 // Hooks - ABI Management

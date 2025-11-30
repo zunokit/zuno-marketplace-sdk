@@ -565,6 +565,36 @@ export class AuctionModule extends BaseModule {
   }
 
   /**
+   * Get pending refund amount for a bidder
+   *
+   * @param auctionId - ID of the auction
+   * @param bidder - Address of the bidder
+   *
+   * @returns Promise resolving to pending refund amount in ETH
+   */
+  async getPendingRefund(auctionId: string, bidder: string): Promise<string> {
+    validateTokenId(auctionId, 'auctionId');
+    validateAddress(bidder, 'bidder');
+
+    const provider = this.ensureProvider();
+    const txManager = this.ensureTxManager();
+
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider
+    );
+
+    const refund = await txManager.callContract<bigint>(
+      auctionFactory,
+      'getPendingRefund',
+      [auctionId, bidder]
+    );
+
+    return ethers.formatEther(refund);
+  }
+
+  /**
    * Get auction details from AuctionFactory
    */
   async getAuctionFromFactory(auctionId: string): Promise<Auction> {

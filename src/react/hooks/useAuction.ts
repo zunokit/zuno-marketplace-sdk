@@ -75,6 +75,7 @@ export function useAuction() {
       sdk.auction.withdrawBid(auctionId, options),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
+      queryClient.invalidateQueries({ queryKey: ['pendingRefund', variables.auctionId] });
     },
   });
 
@@ -122,5 +123,18 @@ export function useDutchAuctionPrice(auctionId?: string) {
     queryFn: () => sdk.auction.getCurrentPrice(auctionId!),
     enabled: !!auctionId,
     refetchInterval: 10000,
+  });
+}
+
+/**
+ * Hook to get pending refund amount for a bidder
+ */
+export function usePendingRefund(auctionId?: string, bidder?: string) {
+  const sdk = useZuno();
+
+  return useQuery({
+    queryKey: ['pendingRefund', auctionId, bidder],
+    queryFn: () => sdk.auction.getPendingRefund(auctionId!, bidder!),
+    enabled: !!auctionId && !!bidder,
   });
 }
