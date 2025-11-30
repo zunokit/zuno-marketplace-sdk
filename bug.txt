@@ -101,6 +101,75 @@ page.tsx:158 Gas estimation failed: Error: execution reverted (unknown custom er
     at BrowserProvider.getRpcError (provider-jsonrpc.ts:1016:32)
     at BrowserProvider.getRpcError (provider-browser.ts:193:22)
     at provider-jsonrpc.ts:571:45
+buildOverrides @ transactions.ts:147
+await in buildOverrides
+sendTransaction @ transactions.ts:57
+buyNFT @ ExchangeModule.ts:135
+await in buyNFT
+useExchange.useMutation[buyNFT] @ useExchange.ts:42
+fn @ mutation.ts:190
+run @ retryer.ts:155
+start @ retryer.ts:221
+execute @ mutation.ts:233
+await in execute
+mutate @ mutationObserver.ts:142
+handleBuy @ page.tsx:158
+await in handleBuy
+onClick @ page.tsx:92
+executeDispatch @ react-dom-client.development.js:16970
+runWithFiberInDEV @ react-dom-client.development.js:871
+processDispatchQueue @ react-dom-client.development.js:17020
+(anonymous) @ react-dom-client.development.js:17621
+batchedUpdates$1 @ react-dom-client.development.js:3311
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:17174
+dispatchEvent @ react-dom-client.development.js:21357
+dispatchDiscreteEvent @ react-dom-client.development.js:21325
+<button>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:323
+Button @ button.tsx:50
+react_stack_bottom_frame @ react-dom-client.development.js:23583
+renderWithHooksAgain @ react-dom-client.development.js:6892
+renderWithHooks @ react-dom-client.development.js:6804
+updateFunctionComponent @ react-dom-client.development.js:9246
+beginWork @ react-dom-client.development.js:10857
+runWithFiberInDEV @ react-dom-client.development.js:871
+performUnitOfWork @ react-dom-client.development.js:15726
+workLoopSync @ react-dom-client.development.js:15546
+renderRootSync @ react-dom-client.development.js:15526
+performWorkOnRoot @ react-dom-client.development.js:14990
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16815
+performWorkUntilDeadline @ scheduler.development.js:45
+<Button>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:323
+ListingCard @ page.tsx:90
+react_stack_bottom_frame @ react-dom-client.development.js:23583
+renderWithHooksAgain @ react-dom-client.development.js:6892
+renderWithHooks @ react-dom-client.development.js:6804
+updateFunctionComponent @ react-dom-client.development.js:9246
+beginWork @ react-dom-client.development.js:10857
+runWithFiberInDEV @ react-dom-client.development.js:871
+performUnitOfWork @ react-dom-client.development.js:15726
+workLoopSync @ react-dom-client.development.js:15546
+renderRootSync @ react-dom-client.development.js:15526
+performWorkOnRoot @ react-dom-client.development.js:14990
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16815
+performWorkUntilDeadline @ scheduler.development.js:45
+<ListingCard>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:323
+(anonymous) @ page.tsx:235
+MarketplacePage @ page.tsx:234
+react_stack_bottom_frame @ react-dom-client.development.js:23583
+renderWithHooksAgain @ react-dom-client.development.js:6892
+renderWithHooks @ react-dom-client.development.js:6804
+updateFunctionComponent @ react-dom-client.development.js:9246
+beginWork @ react-dom-client.development.js:10857
+runWithFiberInDEV @ react-dom-client.development.js:871
+performUnitOfWork @ react-dom-client.development.js:15726
+workLoopSync @ react-dom-client.development.js:15546
+renderRootSync @ react-dom-client.development.js:15526
+performWorkOnRoot @ react-dom-client.development.js:14990
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:16815
+performWorkUntilDeadline @ scheduler.development.js:45Understand this warning
+inpage.js:1 MetaMask - RPC Error: Internal JSON-RPC error. {code: -32603, message: 'Internal JSON-RPC error.', data: {…}, stack: '{\n  "code": -32603,\n  "message": "Internal JSON-RP…hfbeogaeaoehlefnkodbefgpgknn/common-2.js:3:150959'}
 
-Vấn đề 2 Batch list hiện tại batch list bao nhiêu thì xác nhận bấy nhiêu mong muốn 1 tx,check zuno-contracts có hỗ trợ chưa
-Vấn đề 3 giao diện chua hỗ trợ batch buy,check zuno-contracts luôn có hỗ trợ chưa
+Vấn đề 2 zuno-mini lỗi,typecheck,build

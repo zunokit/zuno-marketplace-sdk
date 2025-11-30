@@ -108,6 +108,7 @@ export class ExchangeModule extends BaseModule {
   
   /**
    * Buy an NFT from a listing
+   * @param params.value - Price in ETH (e.g., "1.5")
    */
   async buyNFT(params: BuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingId, value, options } = params;
@@ -126,10 +127,13 @@ export class ExchangeModule extends BaseModule {
       this.signer
     );
 
-    // Prepare transaction options with value
+    // Convert ETH value to wei for transaction
+    const valueInWei = value ? ethers.parseEther(value).toString() : options?.value;
+
+    // Prepare transaction options with value in wei
     const txOptions: TransactionOptions = {
       ...options,
-      value: value || options?.value,
+      value: valueInWei,
     };
 
     // Call contract method
@@ -145,6 +149,7 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Batch buy multiple NFTs from listings
+   * @param params.value - Total price in ETH (e.g., "3.0" for 3 NFTs at 1 ETH each)
    */
   async batchBuyNFT(params: BatchBuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingIds, value, options } = params;
@@ -165,10 +170,13 @@ export class ExchangeModule extends BaseModule {
       this.signer
     );
 
-    // Prepare transaction options with value
+    // Convert ETH value to wei for transaction
+    const valueInWei = value ? ethers.parseEther(value).toString() : options?.value;
+
+    // Prepare transaction options with value in wei
     const txOptions: TransactionOptions = {
       ...options,
-      value: value || options?.value,
+      value: valueInWei,
     };
 
     // Call contract method - contract expects: (bytes32[])
