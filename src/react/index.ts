@@ -20,7 +20,14 @@ export { useZunoLogger } from './hooks/useZunoLogger';
 export { useExchange, useListings, useListing } from './hooks/useExchange';
 
 // Hooks - Collection
-export { useCollection, useCollectionInfo, useCreatedCollections, useUserMintedTokens } from './hooks/useCollection';
+export { 
+  useCollection, 
+  useCollectionInfo, 
+  useCreatedCollections, 
+  useUserMintedTokens,
+  useIsInAllowlist,
+  useIsAllowlistOnly,
+} from './hooks/useCollection';
 
 // Hooks - Auction
 export {

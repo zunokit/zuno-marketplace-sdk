@@ -73,6 +73,30 @@ export function useCollection() {
     mutationFn: (address: string) => sdk.collection.verifyCollection(address),
   });
 
+  const addToAllowlist = useMutation({
+    mutationFn: ({ collectionAddress, addresses }: { collectionAddress: string; addresses: string[] }) =>
+      sdk.collection.addToAllowlist(collectionAddress, addresses),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+    },
+  });
+
+  const removeFromAllowlist = useMutation({
+    mutationFn: ({ collectionAddress, addresses }: { collectionAddress: string; addresses: string[] }) =>
+      sdk.collection.removeFromAllowlist(collectionAddress, addresses),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+    },
+  });
+
+  const setAllowlistOnly = useMutation({
+    mutationFn: ({ collectionAddress, enabled }: { collectionAddress: string; enabled: boolean }) =>
+      sdk.collection.setAllowlistOnly(collectionAddress, enabled),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+    },
+  });
+
   return {
     createERC721,
     createERC1155,
@@ -81,6 +105,9 @@ export function useCollection() {
     mintERC1155,
     batchMintERC1155,
     verifyCollection,
+    addToAllowlist,
+    removeFromAllowlist,
+    setAllowlistOnly,
   };
 }
 
@@ -129,6 +156,32 @@ export function useUserMintedTokens(collectionAddress?: string, userAddress?: st
     queryKey: ['userMintedTokens', collectionAddress, userAddress],
     queryFn: () => sdk.collection.getUserMintedTokens(collectionAddress!, userAddress!),
     enabled: !!collectionAddress && !!userAddress,
+  });
+}
+
+/**
+ * Hook to check if address is in allowlist
+ */
+export function useIsInAllowlist(collectionAddress?: string, userAddress?: string) {
+  const sdk = useZuno();
+
+  return useQuery({
+    queryKey: ['allowlist', collectionAddress, userAddress],
+    queryFn: () => sdk.collection.isInAllowlist(collectionAddress!, userAddress!),
+    enabled: !!collectionAddress && !!userAddress,
+  });
+}
+
+/**
+ * Hook to check if collection is allowlist-only
+ */
+export function useIsAllowlistOnly(collectionAddress?: string) {
+  const sdk = useZuno();
+
+  return useQuery({
+    queryKey: ['allowlistOnly', collectionAddress],
+    queryFn: () => sdk.collection.isAllowlistOnly(collectionAddress!),
+    enabled: !!collectionAddress,
   });
 }
 

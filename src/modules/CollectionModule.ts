@@ -104,7 +104,7 @@ export class CollectionModule extends BaseModule {
       royaltyFee: params.royaltyFee || 0,
       maxSupply: params.maxSupply,
       mintLimitPerWallet: params.mintLimitPerWallet || 0,
-      mintStartTime: params.mintStartTime || 0,
+      mintStartTime: params.mintStartTime || Math.floor(Date.now() / 1000),
       allowlistMintPrice: params.allowlistMintPrice ? ethers.parseEther(params.allowlistMintPrice) : 0n,
       publicMintPrice: params.publicMintPrice ? ethers.parseEther(params.publicMintPrice) : 0n,
       allowlistStageDuration: params.allowlistStageDuration || 0,
@@ -646,5 +646,114 @@ export class CollectionModule extends BaseModule {
       ErrorCodes.CONTRACT_CALL_FAILED,
       'Could not extract token ID from transaction'
     );
+  }
+
+  /**
+   * Add addresses to collection allowlist
+   */
+  async addToAllowlist(
+    collectionAddress: string,
+    addresses: string[]
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('addToAllowlist started', { collectionAddress, count: addresses.length });
+    
+    validateAddress(collectionAddress, 'collectionAddress');
+    if (addresses.length === 0) {
+      throw this.error('INVALID_AMOUNT', 'addresses array cannot be empty');
+    }
+    if (addresses.length > 100) {
+      throw this.error('INVALID_AMOUNT', 'Maximum 100 addresses per batch');
+    }
+
+    const txManager = this.ensureTxManager();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function addToAllowlist(address[] calldata addresses) external'];
+    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+
+    const tx = await txManager.sendTransaction(contract, 'addToAllowlist', [addresses], { module: 'Collection' });
+    this.log('addToAllowlist completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
+   * Remove addresses from collection allowlist
+   */
+  async removeFromAllowlist(
+    collectionAddress: string,
+    addresses: string[]
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('removeFromAllowlist started', { collectionAddress, count: addresses.length });
+    
+    validateAddress(collectionAddress, 'collectionAddress');
+    if (addresses.length === 0) {
+      throw this.error('INVALID_AMOUNT', 'addresses array cannot be empty');
+    }
+
+    const txManager = this.ensureTxManager();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function removeFromAllowlist(address[] calldata addresses) external'];
+    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+
+    const tx = await txManager.sendTransaction(contract, 'removeFromAllowlist', [addresses], { module: 'Collection' });
+    this.log('removeFromAllowlist completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
+   * Set allowlist-only mode (disables public minting)
+   */
+  async setAllowlistOnly(
+    collectionAddress: string,
+    enabled: boolean
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('setAllowlistOnly started', { collectionAddress, enabled });
+    
+    validateAddress(collectionAddress, 'collectionAddress');
+
+    const txManager = this.ensureTxManager();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function setAllowlistOnly(bool allowlistOnly) external'];
+    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+
+    const tx = await txManager.sendTransaction(contract, 'setAllowlistOnly', [enabled], { module: 'Collection' });
+    this.log('setAllowlistOnly completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
+   * Check if address is in allowlist
+   */
+  async isInAllowlist(collectionAddress: string, address: string): Promise<boolean> {
+    validateAddress(collectionAddress, 'collectionAddress');
+    validateAddress(address, 'address');
+
+    const provider = this.ensureProvider();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function isInAllowlist(address account) external view returns (bool)'];
+    const contract = new ethers.Contract(collectionAddress, abi, provider);
+
+    return await contract.isInAllowlist(address);
+  }
+
+  /**
+   * Check if collection is in allowlist-only mode
+   */
+  async isAllowlistOnly(collectionAddress: string): Promise<boolean> {
+    validateAddress(collectionAddress, 'collectionAddress');
+
+    const provider = this.ensureProvider();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function isAllowlistOnly() external view returns (bool)'];
+    const contract = new ethers.Contract(collectionAddress, abi, provider);
+
+    return await contract.isAllowlistOnly();
   }
 }
