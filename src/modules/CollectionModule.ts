@@ -572,6 +572,60 @@ export class CollectionModule extends BaseModule {
   }
 
   /**
+   * Get tokens currently owned by a user from a specific collection
+   * Unlike getUserMintedTokens, this verifies actual on-chain ownership
+   */
+  async getUserOwnedTokens(
+    collectionAddress: string,
+    userAddress: string
+  ): Promise<Array<{ tokenId: string; amount: number }>> {
+    this.log('getUserOwnedTokens started', { collectionAddress, userAddress });
+    validateAddress(collectionAddress, 'collectionAddress');
+    validateAddress(userAddress, 'userAddress');
+
+    // First get minted tokens as candidates
+    const mintedTokens = await this.getUserMintedTokens(collectionAddress, userAddress);
+    
+    if (mintedTokens.length === 0) {
+      return [];
+    }
+
+    const provider = this.ensureProvider();
+    const { ethers } = await import('ethers');
+
+    const ERC721_ABI = ['function ownerOf(uint256 tokenId) view returns (address)'];
+    const ERC1155_ABI = ['function balanceOf(address account, uint256 id) view returns (uint256)'];
+
+    const erc721Contract = new ethers.Contract(collectionAddress, ERC721_ABI, provider);
+    const erc1155Contract = new ethers.Contract(collectionAddress, ERC1155_ABI, provider);
+
+    const ownedTokens: Array<{ tokenId: string; amount: number }> = [];
+
+    for (const token of mintedTokens) {
+      try {
+        // Try ERC721 ownerOf first
+        const owner = await erc721Contract.ownerOf(token.tokenId);
+        if (owner.toLowerCase() === userAddress.toLowerCase()) {
+          ownedTokens.push({ tokenId: token.tokenId, amount: 1 });
+        }
+      } catch {
+        // Fallback to ERC1155 balanceOf
+        try {
+          const balance = await erc1155Contract.balanceOf(userAddress, token.tokenId);
+          if (balance > 0n) {
+            ownedTokens.push({ tokenId: token.tokenId, amount: Number(balance) });
+          }
+        } catch {
+          // Token not owned or invalid - skip
+        }
+      }
+    }
+
+    this.log('getUserOwnedTokens completed', { count: ownedTokens.length });
+    return ownedTokens;
+  }
+
+  /**
    * Extract collection address from transaction receipt
    */
   private async extractCollectionAddress(
