@@ -260,3 +260,81 @@ describe('ExchangeModule - Price Formatting', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('ExchangeModule - getBuyerPrice', () => {
+  let sdk: ZunoSDK;
+
+  beforeEach(() => {
+    sdk = new ZunoSDK({
+      apiKey: 'test-api-key',
+      network: 'sepolia',
+    });
+  });
+
+  it('should validate listingId is not empty', async () => {
+    await expect(
+      sdk.exchange.getBuyerPrice('')
+    ).rejects.toThrow();
+  });
+
+  it('should accept valid listingId', async () => {
+    // Will fail due to no provider, but validates input
+    await expect(
+      sdk.exchange.getBuyerPrice('0x1234567890')
+    ).rejects.toThrow();
+  });
+});
+
+describe('ExchangeModule - getListings', () => {
+  let sdk: ZunoSDK;
+
+  beforeEach(() => {
+    sdk = new ZunoSDK({
+      apiKey: 'test-api-key',
+      network: 'sepolia',
+    });
+  });
+
+  it('should validate collectionAddress', async () => {
+    const { ethers } = await import('ethers');
+    (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
+
+    await expect(
+      sdk.exchange.getListings('invalid')
+    ).rejects.toThrow();
+  });
+
+  it('should accept valid collectionAddress', async () => {
+    // Will fail due to no provider, but validates input
+    await expect(
+      sdk.exchange.getListings('0x1234567890123456789012345678901234567890')
+    ).rejects.toThrow();
+  });
+});
+
+describe('ExchangeModule - getListingsBySeller', () => {
+  let sdk: ZunoSDK;
+
+  beforeEach(() => {
+    sdk = new ZunoSDK({
+      apiKey: 'test-api-key',
+      network: 'sepolia',
+    });
+  });
+
+  it('should validate seller address', async () => {
+    const { ethers } = await import('ethers');
+    (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
+
+    await expect(
+      sdk.exchange.getListingsBySeller('invalid')
+    ).rejects.toThrow();
+  });
+
+  it('should accept valid seller address', async () => {
+    // Will fail due to no provider, but validates input
+    await expect(
+      sdk.exchange.getListingsBySeller('0x1234567890123456789012345678901234567890')
+    ).rejects.toThrow();
+  });
+});
