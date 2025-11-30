@@ -83,6 +83,19 @@ export function useListings(collectionAddress?: string) {
 }
 
 /**
+ * Hook to fetch listings by seller
+ */
+export function useListingsBySeller(seller?: string) {
+  const sdk = useZuno();
+
+  return useQuery({
+    queryKey: ['listings', 'seller', seller],
+    queryFn: () => sdk.exchange.getListingsBySeller(seller!),
+    enabled: !!seller,
+  });
+}
+
+/**
  * Hook to fetch a single listing
  */
 export function useListing(listingId?: string) {

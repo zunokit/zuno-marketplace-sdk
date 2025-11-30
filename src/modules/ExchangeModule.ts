@@ -237,7 +237,7 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Get listings by collection (simple, no pagination)
+   * Get listings by collection
    */
   async getListings(collectionAddress: string): Promise<Listing[]> {
     validateAddress(collectionAddress);
@@ -250,17 +250,36 @@ export class ExchangeModule extends BaseModule {
     );
 
     const txManager = this.ensureTxManager();
-
-    // Get all listing IDs for collection
     const listingIds = await txManager.callContract<string[]>(
       exchangeContract,
       'getListingsByCollection',
       [collectionAddress, 0, 100]
     );
 
-    // Fetch details
-    const listings = await Promise.all(listingIds.map((id) => this.getListing(id)));
-    return listings;
+    return Promise.all(listingIds.map((id) => this.getListing(id)));
+  }
+
+  /**
+   * Get listings by seller
+   */
+  async getListingsBySeller(seller: string): Promise<Listing[]> {
+    validateAddress(seller, 'seller');
+
+    const provider = this.ensureProvider();
+    const exchangeContract = await this.contractRegistry.getContract(
+      'ERC721NFTExchange',
+      this.getNetworkId(),
+      provider
+    );
+
+    const txManager = this.ensureTxManager();
+    const listingIds = await txManager.callContract<string[]>(
+      exchangeContract,
+      'getListingsBySeller',
+      [seller, 0, 100]
+    );
+
+    return Promise.all(listingIds.map((id) => this.getListing(id)));
   }
 
   /**
