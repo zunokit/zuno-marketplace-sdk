@@ -106,6 +106,14 @@ export function useAuction() {
     },
   });
 
+  const batchCancelAuction = useMutation({
+    mutationFn: (auctionIds: string[]) =>
+      sdk.auction.batchCancelAuction(auctionIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+    },
+  });
+
   return {
     createEnglishAuction,
     createDutchAuction,
@@ -116,6 +124,7 @@ export function useAuction() {
     buyNow,
     withdrawBid,
     cancelAuction,
+    batchCancelAuction,
   };
 }
 
