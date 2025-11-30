@@ -113,6 +113,9 @@ export class ExchangeModule extends BaseModule {
   async buyNFT(params: BuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingId, value, options } = params;
 
+    // DEBUG
+    console.log('[buyNFT] params:', { listingId, value, options });
+
     validateTokenId(listingId, 'listingId');
 
     const txManager = this.ensureTxManager();
@@ -129,6 +132,9 @@ export class ExchangeModule extends BaseModule {
 
     // Convert ETH value to wei for transaction
     const valueInWei = value ? ethers.parseEther(value).toString() : options?.value;
+
+    // DEBUG
+    console.log('[buyNFT] valueInWei:', valueInWei);
 
     // Prepare transaction options with value in wei
     const txOptions: TransactionOptions = {
@@ -255,6 +261,31 @@ export class ExchangeModule extends BaseModule {
     );
 
     return { tx };
+  }
+
+  /**
+   * Get the total price buyer needs to pay (including royalty and taker fee)
+   * @param listingId - The listing ID
+   * @returns Total price in ETH (e.g., "1.05" for 1 ETH + 5% fees)
+   */
+  async getBuyerPrice(listingId: string): Promise<string> {
+    validateTokenId(listingId, 'listingId');
+
+    const provider = this.ensureProvider();
+    const exchangeContract = await this.contractRegistry.getContract(
+      'ERC721NFTExchange',
+      this.getNetworkId(),
+      provider
+    );
+
+    const txManager = this.ensureTxManager();
+    const totalPriceWei = await txManager.callContract<bigint>(
+      exchangeContract,
+      'getBuyerSeesPrice',
+      [listingId]
+    );
+
+    return ethers.formatEther(totalPriceWei);
   }
 
   /**

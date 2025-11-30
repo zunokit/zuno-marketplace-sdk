@@ -127,6 +127,10 @@ export class TransactionManager {
     args: unknown[],
     options?: TransactionOptions & { maxRetries?: number; confirmations?: number; onSent?: (hash: string) => void; onSuccess?: (receipt: TransactionReceipt) => void }
   ): Promise<ethers.Overrides> {
+    // DEBUG
+    console.log('[TransactionManager.buildOverrides] options:', options);
+    console.log('[TransactionManager.buildOverrides] options?.value:', options?.value);
+
     const overrides = buildTransactionOverrides({
       value: options?.value,
       gasLimit: options?.gasLimit ? BigInt(options.gasLimit) : undefined,

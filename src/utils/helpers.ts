@@ -231,11 +231,15 @@ export function buildTransactionOverrides(options?: {
   maxPriorityFeePerGas?: string | bigint;
   nonce?: number;
 }): ethers.Overrides {
+  // DEBUG
+  console.log('[buildTransactionOverrides] options:', options);
+
   const overrides: ethers.Overrides = {};
 
   if (options?.value) {
     // Convert string to BigInt for ethers v6 compatibility
     overrides.value = typeof options.value === 'string' ? BigInt(options.value) : options.value;
+    console.log('[buildTransactionOverrides] overrides.value:', overrides.value);
   }
 
   if (options?.gasLimit) {
