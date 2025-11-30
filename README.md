@@ -37,56 +37,58 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 | Testnet (Sepolia) | ❌ | Coming soon |
 | Mainnet | ❌ | Coming soon |
 
-## 🆕 What's New in v1.3.0
+## 🆕 What's New in v2.0.0
 
 ### ✨ New Features
 
-- **Tree-shakeable Imports** - Import only what you need for smaller bundles
-- **Testing Utilities** - Official mocks and test helpers (`zuno-marketplace-sdk/testing`)
-- **DevTools Component** - Visual debugging panel for development
-- **Standalone Logger** - Use logger without SDK initialization
+- **Batch Auction Operations** - Create/cancel multiple auctions in one transaction
+- **Allowlist Management** - Add/remove addresses, set allowlist-only mode
+- **Improved Defaults** - `mintLimitPerWallet` defaults to `maxSupply` (was 0)
+- **Hex Listing IDs** - Listing IDs returned in bytes32 hex format
 
-### 📖 Examples
+### 📖 Batch Operations
 
 ```typescript
-// Tree-shakeable imports - smaller bundles
-import { ExchangeModule } from 'zuno-marketplace-sdk/exchange';
-import { AuctionModule } from 'zuno-marketplace-sdk/auction';
+// Batch create English auctions (max 20 per tx)
+const { auctionIds, tx } = await sdk.auction.batchCreateEnglishAuction({
+  collectionAddress: '0x...',
+  tokenIds: ['1', '2', '3'],
+  startingBid: '1.0',
+  duration: 86400 * 7,
+});
 
-// Testing utilities - easy mocking
-import { createMockSDK, createMockZunoProvider } from 'zuno-marketplace-sdk/testing';
-
-const mockSdk = createMockSDK();
-const MockProvider = createMockZunoProvider();
-
-// DevTools - visual debugging
-import { ZunoDevTools } from 'zuno-marketplace-sdk/devtools';
-
-function App() {
-  return (
-    <>
-      <YourApp />
-      {process.env.NODE_ENV === 'development' && (
-        <ZunoDevTools config={{ showLogger: true, showCache: true }} />
-      )}
-    </>
-  );
-}
-
-// Standalone logger - use anywhere
-import { logger, configureLogger } from 'zuno-marketplace-sdk/logger';
-
-configureLogger({ level: 'debug' });
-logger.info('Application started');
+// Batch cancel auctions
+const { cancelledCount, tx } = await sdk.auction.batchCancelAuction(['1', '2', '3']);
 ```
 
-> **No Breaking Changes** - All v1.3.0 features are additive. See [CHANGELOG.md](./CHANGELOG.md) for details.
+### 📖 Allowlist Management
 
-### Previous: v1.2.0 Highlights
+```typescript
+// Add addresses to allowlist
+await sdk.collection.addToAllowlist({
+  collectionAddress: '0x...',
+  addresses: ['0x...', '0x...'],
+});
 
-- `useZunoSDK()` / `useZunoLogger()` hooks for React
-- `ZunoSDK.getInstance()` singleton for non-React contexts
-- `toUserMessage()` for user-friendly error messages
+// Enable allowlist-only mode (permanent restriction)
+await sdk.collection.setAllowlistOnly({
+  collectionAddress: '0x...',
+  enabled: true,
+});
+
+// Check allowlist status
+const isAllowed = await sdk.collection.isInAllowlist({
+  collectionAddress: '0x...',
+  address: '0x...',
+});
+```
+
+### Previous Highlights
+
+- Tree-shakeable imports for smaller bundles
+- Testing utilities (`zuno-marketplace-sdk/testing`)
+- DevTools component for visual debugging
+- Standalone logger module
 
 ## 📦 Installation
 
@@ -223,24 +225,24 @@ export default function HomePage() {
 const { listingId, tx } = await sdk.exchange.listNFT({
   collectionAddress: '0x...',
   tokenId: '1',
-  price: '1.5',
-  duration: 86400,
+  price: '1.5',        // Price in ETH
+  duration: 86400,     // Duration in seconds
 });
+// listingId is bytes32 hex format: '0x...'
 
 // Buy NFT
 const { tx } = await sdk.exchange.buyNFT({
-  listingId: '0x...',
-  value: '1.5',
+  listingId: '0x...',  // bytes32 hex
 });
 
-// Update listing price (NEW in v1.1.4)
-const { tx } = await sdk.exchange.updateListingPrice('listingId', '2.0');
-
 // Cancel listing
-const { tx } = await sdk.exchange.cancelListing('listingId');
+const { tx } = await sdk.exchange.cancelListing('0x...');
 
-// Get active listings (NEW in v1.1.4)
+// Get active listings
 const { items, total } = await sdk.exchange.getActiveListings(1, 20);
+
+// Get listings by seller
+const { items } = await sdk.exchange.getListingsBySeller('0x...', 1, 20);
 ```
 
 ### Collection
@@ -250,61 +252,31 @@ const { items, total } = await sdk.exchange.getActiveListings(1, 20);
 const { address, tx } = await sdk.collection.createERC721Collection({
   name: 'My NFTs',
   symbol: 'MNFT',
-  baseUri: 'ipfs://...',
   maxSupply: 10000,
+  mintPrice: '0.1',              // Price in ETH
+  royaltyFee: 500,               // 5% (basis points)
+  mintLimitPerWallet: 10,        // Optional, defaults to maxSupply
+  allowlistStageDuration: 86400, // 1 day allowlist, then public
+  tokenURI: 'ipfs://...',
 });
 
-// Mint NFT (single)
+// Mint NFT (with payment)
 const { tokenId, tx } = await sdk.collection.mintERC721({
   collectionAddress: '0x...',
   recipient: '0x...',
-  value: '0.1',
+  value: '0.1', // Mint price in ETH (as string)
 });
 
-// Batch mint ERC721
-const { tx } = await sdk.collection.batchMintERC721({
+// Allowlist management
+await sdk.collection.addToAllowlist({
   collectionAddress: '0x...',
-  recipient: '0x...',
-  amount: 5,
-  value: '0.5', // total ETH for all NFTs
+  addresses: ['0x...', '0x...'],
 });
 
-// Batch mint ERC1155
-const { tx } = await sdk.collection.batchMintERC1155({
+await sdk.collection.setAllowlistOnly({
   collectionAddress: '0x...',
-  recipient: '0x...',
-  amount: 10,
-  value: '1.0',
+  enabled: true, // Only allowlisted addresses can mint
 });
-```
-
-#### React: Dynamic Mint Function
-
-Use `useCollectionInfo` to detect token type and select the appropriate mint function:
-
-```tsx
-import { useCollection, useCollectionInfo } from 'zuno-marketplace-sdk/react';
-
-function MintPage({ collectionAddress }: { collectionAddress: string }) {
-  const { data: collection } = useCollectionInfo(collectionAddress);
-  const { batchMintERC721, batchMintERC1155 } = useCollection();
-
-  // Select mint function based on token type
-  const isERC1155 = collection?.tokenType === 'ERC1155';
-  const mintFn = isERC1155 ? batchMintERC1155 : batchMintERC721;
-
-  const handleMint = async (quantity: number, totalValue: string) => {
-    const result = await mintFn.mutateAsync({
-      collectionAddress,
-      recipient: userAddress,
-      amount: quantity,
-      value: totalValue,
-    });
-    console.log('Minted:', result.tx.hash);
-  };
-
-  return <button onClick={() => handleMint(5, '0.5')}>Mint 5 NFTs</button>;
-}
 ```
 
 ### Auction
@@ -315,23 +287,41 @@ const { auctionId, tx } = await sdk.auction.createEnglishAuction({
   collectionAddress: '0x...',
   tokenId: '1',
   startingBid: '1.0',
-  duration: 86400 * 7, // 7 days
+  reservePrice: '5.0',    // Optional minimum price
+  duration: 86400 * 7,    // 7 days
 });
 
-// Place bid
+// Create Dutch auction (descending price)
+const { auctionId, tx } = await sdk.auction.createDutchAuction({
+  collectionAddress: '0x...',
+  tokenId: '1',
+  startPrice: '10.0',     // Starting high price
+  endPrice: '1.0',        // Minimum price
+  duration: 86400,        // 1 day
+});
+
+// Place bid (English auction)
 const { tx } = await sdk.auction.placeBid({
   auctionId: '1',
   amount: '1.5',
 });
 
-// Cancel auction (NEW in v1.1.4)
+// Buy now (Dutch auction)
+const { tx } = await sdk.auction.buyNow('auctionId');
+
+// Cancel auction
 const { tx } = await sdk.auction.cancelAuction('auctionId');
 
-// Get active auctions (NEW in v1.1.4)
-const { items, total } = await sdk.auction.getActiveAuctions(1, 20);
+// Batch create auctions (max 20 per tx)
+const { auctionIds, tx } = await sdk.auction.batchCreateEnglishAuction({
+  collectionAddress: '0x...',
+  tokenIds: ['1', '2', '3'],
+  startingBid: '1.0',
+  duration: 86400 * 7,
+});
 
-// Get auctions by seller (NEW in v1.1.4)
-const { items } = await sdk.auction.getAuctionsBySeller('0x...', 1, 20);
+// Batch cancel auctions
+const { cancelledCount, tx } = await sdk.auction.batchCancelAuction(['1', '2', '3']);
 ```
 
 ### Offers & Bundles
