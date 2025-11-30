@@ -5,7 +5,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { ContractRegistry } from '../../../src/core/ContractRegistry';
 import { ZunoAPIClient } from '../../../src/core/ZunoAPIClient';
-import { ZunoSDKError, ErrorCodes } from '../../../src/utils/errors';
+import { ZunoSDKError } from '../../../src/utils/errors';
 import { ethers } from 'ethers';
 import axios from 'axios';
 
@@ -37,11 +37,6 @@ describe('ContractRegistry', () => {
         queries: { retry: false },
         mutations: { retry: false },
       },
-      logger: {
-        log: () => {},
-        warn: () => {},
-        error: () => {},
-      },
     });
 
     apiClient = new ZunoAPIClient('test-api-key');
@@ -66,7 +61,7 @@ describe('ContractRegistry', () => {
 
     const mockAbiEntity = {
       id: 'abi-123',
-      contractName: 'ERC721',
+      contractName: 'ERC721NFTExchange',
       abi: mockABI,
       version: '1.0.0',
       networkId: 'sepolia',
@@ -83,7 +78,7 @@ describe('ContractRegistry', () => {
             contracts: [
               {
                 id: 'contract-123',
-                name: 'ERC721',
+                name: 'ERC721NFTExchange',
                 abiId: 'abi-123',
                 chainId: 11155111,
                 address: '0x1234567890123456789012345678901234567890',
@@ -111,7 +106,7 @@ describe('ContractRegistry', () => {
             contracts: [
               {
                 id: 'contract-123',
-                name: 'ERC721',
+                name: 'ERC721NFTExchange',
                 abiId: 'abi-123',
                 chainId: 11155111,
                 address: '0x1234567890123456789012345678901234567890',
@@ -123,7 +118,7 @@ describe('ContractRegistry', () => {
       });
 
       const contract = await registry.getContract(
-        'ERC721',
+        'ERC721NFTExchange',
         'sepolia',
         mockProvider
       );
@@ -141,7 +136,7 @@ describe('ContractRegistry', () => {
             contracts: [
               {
                 id: 'contract-123',
-                name: 'ERC721',
+                name: 'ERC721NFTExchange',
                 abiId: 'abi-123',
                 chainId: 11155111,
                 address: '0x1234567890123456789012345678901234567890',
@@ -169,7 +164,7 @@ describe('ContractRegistry', () => {
             contracts: [
               {
                 id: 'contract-123',
-                name: 'ERC721',
+                name: 'ERC721NFTExchange',
                 abiId: 'abi-123',
                 chainId: 11155111,
                 address: '0x1234567890123456789012345678901234567890',
@@ -181,12 +176,12 @@ describe('ContractRegistry', () => {
       });
 
       const contract1 = await registry.getContract(
-        'ERC721',
+        'ERC721NFTExchange',
         'sepolia',
         mockProvider
       );
       const contract2 = await registry.getContract(
-        'ERC721',
+        'ERC721NFTExchange',
         'sepolia',
         mockProvider
       );
@@ -208,7 +203,7 @@ describe('ContractRegistry', () => {
             contracts: [
               {
                 id: 'contract-123',
-                name: 'ERC721',
+                name: 'ERC721NFTExchange',
                 abiId: 'abi-123',
                 chainId: 11155111,
                 address: '0x1234567890123456789012345678901234567890',
@@ -229,7 +224,7 @@ describe('ContractRegistry', () => {
       });
 
       const contract = await registry.getContract(
-        'ERC721',
+        'ERC721NFTExchange',
         'sepolia',
         mockProvider,
         customAddress
@@ -250,7 +245,7 @@ describe('ContractRegistry', () => {
             contracts: [
               {
                 id: 'contract-123',
-                name: 'ERC721',
+                name: 'ERC721NFTExchange',
                 abiId: 'abi-123',
                 chainId: 11155111,
                 address: '0x1234567890123456789012345678901234567890',
@@ -274,7 +269,7 @@ describe('ContractRegistry', () => {
       });
 
       await expect(
-        registry.getContract('ERC721', 'sepolia', mockProvider)
+        registry.getContract('ERC721NFTExchange', 'sepolia', mockProvider)
       ).rejects.toThrow(ZunoSDKError);
     });
 
@@ -287,7 +282,7 @@ describe('ContractRegistry', () => {
             contracts: [
               {
                 id: 'contract-123',
-                name: 'ERC721',
+                name: 'ERC721NFTExchange',
                 abiId: 'abi-123',
                 chainId: 11155111,
                 address: '0x1234567890123456789012345678901234567890',
@@ -308,7 +303,7 @@ describe('ContractRegistry', () => {
       });
 
       await expect(
-        registry.getContract('ERC721', 'sepolia', mockProvider, 'invalid-address')
+        registry.getContract('ERC721NFTExchange', 'sepolia', mockProvider, 'invalid-address')
       ).rejects.toThrow(ZunoSDKError);
     });
 
@@ -326,7 +321,7 @@ describe('ContractRegistry', () => {
             contracts: [
               {
                 id: 'contract-123',
-                name: 'ERC721',
+                name: 'ERC721NFTExchange',
                 abiId: 'abi-123',
                 chainId: 11155111,
                 address: '0x1234567890123456789012345678901234567890',
@@ -354,7 +349,7 @@ describe('ContractRegistry', () => {
             contracts: [
               {
                 id: 'contract-123',
-                name: 'ERC721',
+                name: 'ERC721NFTExchange',
                 abiId: 'abi-123',
                 chainId: 11155111,
                 address: '0x1234567890123456789012345678901234567890',
@@ -366,7 +361,7 @@ describe('ContractRegistry', () => {
       });
 
       const contract = await registry.getContract(
-        'ERC721',
+        'ERC721NFTExchange',
         'sepolia',
         mockProvider,
         undefined,
@@ -383,7 +378,7 @@ describe('ContractRegistry', () => {
       const mockABI = [{ type: 'function', name: 'test' }];
       const mockAbiEntity = {
         id: 'abi-123',
-        contractName: 'ERC721',
+        contractName: 'ERC721NFTExchange',
         abi: mockABI,
         version: '1.0.0',
         networkId: 'sepolia',
@@ -394,13 +389,13 @@ describe('ContractRegistry', () => {
       // Mock the apiClient.getABI directly
       jest.spyOn(apiClient, 'getABI')
         .mockResolvedValueOnce(mockAbiEntity)
-        .mockResolvedValueOnce({ ...mockAbiEntity, contractName: 'Exchange' });
+        .mockResolvedValueOnce({ ...mockAbiEntity, contractName: 'ERC1155NFTExchange' });
 
-      await registry.prefetchABIs(['ERC721', 'Exchange'], 'sepolia');
+      await registry.prefetchABIs(['ERC721NFTExchange', 'ERC1155NFTExchange'], 'sepolia');
 
       expect(apiClient.getABI).toHaveBeenCalledTimes(2);
-      expect(apiClient.getABI).toHaveBeenCalledWith('ERC721', 'sepolia');
-      expect(apiClient.getABI).toHaveBeenCalledWith('Exchange', 'sepolia');
+      expect(apiClient.getABI).toHaveBeenCalledWith('ERC721NFTExchange', 'sepolia');
+      expect(apiClient.getABI).toHaveBeenCalledWith('ERC1155NFTExchange', 'sepolia');
     }, 10000);
   });
 

@@ -4,7 +4,7 @@
 
 import axios from 'axios';
 import { ZunoAPIClient, createABIQueryOptions, createContractInfoQueryOptions } from '../../../src/core/ZunoAPIClient';
-import { ZunoSDKError, ErrorCodes } from '../../../src/utils/errors';
+import { ZunoSDKError } from '../../../src/utils/errors';
 
 // Mock axios
 jest.mock('axios');

@@ -21,7 +21,7 @@ import {
   validateTokenId,
   validateListNFTParams,
 } from '../utils/errors';
-import { ZunoSDKError, ErrorCodes } from '../utils/errors';
+import { ErrorCodes } from '../utils/errors';
 
 /**
  * ExchangeModule handles marketplace trading operations
@@ -405,8 +405,9 @@ export class ExchangeModule extends BaseModule {
   private extractListingIdsFromLogs(receipt: TransactionReceipt): string[] {
     const listingIds: string[] = [];
     for (const log of receipt.logs) {
-      if (log.topics && log.topics.length > 1) {
-        listingIds.push(log.topics[1]);
+      const topics = (log as { topics?: string[] }).topics;
+      if (topics && topics.length > 1) {
+        listingIds.push(topics[1]);
       }
     }
     return listingIds;

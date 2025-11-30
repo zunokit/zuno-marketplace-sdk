@@ -5,7 +5,7 @@
 
 import { ZunoSDK } from '../core/ZunoSDK';
 import { ZunoAPIClient } from '../core/ZunoAPIClient';
-import { ZunoSDKError, ErrorCodes } from '../utils/errors';
+import { ZunoSDKError } from '../utils/errors';
 import { ZunoLogger } from '../utils/logger';
 import { logStore } from '../utils/logStore';
 import { ethers } from 'ethers';
@@ -438,7 +438,7 @@ describe('Edge Cases - Logger', () => {
   describe('Metadata Edge Cases', () => {
     it('should handle null metadata', () => {
       const logger = new ZunoLogger({ level: 'info' });
-      logger.info('Test', null as any);
+      logger.info('Test', null as unknown as undefined);
       expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 

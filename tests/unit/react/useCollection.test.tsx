@@ -2,7 +2,7 @@
  * useCollection Hook Tests
  */
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCollection, useCollectionInfo, useCreatedCollections } from '../../../src/react/hooks/useCollection';
 import { ZunoContextProvider } from '../../../src/react/provider/ZunoContextProvider';

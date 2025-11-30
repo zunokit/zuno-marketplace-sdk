@@ -32,8 +32,8 @@ jest.mock('ethers', () => ({
       getCurrentPrice: jest.fn().mockResolvedValue(1000000000000000000n),
       getPendingRefund: jest.fn().mockResolvedValue(100000000000000000n),
     })),
-    parseEther: jest.fn((val: string) => BigInt(parseFloat(val) * 1e18)),
-    formatEther: jest.fn((val: bigint) => (Number(val) / 1e18).toString()),
+    parseEther: jest.fn((val) => BigInt(parseFloat(val) * 1e18)),
+    formatEther: jest.fn((val) => (Number(val) / 1e18).toString()),
     isAddress: jest.fn().mockReturnValue(true),
     ZeroAddress: '0x0000000000000000000000000000000000000000',
   },
@@ -79,7 +79,7 @@ describe('AuctionModule', () => {
   describe('validation', () => {
     it('should validate collectionAddress in createEnglishAuction', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.auction.createEnglishAuction({
@@ -114,7 +114,7 @@ describe('AuctionModule', () => {
 
     it('should validate auctionId in placeBid', async () => {
       await expect(
-        sdk.auction.placeBid({ auctionId: '', bidAmount: '1.0' })
+        sdk.auction.placeBid({ auctionId: '', amount: '1.0' })
       ).rejects.toThrow();
     });
   });
@@ -135,7 +135,7 @@ describe('AuctionModule', () => {
 
     it('should validate bidder address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.auction.getPendingRefund('0x1234', 'invalid')

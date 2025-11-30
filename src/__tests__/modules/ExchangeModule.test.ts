@@ -47,10 +47,10 @@ jest.mock('ethers', () => ({
         wait: jest.fn().mockResolvedValue({ hash: '0xpqr678' }),
       }),
     })),
-    parseEther: jest.fn((val: string) => BigInt(parseFloat(val) * 1e18)),
-    formatEther: jest.fn((val: bigint) => (Number(val) / 1e18).toString()),
+    parseEther: jest.fn((val) => BigInt(parseFloat(val) * 1e18)),
+    formatEther: jest.fn((val) => (Number(val) / 1e18).toString()),
     isAddress: jest.fn().mockReturnValue(true),
-    toBigInt: jest.fn((val: string) => BigInt(val.startsWith('0x') ? parseInt(val, 16) : val)),
+    toBigInt: jest.fn((val) => BigInt(val.startsWith('0x') ? parseInt(val, 16) : val)),
     ZeroAddress: '0x0000000000000000000000000000000000000000',
   },
 }));
@@ -74,7 +74,7 @@ describe('ExchangeModule', () => {
   describe('listNFT', () => {
     it('should validate collectionAddress', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.exchange.listNFT({
@@ -200,26 +200,26 @@ describe('ExchangeModule', () => {
   });
 
   describe('batchListNFT', () => {
-    it('should throw error for empty params array', async () => {
+    it('should throw error for empty tokenIds array', async () => {
       await expect(
-        sdk.exchange.batchListNFT([])
-      ).rejects.toThrow('Parameters array cannot be empty');
+        sdk.exchange.batchListNFT({
+          collectionAddress: '0x1234567890123456789012345678901234567890',
+          tokenIds: [],
+          prices: [],
+          duration: 86400,
+        })
+      ).rejects.toThrow('Token IDs array cannot be empty');
     });
 
-    it('should accept array of listing params and return results array', async () => {
-      // batchListNFT returns array of results, not throws
-      const results = await sdk.exchange.batchListNFT([
-        {
+    it('should throw error when tokenIds and prices length mismatch', async () => {
+      await expect(
+        sdk.exchange.batchListNFT({
           collectionAddress: '0x1234567890123456789012345678901234567890',
-          tokenId: '1',
-          price: '1.0',
+          tokenIds: ['1', '2'],
+          prices: ['1.0'],
           duration: 86400,
-        },
-      ]);
-      // Will fail due to no signer, but returns error in results array
-      expect(Array.isArray(results)).toBe(true);
-      expect(results.length).toBe(1);
-      expect(results[0].success).toBe(false);
+        })
+      ).rejects.toThrow('Token IDs and prices arrays must have same length');
     });
   });
 });

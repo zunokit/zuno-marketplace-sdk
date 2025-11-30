@@ -8,12 +8,7 @@ module.exports = {
   testPathIgnorePatterns: ['/node_modules/', '/.claude/'],
   transform: {
     '^.+\\.(t|j)sx?$': ['ts-jest', {
-      tsconfig: {
-        allowJs: true,
-        jsx: 'react',
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-      },
+      tsconfig: '<rootDir>/tsconfig.test.json',
     }],
   },
   moduleNameMapper: {

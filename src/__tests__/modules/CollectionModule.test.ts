@@ -34,8 +34,8 @@ jest.mock('ethers', () => ({
         true, // accountInAllowlist
       ]),
     })),
-    parseEther: jest.fn((val: string) => BigInt(parseFloat(val) * 1e18)),
-    formatEther: jest.fn((val: bigint) => (Number(val) / 1e18).toString()),
+    parseEther: jest.fn((val) => BigInt(parseFloat(val) * 1e18)),
+    formatEther: jest.fn((val) => (Number(val) / 1e18).toString()),
     isAddress: jest.fn().mockReturnValue(true),
     ZeroAddress: '0x0000000000000000000000000000000000000000',
     id: jest.fn().mockReturnValue('0x1234'),
@@ -81,7 +81,7 @@ describe('CollectionModule', () => {
 
     it('should validate collection address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.collection.addToAllowlist('invalid', ['0x1234567890123456789012345678901234567890'])
@@ -98,7 +98,7 @@ describe('CollectionModule', () => {
 
     it('should validate collection address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.collection.removeFromAllowlist('invalid', ['0x1234567890123456789012345678901234567890'])
@@ -109,7 +109,7 @@ describe('CollectionModule', () => {
   describe('setAllowlistOnly', () => {
     it('should validate collection address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.collection.setAllowlistOnly('invalid', true)
@@ -127,7 +127,7 @@ describe('CollectionModule', () => {
   describe('isInAllowlist', () => {
     it('should validate collection address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.collection.isInAllowlist('invalid', '0x1234567890123456789012345678901234567890')
@@ -136,7 +136,7 @@ describe('CollectionModule', () => {
 
     it('should validate user address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock)
+      (ethers.isAddress as unknown as jest.Mock)
         .mockReturnValueOnce(true) // collection address valid
         .mockReturnValueOnce(false); // user address invalid
 
@@ -149,7 +149,7 @@ describe('CollectionModule', () => {
   describe('isAllowlistOnly', () => {
     it('should validate collection address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.collection.isAllowlistOnly('invalid')
@@ -192,7 +192,7 @@ describe('CollectionModule', () => {
   describe('mintERC721', () => {
     it('should validate collection address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.collection.mintERC721({
@@ -204,7 +204,7 @@ describe('CollectionModule', () => {
 
     it('should validate recipient address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock)
+      (ethers.isAddress as unknown as jest.Mock)
         .mockReturnValueOnce(true) // collection address valid
         .mockReturnValueOnce(false); // recipient address invalid
 
@@ -242,7 +242,7 @@ describe('CollectionModule', () => {
   describe('getCollectionInfo', () => {
     it('should validate address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.collection.getCollectionInfo('invalid')
@@ -253,7 +253,7 @@ describe('CollectionModule', () => {
   describe('verifyCollection', () => {
     it('should validate address', async () => {
       const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
+      (ethers.isAddress as unknown as jest.Mock).mockReturnValueOnce(false);
 
       await expect(
         sdk.collection.verifyCollection('invalid')

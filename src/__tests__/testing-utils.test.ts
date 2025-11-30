@@ -381,7 +381,6 @@ describe('Testing Utilities', () => {
     });
 
     it('should allow overriding module methods with custom implementations', async () => {
-      const customError = new Error('Custom error');
       const exchange = createMockExchangeModule({
         listNFT: {
           mockRejectedValue: () => ({ mockRejectedValue: () => {} }),

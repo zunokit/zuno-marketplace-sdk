@@ -8,8 +8,8 @@ import { ZunoSDK } from '../../core/ZunoSDK';
 jest.mock('ethers', () => ({
   ethers: {
     Contract: jest.fn().mockImplementation(() => ({})),
-    parseEther: jest.fn((val: string) => BigInt(parseFloat(val) * 1e18)),
-    formatEther: jest.fn((val: bigint) => (Number(val) / 1e18).toString()),
+    parseEther: jest.fn((val) => BigInt(parseFloat(val) * 1e18)),
+    formatEther: jest.fn((val) => (Number(val) / 1e18).toString()),
     isAddress: jest.fn().mockReturnValue(true),
     ZeroAddress: '0x0000000000000000000000000000000000000000',
   },
