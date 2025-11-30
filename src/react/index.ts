@@ -17,7 +17,7 @@ export { useZunoSDK } from './hooks/useZunoSDK';
 export { useZunoLogger } from './hooks/useZunoLogger';
 
 // Hooks - Exchange
-export { useExchange, useListings, useListing, useListingsBySeller, useActiveListings } from './hooks/useExchange';
+export { useExchange, useListings, useListing } from './hooks/useExchange';
 
 // Hooks - Collection
 export { 

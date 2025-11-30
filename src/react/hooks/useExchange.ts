@@ -72,17 +72,12 @@ export function useExchange() {
 /**
  * Hook to fetch listings by collection
  */
-export function useListings(
-  collectionAddress?: string,
-  page = 1,
-  pageSize = 20
-) {
+export function useListings(collectionAddress?: string) {
   const sdk = useZuno();
 
   return useQuery({
-    queryKey: ['listings', collectionAddress, page, pageSize],
-    queryFn: () =>
-      sdk.exchange.getListingsByCollection(collectionAddress!, page, pageSize),
+    queryKey: ['listings', collectionAddress],
+    queryFn: () => sdk.exchange.getListings(collectionAddress!),
     enabled: !!collectionAddress,
   });
 }
@@ -100,32 +95,4 @@ export function useListing(listingId?: string) {
   });
 }
 
-/**
- * Hook to fetch listings by seller
- */
-export function useListingsBySeller(
-  seller?: string,
-  page = 1,
-  pageSize = 20
-) {
-  const sdk = useZuno();
 
-  return useQuery({
-    queryKey: ['listings', 'seller', seller, page, pageSize],
-    queryFn: () =>
-      sdk.exchange.getListingsBySeller(seller!, page, pageSize),
-    enabled: !!seller,
-  });
-}
-
-/**
- * Hook to fetch active listings
- */
-export function useActiveListings(page = 1, pageSize = 20) {
-  const sdk = useZuno();
-
-  return useQuery({
-    queryKey: ['listings', 'active', page, pageSize],
-    queryFn: () => sdk.exchange.getActiveListings(page, pageSize),
-  });
-}

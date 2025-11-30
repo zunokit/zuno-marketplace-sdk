@@ -13,7 +13,6 @@ import type {
 } from '../types/contracts';
 import type {
   Listing,
-  PaginatedResult,
   TransactionReceipt,
 } from '../types/entities';
 import {
@@ -238,18 +237,12 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Get listings by collection
+   * Get listings by collection (simple, no pagination)
    */
-  async getListingsByCollection(
-    collectionAddress: string,
-    page = 1,
-    pageSize = 20
-  ): Promise<PaginatedResult<Listing>> {
+  async getListings(collectionAddress: string): Promise<Listing[]> {
     validateAddress(collectionAddress);
 
     const provider = this.ensureProvider();
-
-    // Get contract instance
     const exchangeContract = await this.contractRegistry.getContract(
       'ERC721NFTExchange',
       this.getNetworkId(),
@@ -258,137 +251,16 @@ export class ExchangeModule extends BaseModule {
 
     const txManager = this.ensureTxManager();
 
-    // Get total count
-    const totalCount = await txManager.callContract<bigint>(
-      exchangeContract,
-      'getListingCountByCollection',
-      [collectionAddress]
-    );
-
-    const total = Number(totalCount);
-    const skip = (page - 1) * pageSize;
-
-    // Get paginated listings
+    // Get all listing IDs for collection
     const listingIds = await txManager.callContract<string[]>(
       exchangeContract,
       'getListingsByCollection',
-      [collectionAddress, skip, pageSize]
+      [collectionAddress, 0, 100]
     );
 
-    // Fetch details for each listing
-    const listingsPromises = listingIds.map((id) => this.getListing(id));
-    const items = await Promise.all(listingsPromises);
-
-    return {
-      items,
-      total,
-      page,
-      pageSize,
-      hasMore: skip + pageSize < total,
-    };
-  }
-
-  /**
-   * Get listings by seller
-   */
-  async getListingsBySeller(
-    seller: string,
-    page = 1,
-    pageSize = 20
-  ): Promise<PaginatedResult<Listing>> {
-    validateAddress(seller, 'seller');
-
-    const provider = this.ensureProvider();
-
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
-      provider
-    );
-
-    const txManager = this.ensureTxManager();
-
-    // Get total count
-    const totalCount = await txManager.callContract<bigint>(
-      exchangeContract,
-      'getListingCountBySeller',
-      [seller]
-    );
-
-    const total = Number(totalCount);
-    const skip = (page - 1) * pageSize;
-
-    // Get paginated listings
-    const listingIds = await txManager.callContract<string[]>(
-      exchangeContract,
-      'getListingsBySeller',
-      [seller, skip, pageSize]
-    );
-
-    // Fetch details for each listing
-    const listingsPromises = listingIds.map((id) => this.getListing(id));
-    const items = await Promise.all(listingsPromises);
-
-    return {
-      items,
-      total,
-      page,
-      pageSize,
-      hasMore: skip + pageSize < total,
-    };
-  }
-
-  /**
-   * Get all active listings
-   *
-   * @param page - Page number (1-indexed)
-   * @param pageSize - Number of items per page
-   * @returns Paginated active listings
-   */
-  async getActiveListings(
-    page = 1,
-    pageSize = 20
-  ): Promise<PaginatedResult<Listing>> {
-    const provider = this.ensureProvider();
-
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
-      provider
-    );
-
-    const txManager = this.ensureTxManager();
-
-    // Get total count of active listings
-    const totalCount = await txManager.callContract<bigint>(
-      exchangeContract,
-      'getActiveListingCount',
-      []
-    );
-
-    const total = Number(totalCount);
-    const skip = (page - 1) * pageSize;
-
-    // Get paginated active listings
-    const listingIds = await txManager.callContract<string[]>(
-      exchangeContract,
-      'getActiveListings',
-      [skip, pageSize]
-    );
-
-    // Fetch details for each listing
-    const listingsPromises = listingIds.map((id) => this.getListing(id));
-    const items = await Promise.all(listingsPromises);
-
-    return {
-      items,
-      total,
-      page,
-      pageSize,
-      hasMore: skip + pageSize < total,
-    };
+    // Fetch details
+    const listings = await Promise.all(listingIds.map((id) => this.getListing(id)));
+    return listings;
   }
 
   /**

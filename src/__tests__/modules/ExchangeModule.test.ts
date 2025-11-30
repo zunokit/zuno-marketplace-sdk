@@ -199,44 +199,6 @@ describe('ExchangeModule', () => {
     });
   });
 
-  describe('getListingsByCollection', () => {
-    it('should validate collectionAddress', async () => {
-      const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
-
-      await expect(
-        sdk.exchange.getListingsByCollection('invalid', 1, 20)
-      ).rejects.toThrow();
-    });
-
-    it('should use default pagination values', async () => {
-      // Will fail due to no provider, but tests parameter defaults
-      await expect(
-        sdk.exchange.getListingsByCollection('0x1234567890123456789012345678901234567890')
-      ).rejects.toThrow();
-    });
-  });
-
-  describe('getListingsBySeller', () => {
-    it('should validate seller address', async () => {
-      const { ethers } = await import('ethers');
-      (ethers.isAddress as jest.Mock).mockReturnValueOnce(false);
-
-      await expect(
-        sdk.exchange.getListingsBySeller('invalid', 1, 20)
-      ).rejects.toThrow();
-    });
-  });
-
-  describe('getActiveListings', () => {
-    it('should accept pagination parameters', async () => {
-      // Will fail due to no provider, but tests the method exists
-      await expect(
-        sdk.exchange.getActiveListings(1, 20)
-      ).rejects.toThrow();
-    });
-  });
-
   describe('batchListNFT', () => {
     it('should throw error for empty params array', async () => {
       await expect(

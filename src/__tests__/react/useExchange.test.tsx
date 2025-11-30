@@ -5,7 +5,7 @@
 import React, { ReactNode } from 'react';
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useExchange, useListings, useListing, useListingsBySeller, useActiveListings } from '../../react/hooks/useExchange';
+import { useExchange, useListing } from '../../react/hooks/useExchange';
 
 // Mock the ZunoContextProvider
 const mockSdk = {
@@ -94,39 +94,6 @@ describe('useExchange', () => {
   });
 });
 
-describe('useListings', () => {
-  let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    });
-
-    wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-
-    jest.clearAllMocks();
-  });
-
-  it('should not fetch without collectionAddress', () => {
-    const { result } = renderHook(() => useListings(undefined), { wrapper });
-
-    expect(result.current.isFetching).toBe(false);
-    expect(mockSdk.exchange.getListingsByCollection).not.toHaveBeenCalled();
-  });
-
-  it('should return query state', () => {
-    const { result } = renderHook(() => useListings('0x123'), { wrapper });
-
-    expect(result.current.isLoading).toBeDefined();
-    expect(result.current.isError).toBeDefined();
-  });
-});
-
 describe('useListing', () => {
   let queryClient: QueryClient;
   let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
@@ -157,77 +124,5 @@ describe('useListing', () => {
 
     expect(result.current.isLoading).toBeDefined();
     expect(result.current.isError).toBeDefined();
-  });
-});
-
-describe('useListingsBySeller', () => {
-  let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    });
-
-    wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-
-    jest.clearAllMocks();
-  });
-
-  it('should not fetch without seller address', () => {
-    const { result } = renderHook(() => useListingsBySeller(undefined), { wrapper });
-
-    expect(result.current.isFetching).toBe(false);
-    expect(mockSdk.exchange.getListingsBySeller).not.toHaveBeenCalled();
-  });
-
-  it('should return query state with seller', () => {
-    const { result } = renderHook(() => useListingsBySeller('0x123'), { wrapper });
-
-    expect(result.current.isLoading).toBeDefined();
-    expect(result.current.isError).toBeDefined();
-  });
-
-  it('should use default pagination', () => {
-    const { result } = renderHook(() => useListingsBySeller('0x123'), { wrapper });
-
-    // Default page = 1, pageSize = 20
-    expect(result.current).toBeDefined();
-  });
-});
-
-describe('useActiveListings', () => {
-  let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
-
-  beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    });
-
-    wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-
-    jest.clearAllMocks();
-  });
-
-  it('should return query state', () => {
-    const { result } = renderHook(() => useActiveListings(), { wrapper });
-
-    expect(result.current.isLoading).toBeDefined();
-    expect(result.current.isError).toBeDefined();
-  });
-
-  it('should accept pagination parameters', () => {
-    const { result } = renderHook(() => useActiveListings(2, 50), { wrapper });
-
-    expect(result.current).toBeDefined();
   });
 });
