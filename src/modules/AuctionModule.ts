@@ -12,16 +12,19 @@ import { BaseModule } from './BaseModule';
 import type {
   CreateEnglishAuctionParams,
   CreateDutchAuctionParams,
+  BatchCreateEnglishAuctionParams,
+  BatchCreateDutchAuctionParams,
   PlaceBidParams,
   TransactionOptions,
 } from '../types/contracts';
-import type { Auction, TransactionReceipt, PaginatedResult } from '../types/entities';
+import type { Auction, TransactionReceipt } from '../types/entities';
 import {
   validateAddress,
   validateTokenId,
   validateAmount,
   validateDuration,
 } from '../utils/errors';
+
 
 /**
  * AuctionModule handles auction creation and bidding operations
@@ -46,6 +49,46 @@ import {
  * ```
  */
 export class AuctionModule extends BaseModule {
+  private log(message: string, data?: unknown) {
+    this.logger.debug(message, { module: 'Auction', data });
+  }
+
+  /**
+   * Ensure NFT collection is approved for AuctionFactory
+   * Checks approval status and approves if needed
+   */
+  private async ensureApproval(
+    collectionAddress: string,
+    ownerAddress: string
+  ): Promise<void> {
+    const provider = this.ensureProvider();
+    const signer = this.ensureSigner();
+
+    // Get AuctionFactory address from API
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider
+    );
+    const operatorAddress = await auctionFactory.getAddress();
+
+    // Check if already approved
+    const erc721Abi = [
+      'function isApprovedForAll(address owner, address operator) view returns (bool)',
+      'function setApprovalForAll(address operator, bool approved)',
+    ];
+    const nftContract = new ethers.Contract(collectionAddress, erc721Abi, signer);
+    
+    const isApproved = await nftContract.isApprovedForAll(ownerAddress, operatorAddress);
+    
+    if (!isApproved) {
+      this.log('Approving AuctionFactory for collection', { collectionAddress, operatorAddress });
+      const tx = await nftContract.setApprovalForAll(operatorAddress, true);
+      await tx.wait();
+      this.log('Approval confirmed');
+    }
+  }
+
   /**
    * Create an English auction for an NFT
    *
@@ -104,9 +147,16 @@ export class AuctionModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
-    // Get auction contract
-    const auctionContract = await this.contractRegistry.getContract(
-      'EnglishAuction',
+    // Get seller address (default to signer address if not provided)
+    const sellerAddress =
+      seller || (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
+
+    // Ensure NFT is approved for AuctionFactory
+    await this.ensureApproval(collectionAddress, sellerAddress);
+
+    // Get AuctionFactory contract (handles NFT transfers and creates auctions)
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
       this.getNetworkId(),
       provider,
       undefined,
@@ -118,14 +168,10 @@ export class AuctionModule extends BaseModule {
       ? ethers.parseEther(reservePrice)
       : 0n;
 
-    // Get seller address (default to signer address if not provided)
-    const sellerAddress =
-      seller || (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
-
-    // Contract expects: (address, uint256, uint256, uint256, uint256, uint256, AuctionType, address)
+    // AuctionFactory.createEnglishAuction(nftContract, tokenId, amount, startPrice, reservePrice, duration)
     const receipt = await txManager.sendTransaction(
-      auctionContract,
-      'createAuction',
+      auctionFactory,
+      'createEnglishAuction',
       [
         collectionAddress,
         tokenId,
@@ -133,10 +179,8 @@ export class AuctionModule extends BaseModule {
         startingBidWei,
         reservePriceWei,
         duration,
-        0, // AuctionType.ENGLISH = 0
-        sellerAddress,
       ],
-      options
+      { ...options, module: 'Auction' }
     );
 
     // Extract auction ID from logs
@@ -204,9 +248,16 @@ export class AuctionModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
-    // Get auction contract
-    const auctionContract = await this.contractRegistry.getContract(
-      'DutchAuction',
+    // Get seller address (default to signer address if not provided)
+    const sellerAddress =
+      seller || (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
+
+    // Ensure NFT is approved for AuctionFactory
+    await this.ensureApproval(collectionAddress, sellerAddress);
+
+    // Get AuctionFactory contract (handles NFT transfers and creates auctions)
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
       this.getNetworkId(),
       provider,
       undefined,
@@ -216,32 +267,212 @@ export class AuctionModule extends BaseModule {
     const startPriceWei = ethers.parseEther(startPrice);
     const endPriceWei = ethers.parseEther(endPrice);
 
-    // Get seller address (default to signer address if not provided)
-    const sellerAddress =
-      seller || (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
+    // Calculate priceDropPerHour in basis points (100 = 1%, 5000 = 50%)
+    // Total drop % = (startPrice - endPrice) / startPrice * 10000
+    // Drop per hour = totalDropBps / durationInHours
+    const durationInHours = BigInt(Math.max(1, Math.ceil(duration / 3600)));
+    const totalDropBps = ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
+    let priceDropPerHourBps = totalDropBps / durationInHours;
+    
+    // Clamp to valid range: 100-5000 basis points
+    if (priceDropPerHourBps < 100n) priceDropPerHourBps = 100n;
+    if (priceDropPerHourBps > 5000n) priceDropPerHourBps = 5000n;
 
-    // Contract expects: (address, uint256, uint256, uint256, uint256, uint256, AuctionType, address)
-    // Note: endPrice maps to reservePrice parameter in contract
     const receipt = await txManager.sendTransaction(
-      auctionContract,
-      'createAuction',
+      auctionFactory,
+      'createDutchAuction',
       [
         collectionAddress,
         tokenId,
         amount,
         startPriceWei,
-        endPriceWei, // maps to reservePrice in contract
+        endPriceWei,
         duration,
-        1, // AuctionType.DUTCH = 1
-        sellerAddress,
+        priceDropPerHourBps,
       ],
-      options
+      { ...options, module: 'Auction' }
     );
 
     // Extract auction ID from logs
     const auctionId = await this.extractAuctionId(receipt);
 
     return { auctionId, tx: receipt };
+  }
+
+  /**
+   * Create multiple English auctions in a single transaction
+   *
+   * @param params - Batch auction creation parameters
+   * @param params.collectionAddress - NFT collection contract address (same for all)
+   * @param params.tokenIds - Array of token IDs to auction
+   * @param params.amounts - Array of amounts (1 for ERC721, optional)
+   * @param params.startingBid - Starting bid for all auctions (in ETH)
+   * @param params.reservePrice - Reserve price for all auctions (in ETH)
+   * @param params.duration - Duration in seconds for all auctions
+   *
+   * @returns Promise resolving to array of auction IDs and transaction receipt
+   *
+   * @example
+   * ```typescript
+   * const { auctionIds, tx } = await sdk.auction.batchCreateEnglishAuction({
+   *   collectionAddress: "0x123...",
+   *   tokenIds: ["1", "2", "3"],
+   *   startingBid: "1.0",
+   *   duration: 86400 * 7,
+   * });
+   * console.log(`Created ${auctionIds.length} auctions`);
+   * ```
+   */
+  async batchCreateEnglishAuction(
+    params: BatchCreateEnglishAuctionParams
+  ): Promise<{ auctionIds: string[]; tx: TransactionReceipt }> {
+    const {
+      collectionAddress,
+      tokenIds,
+      amounts,
+      startingBid,
+      reservePrice,
+      duration,
+      options,
+    } = params;
+
+    validateAddress(collectionAddress, 'collectionAddress');
+    if (tokenIds.length === 0) throw this.error('INVALID_AMOUNT', 'tokenIds array cannot be empty');
+    if (tokenIds.length > 20) throw this.error('INVALID_AMOUNT', 'Maximum 20 auctions per batch');
+    validateAmount(startingBid, 'startingBid');
+    validateDuration(duration);
+
+    const txManager = this.ensureTxManager();
+    const provider = this.ensureProvider();
+    const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
+
+    // Ensure NFT is approved for AuctionFactory
+    await this.ensureApproval(collectionAddress, sellerAddress);
+
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider,
+      undefined,
+      this.signer
+    );
+
+    const tokenIdsBigInt = tokenIds.map(id => BigInt(id));
+    const amountsArray = amounts || tokenIds.map(() => 1);
+    const startingBidWei = ethers.parseEther(startingBid);
+    const reservePriceWei = reservePrice ? ethers.parseEther(reservePrice) : 0n;
+
+    const receipt = await txManager.sendTransaction(
+      auctionFactory,
+      'batchCreateEnglishAuction',
+      [
+        collectionAddress,
+        tokenIdsBigInt,
+        amountsArray,
+        startingBidWei,
+        reservePriceWei,
+        duration,
+      ],
+      { ...options, module: 'Auction' }
+    );
+
+    // Extract auction IDs from logs
+    const auctionIds = this.extractBatchAuctionIds(receipt, tokenIds.length);
+
+    return { auctionIds, tx: receipt };
+  }
+
+  /**
+   * Create multiple Dutch auctions in a single transaction
+   *
+   * @param params - Batch auction creation parameters
+   * @param params.collectionAddress - NFT collection contract address (same for all)
+   * @param params.tokenIds - Array of token IDs to auction
+   * @param params.amounts - Array of amounts (1 for ERC721, optional)
+   * @param params.startPrice - Starting price for all auctions (in ETH)
+   * @param params.endPrice - End price for all auctions (in ETH)
+   * @param params.duration - Duration in seconds for all auctions
+   *
+   * @returns Promise resolving to array of auction IDs and transaction receipt
+   *
+   * @example
+   * ```typescript
+   * const { auctionIds, tx } = await sdk.auction.batchCreateDutchAuction({
+   *   collectionAddress: "0x123...",
+   *   tokenIds: ["1", "2", "3"],
+   *   startPrice: "10.0",
+   *   endPrice: "1.0",
+   *   duration: 86400,
+   * });
+   * console.log(`Created ${auctionIds.length} Dutch auctions`);
+   * ```
+   */
+  async batchCreateDutchAuction(
+    params: BatchCreateDutchAuctionParams
+  ): Promise<{ auctionIds: string[]; tx: TransactionReceipt }> {
+    const {
+      collectionAddress,
+      tokenIds,
+      amounts,
+      startPrice,
+      endPrice,
+      duration,
+      options,
+    } = params;
+
+    validateAddress(collectionAddress, 'collectionAddress');
+    if (tokenIds.length === 0) throw this.error('INVALID_AMOUNT', 'tokenIds array cannot be empty');
+    if (tokenIds.length > 20) throw this.error('INVALID_AMOUNT', 'Maximum 20 auctions per batch');
+    validateAmount(startPrice, 'startPrice');
+    validateAmount(endPrice, 'endPrice');
+    validateDuration(duration);
+
+    const txManager = this.ensureTxManager();
+    const provider = this.ensureProvider();
+    const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
+
+    // Ensure NFT is approved for AuctionFactory
+    await this.ensureApproval(collectionAddress, sellerAddress);
+
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider,
+      undefined,
+      this.signer
+    );
+
+    const tokenIdsBigInt = tokenIds.map(id => BigInt(id));
+    const amountsArray = amounts || tokenIds.map(() => 1);
+    const startPriceWei = ethers.parseEther(startPrice);
+    const endPriceWei = ethers.parseEther(endPrice);
+
+    // Calculate priceDropPerHour in basis points
+    const durationInHours = BigInt(Math.max(1, Math.ceil(duration / 3600)));
+    const totalDropBps = ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
+    let priceDropPerHourBps = totalDropBps / durationInHours;
+    if (priceDropPerHourBps < 100n) priceDropPerHourBps = 100n;
+    if (priceDropPerHourBps > 5000n) priceDropPerHourBps = 5000n;
+
+    const receipt = await txManager.sendTransaction(
+      auctionFactory,
+      'batchCreateDutchAuction',
+      [
+        collectionAddress,
+        tokenIdsBigInt,
+        amountsArray,
+        startPriceWei,
+        endPriceWei,
+        duration,
+        priceDropPerHourBps,
+      ],
+      { ...options, module: 'Auction' }
+    );
+
+    // Extract auction IDs from logs
+    const auctionIds = this.extractBatchAuctionIds(receipt, tokenIds.length);
+
+    return { auctionIds, tx: receipt };
   }
 
   /**
@@ -279,9 +510,9 @@ export class AuctionModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
-    // Get auction contract
-    const auctionContract = await this.contractRegistry.getContract(
-      'EnglishAuction',
+    // Call AuctionFactory.placeBid (routes to correct auction contract)
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
       this.getNetworkId(),
       provider,
       undefined,
@@ -290,17 +521,88 @@ export class AuctionModule extends BaseModule {
 
     const amountWei = ethers.parseEther(amount);
 
-    // Place bid with ETH value
     const tx = await txManager.sendTransaction(
-      auctionContract,
+      auctionFactory,
       'placeBid',
       [auctionId],
       {
         ...options,
         value: amountWei.toString(),
+        module: 'Auction',
       }
     );
 
+    return { tx };
+  }
+
+  /**
+   * Buy now in a Dutch auction at the current price
+   */
+  async buyNow(
+    auctionId: string,
+    options?: TransactionOptions
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('buyNow started', { auctionId });
+    validateTokenId(auctionId, 'auctionId');
+
+    const txManager = this.ensureTxManager();
+    const provider = this.ensureProvider();
+
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider,
+      undefined,
+      this.signer
+    );
+
+    // Get current price from factory
+    const currentPrice = await txManager.callContract<bigint>(
+      auctionFactory,
+      'getCurrentPrice',
+      [auctionId]
+    );
+
+    const tx = await txManager.sendTransaction(
+      auctionFactory,
+      'buyNow',
+      [auctionId],
+      { ...options, value: currentPrice.toString(), module: 'Auction' }
+    );
+
+    this.log('buyNow completed', { auctionId, txHash: tx.hash });
+    return { tx };
+  }
+
+  /**
+   * Withdraw a refunded bid from an English auction
+   */
+  async withdrawBid(
+    auctionId: string,
+    options?: TransactionOptions
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('withdrawBid started', { auctionId });
+    validateTokenId(auctionId, 'auctionId');
+
+    const txManager = this.ensureTxManager();
+    const provider = this.ensureProvider();
+
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider,
+      undefined,
+      this.signer
+    );
+
+    const tx = await txManager.sendTransaction(
+      auctionFactory,
+      'withdrawBid',
+      [auctionId],
+      { ...options, module: 'Auction' }
+    );
+
+    this.log('withdrawBid completed', { auctionId, txHash: tx.hash });
     return { tx };
   }
 
@@ -333,43 +635,71 @@ export class AuctionModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
-    let tx: TransactionReceipt;
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider,
+      undefined,
+      this.signer
+    );
 
-    // Try English auction first
-    try {
-      const auctionContract = await this.contractRegistry.getContract(
-        'EnglishAuction',
-        this.getNetworkId(),
-        provider,
-        undefined,
-        this.signer
-      );
-
-      tx = await txManager.sendTransaction(
-        auctionContract,
-        'cancelAuction',
-        [auctionId],
-        options
-      );
-    } catch {
-      // Try Dutch auction
-      const auctionContract = await this.contractRegistry.getContract(
-        'DutchAuction',
-        this.getNetworkId(),
-        provider,
-        undefined,
-        this.signer
-      );
-
-      tx = await txManager.sendTransaction(
-        auctionContract,
-        'cancelAuction',
-        [auctionId],
-        options
-      );
-    }
+    const tx = await txManager.sendTransaction(
+      auctionFactory,
+      'cancelAuction',
+      [auctionId],
+      { ...options, module: 'Auction' }
+    );
 
     return { tx };
+  }
+
+  /**
+   * Cancel multiple auctions in a single transaction
+   *
+   * @param auctionIds - Array of auction IDs to cancel
+   * @param options - Optional transaction options
+   *
+   * @returns Promise resolving to cancelled count and transaction receipt
+   *
+   * @example
+   * ```typescript
+   * const { cancelledCount, tx } = await sdk.auction.batchCancelAuction(["1", "2", "3"]);
+   * console.log(`Cancelled ${cancelledCount} auctions`);
+   * ```
+   */
+  async batchCancelAuction(
+    auctionIds: string[],
+    options?: TransactionOptions
+  ): Promise<{ cancelledCount: number; tx: TransactionReceipt }> {
+    if (auctionIds.length === 0) {
+      throw this.error('INVALID_AMOUNT', 'auctionIds array cannot be empty');
+    }
+    if (auctionIds.length > 20) {
+      throw this.error('INVALID_AMOUNT', 'Maximum 20 cancellations per batch');
+    }
+
+    const txManager = this.ensureTxManager();
+    const provider = this.ensureProvider();
+
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider,
+      undefined,
+      this.signer
+    );
+
+    const tx = await txManager.sendTransaction(
+      auctionFactory,
+      'batchCancelAuction',
+      [auctionIds],
+      { ...options, module: 'Auction' }
+    );
+
+    // Extract cancelledCount from transaction logs or return auctionIds.length as estimate
+    // The actual count is returned by the contract but we may not be able to get it from receipt
+    // For now, return the length as the caller can verify individually if needed
+    return { cancelledCount: auctionIds.length, tx };
   }
 
   /**
@@ -402,103 +732,22 @@ export class AuctionModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
-    let tx: TransactionReceipt;
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider,
+      undefined,
+      this.signer
+    );
 
-    // Try English auction first
-    try {
-      const auctionContract = await this.contractRegistry.getContract(
-        'EnglishAuction',
-        this.getNetworkId(),
-        provider,
-        undefined,
-        this.signer
-      );
-
-      tx = await txManager.sendTransaction(
-        auctionContract,
-        'settleAuction',
-        [auctionId],
-        options
-      );
-    } catch {
-      // Try Dutch auction
-      const auctionContract = await this.contractRegistry.getContract(
-        'DutchAuction',
-        this.getNetworkId(),
-        provider,
-        undefined,
-        this.signer
-      );
-
-      tx = await txManager.sendTransaction(
-        auctionContract,
-        'settleAuction',
-        [auctionId],
-        options
-      );
-    }
+    const tx = await txManager.sendTransaction(
+      auctionFactory,
+      'settleAuction',
+      [auctionId],
+      { ...options, module: 'Auction' }
+    );
 
     return { tx };
-  }
-
-  /**
-   * Get detailed information about an auction
-   *
-   * Fetches the current state of an auction including seller, NFT details,
-   * pricing information, and status. Works for both English and Dutch auctions.
-   *
-   * @param auctionId - ID of the auction to fetch
-   *
-   * @returns Promise resolving to auction details
-   *
-   * @throws {ZunoSDKError} INVALID_TOKEN_ID - If the auction ID is invalid
-   * @throws {ZunoSDKError} CONTRACT_CALL_FAILED - If the auction is not found
-   *
-   * @example
-   * ```typescript
-   * const auction = await sdk.auction.getAuction("1");
-   * console.log(`Auction type: ${auction.type}`);
-   * console.log(`Current bid: ${auction.currentBid} ETH`);
-   * console.log(`Status: ${auction.status}`);
-   * ```
-   */
-  async getAuction(auctionId: string): Promise<Auction> {
-    validateTokenId(auctionId, 'auctionId');
-
-    const provider = this.ensureProvider();
-    const txManager = this.ensureTxManager();
-
-    // Try English auction first
-    try {
-      const auctionContract = await this.contractRegistry.getContract(
-        'EnglishAuction',
-        this.getNetworkId(),
-        provider
-      );
-
-      const auction = await txManager.callContract<unknown[]>(
-        auctionContract,
-        'getAuction',
-        [auctionId]
-      );
-
-      return this.formatAuction(auctionId, auction, 'english');
-    } catch {
-      // Try Dutch auction
-      const auctionContract = await this.contractRegistry.getContract(
-        'DutchAuction',
-        this.getNetworkId(),
-        provider
-      );
-
-      const auction = await txManager.callContract<unknown[]>(
-        auctionContract,
-        'getAuction',
-        [auctionId]
-      );
-
-      return this.formatAuction(auctionId, auction, 'dutch');
-    }
   }
 
   /**
@@ -527,14 +776,14 @@ export class AuctionModule extends BaseModule {
     const provider = this.ensureProvider();
     const txManager = this.ensureTxManager();
 
-    const auctionContract = await this.contractRegistry.getContract(
-      'DutchAuction',
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
       this.getNetworkId(),
       provider
     );
 
     const price = await txManager.callContract<bigint>(
-      auctionContract,
+      auctionFactory,
       'getCurrentPrice',
       [auctionId]
     );
@@ -543,229 +792,103 @@ export class AuctionModule extends BaseModule {
   }
 
   /**
-   * Get all active auctions (both English and Dutch)
+   * Get pending refund amount for a bidder
    *
-   * Fetches paginated list of all active auctions on the marketplace.
-   * Returns auctions from both English and Dutch auction contracts.
+   * @param auctionId - ID of the auction
+   * @param bidder - Address of the bidder
    *
-   * @param page - Page number (1-indexed)
-   * @param pageSize - Number of items per page
-   *
-   * @returns Promise resolving to paginated auction results
-   *
-   * @example
-   * ```typescript
-   * const { items: auctions, total } = await sdk.auction.getActiveAuctions(1, 20);
-   * console.log(`Found ${total} active auctions`);
-   * ```
+   * @returns Promise resolving to pending refund amount in ETH
    */
-  async getActiveAuctions(
-    page = 1,
-    pageSize = 20
-  ): Promise<PaginatedResult<Auction>> {
-    // Fetch from both English and Dutch auction contracts
-    const [englishAuctions, dutchAuctions] = await Promise.all([
-      this.getActiveAuctionsByType('english', page, pageSize),
-      this.getActiveAuctionsByType('dutch', page, pageSize),
-    ]);
+  async getPendingRefund(auctionId: string, bidder: string): Promise<string> {
+    validateTokenId(auctionId, 'auctionId');
+    validateAddress(bidder, 'bidder');
 
-    // Combine results
-    const allAuctions = [...englishAuctions.items, ...dutchAuctions.items];
-    const total = englishAuctions.total + dutchAuctions.total;
-
-    // Sort by creation time (newest first)
-    allAuctions.sort((a, b) => b.startTime - a.startTime);
-
-    // Apply pagination to combined results
-    const startIndex = (page - 1) * pageSize;
-    const paginatedItems = allAuctions.slice(startIndex, startIndex + pageSize);
-
-    return {
-      items: paginatedItems,
-      total,
-      page,
-      pageSize,
-      hasMore: startIndex + pageSize < total,
-    };
-  }
-
-  /**
-   * Get auctions by seller address
-   *
-   * Fetches all auctions created by a specific seller, including both
-   * English and Dutch auctions.
-   *
-   * @param seller - Seller wallet address
-   * @param page - Page number (1-indexed)
-   * @param pageSize - Number of items per page
-   *
-   * @returns Promise resolving to paginated auction results
-   *
-   * @throws {ZunoSDKError} INVALID_ADDRESS - If the seller address is invalid
-   *
-   * @example
-   * ```typescript
-   * const { items } = await sdk.auction.getAuctionsBySeller(
-   *   "0x1234567890123456789012345678901234567890",
-   *   1,
-   *   20
-   * );
-   * ```
-   */
-  async getAuctionsBySeller(
-    seller: string,
-    page = 1,
-    pageSize = 20
-  ): Promise<PaginatedResult<Auction>> {
-    validateAddress(seller, 'seller');
-
-    // Fetch from both English and Dutch auction contracts
-    const results = await Promise.all([
-      this.getAuctionsBySellerAndType(seller, 'english', page, pageSize),
-      this.getAuctionsBySellerAndType(seller, 'dutch', page, pageSize),
-    ]);
-
-    const [englishAuctions, dutchAuctions] = results;
-
-    // Combine results
-    const allAuctions = [...englishAuctions.items, ...dutchAuctions.items];
-    const total = englishAuctions.total + dutchAuctions.total;
-
-    // Sort by creation time (newest first)
-    allAuctions.sort((a, b) => b.startTime - a.startTime);
-
-    // Apply pagination to combined results
-    const startIndex = (page - 1) * pageSize;
-    const paginatedItems = allAuctions.slice(startIndex, startIndex + pageSize);
-
-    return {
-      items: paginatedItems,
-      total,
-      page,
-      pageSize,
-      hasMore: startIndex + pageSize < total,
-    };
-  }
-
-  /**
-   * Get active auctions by type (helper method)
-   */
-  private async getActiveAuctionsByType(
-    type: 'english' | 'dutch',
-    page: number,
-    pageSize: number
-  ): Promise<PaginatedResult<Auction>> {
     const provider = this.ensureProvider();
     const txManager = this.ensureTxManager();
 
-    const contractType = type === 'english' ? 'EnglishAuction' : 'DutchAuction';
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider
+    );
 
-    try {
-      const auctionContract = await this.contractRegistry.getContract(
-        contractType,
-        this.getNetworkId(),
-        provider
-      );
+    const refund = await txManager.callContract<bigint>(
+      auctionFactory,
+      'getPendingRefund',
+      [auctionId, bidder]
+    );
 
-      // Get total count
-      const totalCount = await txManager.callContract<bigint>(
-        auctionContract,
-        'getActiveAuctionCount',
-        []
-      );
-
-      const total = Number(totalCount);
-      const skip = (page - 1) * pageSize;
-
-      // Get paginated auction IDs
-      const auctionIds = await txManager.callContract<string[]>(
-        auctionContract,
-        'getActiveAuctions',
-        [skip, pageSize]
-      );
-
-      // Fetch details for each auction
-      const auctionsPromises = auctionIds.map((id) => this.getAuction(id));
-      const items = await Promise.all(auctionsPromises);
-
-      return {
-        items,
-        total,
-        page,
-        pageSize,
-        hasMore: skip + pageSize < total,
-      };
-    } catch {
-      // Return empty result if contract method doesn't exist
-      return {
-        items: [],
-        total: 0,
-        page,
-        pageSize,
-        hasMore: false,
-      };
-    }
+    return ethers.formatEther(refund);
   }
 
   /**
-   * Get auctions by seller and type (helper method)
+   * Get auction details from AuctionFactory
    */
-  private async getAuctionsBySellerAndType(
-    seller: string,
-    type: 'english' | 'dutch',
-    page: number,
-    pageSize: number
-  ): Promise<PaginatedResult<Auction>> {
+  async getAuctionFromFactory(auctionId: string): Promise<Auction> {
     const provider = this.ensureProvider();
     const txManager = this.ensureTxManager();
 
-    const contractType = type === 'english' ? 'EnglishAuction' : 'DutchAuction';
+    const auctionFactory = await this.contractRegistry.getContract(
+      'AuctionFactory',
+      this.getNetworkId(),
+      provider
+    );
 
-    try {
-      const auctionContract = await this.contractRegistry.getContract(
-        contractType,
-        this.getNetworkId(),
-        provider
-      );
+    const auctionData = await txManager.callContract<{
+      auctionId: string;
+      nftContract: string;
+      tokenId: bigint;
+      amount: bigint;
+      seller: string;
+      startPrice: bigint;
+      reservePrice: bigint;
+      startTime: bigint;
+      endTime: bigint;
+      status: number;
+      auctionType: number;
+      highestBidder: string;
+      highestBid: bigint;
+      bidCount: bigint;
+    }>(auctionFactory, 'getAuction', [auctionId]);
 
-      // Get total count
-      const totalCount = await txManager.callContract<bigint>(
-        auctionContract,
-        'getAuctionCountBySeller',
-        [seller]
-      );
+    // Contract enum: CREATED=0, ACTIVE=1, ENDED=2, CANCELLED=3, SETTLED=4
+    const statusMap: Record<number, Auction['status']> = {
+      0: 'active',     // CREATED - treat as active
+      1: 'active',     // ACTIVE
+      2: 'ended',      // ENDED
+      3: 'cancelled',  // CANCELLED
+      4: 'ended',      // SETTLED - treat as ended
+    };
 
-      const total = Number(totalCount);
-      const skip = (page - 1) * pageSize;
+    // Convert BigInt to number for status lookup
+    const statusNum = Number(auctionData.status);
+    const type = Number(auctionData.auctionType) === 0 ? 'english' : 'dutch';
 
-      // Get paginated auction IDs
-      const auctionIds = await txManager.callContract<string[]>(
-        auctionContract,
-        'getAuctionsBySeller',
-        [seller, skip, pageSize]
-      );
+    const auction: Auction = {
+      id: auctionId,
+      type,
+      seller: auctionData.seller,
+      collectionAddress: auctionData.nftContract,
+      tokenId: auctionData.tokenId.toString(),
+      startTime: Number(auctionData.startTime),
+      endTime: Number(auctionData.endTime),
+      status: statusMap[statusNum] || 'active',
+      createdAt: new Date(Number(auctionData.startTime) * 1000).toISOString(),
+    };
 
-      // Fetch details for each auction
-      const auctionsPromises = auctionIds.map((id) => this.getAuction(id));
-      const items = await Promise.all(auctionsPromises);
-
-      return {
-        items,
-        total,
-        page,
-        pageSize,
-        hasMore: skip + pageSize < total,
-      };
-    } catch {
-      // Return empty result if contract method doesn't exist
-      return {
-        items: [],
-        total: 0,
-        page,
-        pageSize,
-        hasMore: false,
-      };
+    if (type === 'english') {
+      auction.startingBid = ethers.formatEther(auctionData.startPrice);
+      // If no bids yet, show starting bid as current bid
+      auction.currentBid = auctionData.highestBid > 0n 
+        ? ethers.formatEther(auctionData.highestBid)
+        : ethers.formatEther(auctionData.startPrice);
+      auction.highestBidder = auctionData.highestBidder;
+    } else {
+      auction.startPrice = ethers.formatEther(auctionData.startPrice);
+      auction.endPrice = ethers.formatEther(auctionData.reservePrice);
     }
+
+    return auction;
   }
 
   /**
@@ -792,64 +915,34 @@ export class AuctionModule extends BaseModule {
   }
 
   /**
-   * Format raw auction data
+   * Extract multiple auction IDs from batch transaction receipt
    */
-  private formatAuction(
-    id: string,
-    data: unknown[],
-    type: 'english' | 'dutch'
-  ): Auction {
-    const [
-      seller,
-      collectionAddress,
-      tokenId,
-      startPrice,
-      endPrice,
-      currentBid,
-      highestBidder,
-      startTime,
-      endTime,
-      status,
-    ] = data as [
-      string,
-      string,
-      bigint,
-      bigint,
-      bigint,
-      bigint,
-      string,
-      bigint,
-      bigint,
-      number,
-    ];
-
-    const statusMap: Record<number, Auction['status']> = {
-      0: 'active',
-      1: 'ended',
-      2: 'cancelled',
-    };
-
-    const auction: Auction = {
-      id,
-      type,
-      seller,
-      collectionAddress,
-      tokenId: tokenId.toString(),
-      startTime: Number(startTime),
-      endTime: Number(endTime),
-      status: statusMap[status] || 'active',
-      createdAt: new Date(Number(startTime) * 1000).toISOString(),
-    };
-
-    if (type === 'english') {
-      auction.startingBid = ethers.formatEther(startPrice);
-      auction.currentBid = ethers.formatEther(currentBid);
-      auction.highestBidder = highestBidder;
-    } else {
-      auction.startPrice = ethers.formatEther(startPrice);
-      auction.endPrice = ethers.formatEther(endPrice);
+  private extractBatchAuctionIds(receipt: TransactionReceipt, _expectedCount: number): string[] {
+    const auctionIds: string[] = [];
+    
+    for (const logEntry of receipt.logs) {
+      try {
+        const log = logEntry as { topics?: string[] };
+        if (log.topics && Array.isArray(log.topics) && log.topics.length > 1) {
+          const auctionIdHex = log.topics[1];
+          const auctionId = ethers.toBigInt(auctionIdHex).toString();
+          if (!auctionIds.includes(auctionId)) {
+            auctionIds.push(auctionId);
+          }
+        }
+      } catch {
+        continue;
+      }
     }
 
-    return auction;
+    if (auctionIds.length === 0) {
+      throw this.error(
+        'CONTRACT_CALL_FAILED',
+        'Could not extract auction IDs from transaction'
+      );
+    }
+
+    return auctionIds;
   }
+
 }

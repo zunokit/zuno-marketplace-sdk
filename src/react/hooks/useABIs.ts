@@ -90,8 +90,8 @@ export function useInitializeABIs(network = 'sepolia') {
       'ERC1155NFTExchange',
       'ERC721CollectionFactory',
       'ERC1155CollectionFactory',
-      'EnglishAuction',
-      'DutchAuction',
+      'EnglishAuctionImplementation',
+      'DutchAuctionImplementation',
       'OfferManager',
       'BundleMarketplace',
     ];

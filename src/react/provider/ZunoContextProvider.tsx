@@ -29,24 +29,6 @@ export interface ZunoContextProviderProps {
 /**
  * Core Context Provider - No Wagmi/React Query wrappers
  * Use this when you already have Wagmi + React Query setup
- *
- * @example Basic usage
- * ```tsx
- * <ZunoContextProvider config={config}>
- *   <App />
- * </ZunoContextProvider>
- * ```
- *
- * @example Hybrid usage with singleton
- * ```tsx
- * // Initialize singleton once
- * const sdk = ZunoSDK.getInstance(config);
- *
- * // Pass same instance to React provider
- * <ZunoContextProvider sdk={sdk}>
- *   <App />
- * </ZunoContextProvider>
- * ```
  */
 export function ZunoContextProvider({
   config,
@@ -54,7 +36,6 @@ export function ZunoContextProvider({
   sdk: externalSdk,
   children
 }: ZunoContextProviderProps) {
-  // Create SDK instance or use provided one
   const sdk = useMemo(() => {
     if (externalSdk) {
       return externalSdk;

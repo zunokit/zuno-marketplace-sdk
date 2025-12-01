@@ -10,8 +10,9 @@ export type ContractType =
   | 'ERC1155NFTExchange'
   | 'ERC721CollectionFactory'
   | 'ERC1155CollectionFactory'
-  | 'EnglishAuction'
-  | 'DutchAuction'
+  | 'EnglishAuctionImplementation'
+  | 'DutchAuctionImplementation'
+  | 'AuctionFactory'
   | 'OfferManager'
   | 'BundleMarketplace';
 
@@ -196,9 +197,8 @@ export interface BatchMintERC721Params {
 export interface MintERC1155Params {
   collectionAddress: string;
   recipient: string;
-  tokenId: string;
   amount: number;
-  data?: string;
+  value?: string;
   options?: TransactionOptions;
 }
 
@@ -233,6 +233,68 @@ export interface CreateDutchAuctionParams {
   endPrice: string; // Note: contract uses reservePrice instead
   duration: number;
   seller?: string; // Optional, defaults to msg.sender
+  options?: TransactionOptions;
+}
+
+/**
+ * Batch Create English Auction parameters
+ */
+export interface BatchCreateEnglishAuctionParams {
+  /**
+   * NFT collection contract address (same for all)
+   */
+  collectionAddress: string;
+  /**
+   * Array of token IDs to auction
+   */
+  tokenIds: string[];
+  /**
+   * Array of amounts (1 for ERC721, variable for ERC1155)
+   */
+  amounts?: number[];
+  /**
+   * Starting bid for all auctions (in ETH)
+   */
+  startingBid: string;
+  /**
+   * Reserve price for all auctions (in ETH)
+   */
+  reservePrice?: string;
+  /**
+   * Duration in seconds for all auctions
+   */
+  duration: number;
+  options?: TransactionOptions;
+}
+
+/**
+ * Batch Create Dutch Auction parameters
+ */
+export interface BatchCreateDutchAuctionParams {
+  /**
+   * NFT collection contract address (same for all)
+   */
+  collectionAddress: string;
+  /**
+   * Array of token IDs to auction
+   */
+  tokenIds: string[];
+  /**
+   * Array of amounts (1 for ERC721, variable for ERC1155)
+   */
+  amounts?: number[];
+  /**
+   * Starting price for all auctions (in ETH)
+   */
+  startPrice: string;
+  /**
+   * End price for all auctions (in ETH)
+   */
+  endPrice: string;
+  /**
+   * Duration in seconds for all auctions
+   */
+  duration: number;
   options?: TransactionOptions;
 }
 

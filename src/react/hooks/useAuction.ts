@@ -8,6 +8,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateEnglishAuctionParams,
   CreateDutchAuctionParams,
+  BatchCreateEnglishAuctionParams,
+  BatchCreateDutchAuctionParams,
   PlaceBidParams,
   TransactionOptions,
 } from '../../types/contracts';
@@ -44,6 +46,22 @@ export function useAuction() {
     },
   });
 
+  const batchCreateEnglishAuction = useMutation({
+    mutationFn: (params: BatchCreateEnglishAuctionParams) =>
+      sdk.auction.batchCreateEnglishAuction(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+    },
+  });
+
+  const batchCreateDutchAuction = useMutation({
+    mutationFn: (params: BatchCreateDutchAuctionParams) =>
+      sdk.auction.batchCreateDutchAuction(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+    },
+  });
+
   const placeBid = useMutation({
     mutationFn: (params: PlaceBidParams) => sdk.auction.placeBid(params),
     onSuccess: (_, variables) => {
@@ -61,11 +79,52 @@ export function useAuction() {
     },
   });
 
+  const buyNow = useMutation({
+    mutationFn: ({ auctionId, options }: SettleAuctionParams) =>
+      sdk.auction.buyNow(auctionId, options),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
+      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+    },
+  });
+
+  const withdrawBid = useMutation({
+    mutationFn: ({ auctionId, options }: SettleAuctionParams) =>
+      sdk.auction.withdrawBid(auctionId, options),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
+      queryClient.invalidateQueries({ queryKey: ['pendingRefund', variables.auctionId] });
+    },
+  });
+
+  const cancelAuction = useMutation({
+    mutationFn: ({ auctionId, options }: SettleAuctionParams) =>
+      sdk.auction.cancelAuction(auctionId, options),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
+      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+    },
+  });
+
+  const batchCancelAuction = useMutation({
+    mutationFn: (auctionIds: string[]) =>
+      sdk.auction.batchCancelAuction(auctionIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+    },
+  });
+
   return {
     createEnglishAuction,
     createDutchAuction,
+    batchCreateEnglishAuction,
+    batchCreateDutchAuction,
     placeBid,
     settleAuction,
+    buyNow,
+    withdrawBid,
+    cancelAuction,
+    batchCancelAuction,
   };
 }
 
@@ -77,7 +136,7 @@ export function useAuctionDetails(auctionId?: string) {
 
   return useQuery({
     queryKey: ['auction', auctionId],
-    queryFn: () => sdk.auction.getAuction(auctionId!),
+    queryFn: () => sdk.auction.getAuctionFromFactory(auctionId!),
     enabled: !!auctionId,
   });
 }
@@ -92,6 +151,19 @@ export function useDutchAuctionPrice(auctionId?: string) {
     queryKey: ['dutchAuctionPrice', auctionId],
     queryFn: () => sdk.auction.getCurrentPrice(auctionId!),
     enabled: !!auctionId,
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 10000,
+  });
+}
+
+/**
+ * Hook to get pending refund amount for a bidder
+ */
+export function usePendingRefund(auctionId?: string, bidder?: string) {
+  const sdk = useZuno();
+
+  return useQuery({
+    queryKey: ['pendingRefund', auctionId, bidder],
+    queryFn: () => sdk.auction.getPendingRefund(auctionId!, bidder!),
+    enabled: !!auctionId && !!bidder,
   });
 }

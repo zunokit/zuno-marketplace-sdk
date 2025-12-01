@@ -5,14 +5,22 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ListNFTParams, BuyNFTParams, TransactionOptions } from '../../types/contracts';
+import type { 
+  ListNFTParams, 
+  BatchListNFTParams,
+  BuyNFTParams,
+  BatchBuyNFTParams,
+  TransactionOptions 
+} from '../../types/contracts';
 import { useZuno } from '../provider/ZunoContextProvider';
 
-/**
- * Cancel listing parameters
- */
 export interface CancelListingParams {
   listingId: string;
+  options?: TransactionOptions;
+}
+
+export interface BatchCancelListingParams {
+  listingIds: string[];
   options?: TransactionOptions;
 }
 
@@ -30,8 +38,22 @@ export function useExchange() {
     },
   });
 
+  const batchListNFT = useMutation({
+    mutationFn: (params: BatchListNFTParams) => sdk.exchange.batchListNFT(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+    },
+  });
+
   const buyNFT = useMutation({
     mutationFn: (params: BuyNFTParams) => sdk.exchange.buyNFT(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+    },
+  });
+
+  const batchBuyNFT = useMutation({
+    mutationFn: (params: BatchBuyNFTParams) => sdk.exchange.batchBuyNFT(params),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listings'] });
     },
@@ -45,28 +67,47 @@ export function useExchange() {
     },
   });
 
+  const batchCancelListing = useMutation({
+    mutationFn: ({ listingIds, options }: BatchCancelListingParams) =>
+      sdk.exchange.batchCancelListing({ listingIds, options }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+    },
+  });
+
   return {
     listNFT,
+    batchListNFT,
     buyNFT,
+    batchBuyNFT,
     cancelListing,
+    batchCancelListing,
   };
 }
 
 /**
  * Hook to fetch listings by collection
  */
-export function useListings(
-  collectionAddress?: string,
-  page = 1,
-  pageSize = 20
-) {
+export function useListings(collectionAddress?: string) {
   const sdk = useZuno();
 
   return useQuery({
-    queryKey: ['listings', collectionAddress, page, pageSize],
-    queryFn: () =>
-      sdk.exchange.getListingsByCollection(collectionAddress!, page, pageSize),
+    queryKey: ['listings', collectionAddress],
+    queryFn: () => sdk.exchange.getListings(collectionAddress!),
     enabled: !!collectionAddress,
+  });
+}
+
+/**
+ * Hook to fetch listings by seller
+ */
+export function useListingsBySeller(seller?: string) {
+  const sdk = useZuno();
+
+  return useQuery({
+    queryKey: ['listings', 'seller', seller],
+    queryFn: () => sdk.exchange.getListingsBySeller(seller!),
+    enabled: !!seller,
   });
 }
 
@@ -82,3 +123,5 @@ export function useListing(listingId?: string) {
     enabled: !!listingId,
   });
 }
+
+

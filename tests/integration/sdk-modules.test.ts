@@ -79,14 +79,14 @@ describe('SDK Module Integration', () => {
       const customSDK = new ZunoSDK({
         apiKey: 'custom-key',
         network: 'mainnet',
-        abisUrl: 'https://custom.api.com',
+        apiUrl: 'https://custom.api.com',
       });
 
       const config = customSDK.getConfig();
 
       expect(config.apiKey).toBe('custom-key');
       expect(config.network).toBe('mainnet');
-      expect(config.abisUrl).toBe('https://custom.api.com');
+      expect(config.apiUrl).toBe('https://custom.api.com');
     });
   });
 

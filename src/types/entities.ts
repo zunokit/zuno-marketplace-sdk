@@ -56,7 +56,7 @@ export interface Listing {
   paymentToken: string;
   startTime: number;
   endTime: number;
-  status: 'active' | 'sold' | 'cancelled' | 'expired';
+  status: 'pending' | 'active' | 'sold' | 'cancelled' | 'expired';
   createdAt: string;
 }
 
@@ -147,7 +147,7 @@ export interface Bundle {
   paymentToken: string;
   startTime: number;
   endTime: number;
-  status: 'active' | 'sold' | 'cancelled' | 'expired';
+  status: 'pending' | 'active' | 'sold' | 'cancelled' | 'expired';
   createdAt: string;
 }
 

@@ -6,6 +6,7 @@ import { ethers } from 'ethers';
 import { BaseModule } from './BaseModule';
 import type {
   ListNFTParams,
+  BatchListNFTParams,
   BuyNFTParams,
   BatchBuyNFTParams,
   BatchCancelListingParams,
@@ -13,7 +14,6 @@ import type {
 } from '../types/contracts';
 import type {
   Listing,
-  PaginatedResult,
   TransactionReceipt,
 } from '../types/entities';
 import {
@@ -21,12 +21,46 @@ import {
   validateTokenId,
   validateListNFTParams,
 } from '../utils/errors';
-import { ZunoSDKError, ErrorCodes } from '../utils/errors';
+import { ErrorCodes } from '../utils/errors';
 
 /**
  * ExchangeModule handles marketplace trading operations
  */
 export class ExchangeModule extends BaseModule {
+  /**
+   * Ensure NFT collection is approved for Exchange contract
+   * Checks approval status and approves if needed
+   */
+  private async ensureApproval(
+    collectionAddress: string,
+    ownerAddress: string
+  ): Promise<void> {
+    const provider = this.ensureProvider();
+    const signer = this.ensureSigner();
+
+    // Get Exchange contract address
+    const exchangeContract = await this.contractRegistry.getContract(
+      'ERC721NFTExchange',
+      this.getNetworkId(),
+      provider
+    );
+    const operatorAddress = await exchangeContract.getAddress();
+
+    // Check if already approved
+    const erc721Abi = [
+      'function isApprovedForAll(address owner, address operator) view returns (bool)',
+      'function setApprovalForAll(address operator, bool approved)',
+    ];
+    const nftContract = new ethers.Contract(collectionAddress, erc721Abi, signer);
+
+    const isApproved = await nftContract.isApprovedForAll(ownerAddress, operatorAddress);
+
+    if (!isApproved) {
+      const tx = await nftContract.setApprovalForAll(operatorAddress, true);
+      await tx.wait();
+    }
+  }
+
   /**
    * List an NFT for sale
    */
@@ -38,6 +72,12 @@ export class ExchangeModule extends BaseModule {
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
+
+    // Get seller address
+    const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
+
+    // Ensure NFT is approved for Exchange
+    await this.ensureApproval(collectionAddress, sellerAddress);
 
     // Get contract instance
     const exchangeContract = await this.contractRegistry.getContract(
@@ -56,7 +96,7 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'listNFT',
       [collectionAddress, tokenId, priceInWei, duration],
-      options
+      { ...options, module: 'Exchange' }
     );
 
     // Extract listing ID from transaction logs
@@ -68,6 +108,7 @@ export class ExchangeModule extends BaseModule {
   
   /**
    * Buy an NFT from a listing
+   * @param params.value - Price in ETH (e.g., "1.5")
    */
   async buyNFT(params: BuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingId, value, options } = params;
@@ -86,10 +127,13 @@ export class ExchangeModule extends BaseModule {
       this.signer
     );
 
-    // Prepare transaction options with value
+    // Convert ETH value to wei for transaction
+    const valueInWei = value ? ethers.parseEther(value).toString() : options?.value;
+
+    // Prepare transaction options with value in wei
     const txOptions: TransactionOptions = {
       ...options,
-      value: value || options?.value,
+      value: valueInWei,
     };
 
     // Call contract method
@@ -97,7 +141,7 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'buyNFT',
       [listingId],
-      txOptions
+      { ...txOptions, module: 'Exchange' }
     );
 
     return { tx };
@@ -105,6 +149,7 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Batch buy multiple NFTs from listings
+   * @param params.value - Total price in ETH (e.g., "3.0" for 3 NFTs at 1 ETH each)
    */
   async batchBuyNFT(params: BatchBuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingIds, value, options } = params;
@@ -125,10 +170,13 @@ export class ExchangeModule extends BaseModule {
       this.signer
     );
 
-    // Prepare transaction options with value
+    // Convert ETH value to wei for transaction
+    const valueInWei = value ? ethers.parseEther(value).toString() : options?.value;
+
+    // Prepare transaction options with value in wei
     const txOptions: TransactionOptions = {
       ...options,
-      value: value || options?.value,
+      value: valueInWei,
     };
 
     // Call contract method - contract expects: (bytes32[])
@@ -136,7 +184,7 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'batchBuyNFT',
       [listingIds],
-      txOptions
+      { ...txOptions, module: 'Exchange' }
     );
 
     return { tx };
@@ -168,7 +216,7 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'cancelListing',
       [listingId],
-      options
+      { ...options, module: 'Exchange' }
     );
 
     return { tx };
@@ -203,10 +251,35 @@ export class ExchangeModule extends BaseModule {
       exchangeContract,
       'batchCancelListing',
       [listingIds],
-      options
+      { ...options, module: 'Exchange' }
     );
 
     return { tx };
+  }
+
+  /**
+   * Get the total price buyer needs to pay (including royalty and taker fee)
+   * @param listingId - The listing ID
+   * @returns Total price in ETH (e.g., "1.05" for 1 ETH + 5% fees)
+   */
+  async getBuyerPrice(listingId: string): Promise<string> {
+    validateTokenId(listingId, 'listingId');
+
+    const provider = this.ensureProvider();
+    const exchangeContract = await this.contractRegistry.getContract(
+      'ERC721NFTExchange',
+      this.getNetworkId(),
+      provider
+    );
+
+    const txManager = this.ensureTxManager();
+    const totalPriceWei = await txManager.callContract<bigint>(
+      exchangeContract,
+      'getBuyerSeesPrice',
+      [listingId]
+    );
+
+    return ethers.formatEther(totalPriceWei);
   }
 
   /**
@@ -216,8 +289,6 @@ export class ExchangeModule extends BaseModule {
     validateTokenId(listingId, 'listingId');
 
     const provider = this.ensureProvider();
-
-    // Get contract instance
     const exchangeContract = await this.contractRegistry.getContract(
       'ERC721NFTExchange',
       this.getNetworkId(),
@@ -225,31 +296,22 @@ export class ExchangeModule extends BaseModule {
     );
 
     const txManager = this.ensureTxManager();
-
-    // Call contract to get listing
-    const listing = await txManager.callContract<unknown[]>(
+    const listing = await txManager.callContract<ethers.Result>(
       exchangeContract,
-      'getListing',
+      's_listings',
       [listingId]
     );
 
-    // Format the response
     return this.formatListing(listingId, listing);
   }
 
   /**
    * Get listings by collection
    */
-  async getListingsByCollection(
-    collectionAddress: string,
-    page = 1,
-    pageSize = 20
-  ): Promise<PaginatedResult<Listing>> {
+  async getListings(collectionAddress: string): Promise<Listing[]> {
     validateAddress(collectionAddress);
 
     const provider = this.ensureProvider();
-
-    // Get contract instance
     const exchangeContract = await this.contractRegistry.getContract(
       'ERC721NFTExchange',
       this.getNetworkId(),
@@ -257,50 +319,22 @@ export class ExchangeModule extends BaseModule {
     );
 
     const txManager = this.ensureTxManager();
-
-    // Get total count
-    const totalCount = await txManager.callContract<bigint>(
-      exchangeContract,
-      'getListingCountByCollection',
-      [collectionAddress]
-    );
-
-    const total = Number(totalCount);
-    const skip = (page - 1) * pageSize;
-
-    // Get paginated listings
     const listingIds = await txManager.callContract<string[]>(
       exchangeContract,
       'getListingsByCollection',
-      [collectionAddress, skip, pageSize]
+      [collectionAddress]
     );
 
-    // Fetch details for each listing
-    const listingsPromises = listingIds.map((id) => this.getListing(id));
-    const items = await Promise.all(listingsPromises);
-
-    return {
-      items,
-      total,
-      page,
-      pageSize,
-      hasMore: skip + pageSize < total,
-    };
+    return Promise.all(listingIds.map((id) => this.getListing(id)));
   }
 
   /**
    * Get listings by seller
    */
-  async getListingsBySeller(
-    seller: string,
-    page = 1,
-    pageSize = 20
-  ): Promise<PaginatedResult<Listing>> {
+  async getListingsBySeller(seller: string): Promise<Listing[]> {
     validateAddress(seller, 'seller');
 
     const provider = this.ensureProvider();
-
-    // Get contract instance
     const exchangeContract = await this.contractRegistry.getContract(
       'ERC721NFTExchange',
       this.getNetworkId(),
@@ -308,166 +342,118 @@ export class ExchangeModule extends BaseModule {
     );
 
     const txManager = this.ensureTxManager();
-
-    // Get total count
-    const totalCount = await txManager.callContract<bigint>(
-      exchangeContract,
-      'getListingCountBySeller',
-      [seller]
-    );
-
-    const total = Number(totalCount);
-    const skip = (page - 1) * pageSize;
-
-    // Get paginated listings
     const listingIds = await txManager.callContract<string[]>(
       exchangeContract,
       'getListingsBySeller',
-      [seller, skip, pageSize]
+      [seller]
     );
 
-    // Fetch details for each listing
-    const listingsPromises = listingIds.map((id) => this.getListing(id));
-    const items = await Promise.all(listingsPromises);
-
-    return {
-      items,
-      total,
-      page,
-      pageSize,
-      hasMore: skip + pageSize < total,
-    };
-  }
-
-  /**
-   * Get all active listings
-   *
-   * @param page - Page number (1-indexed)
-   * @param pageSize - Number of items per page
-   * @returns Paginated active listings
-   */
-  async getActiveListings(
-    page = 1,
-    pageSize = 20
-  ): Promise<PaginatedResult<Listing>> {
-    const provider = this.ensureProvider();
-
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
-      provider
-    );
-
-    const txManager = this.ensureTxManager();
-
-    // Get total count of active listings
-    const totalCount = await txManager.callContract<bigint>(
-      exchangeContract,
-      'getActiveListingCount',
-      []
-    );
-
-    const total = Number(totalCount);
-    const skip = (page - 1) * pageSize;
-
-    // Get paginated active listings
-    const listingIds = await txManager.callContract<string[]>(
-      exchangeContract,
-      'getActiveListings',
-      [skip, pageSize]
-    );
-
-    // Fetch details for each listing
-    const listingsPromises = listingIds.map((id) => this.getListing(id));
-    const items = await Promise.all(listingsPromises);
-
-    return {
-      items,
-      total,
-      page,
-      pageSize,
-      hasMore: skip + pageSize < total,
-    };
+    return Promise.all(listingIds.map((id) => this.getListing(id)));
   }
 
   /**
    * Format raw listing data from contract
+   * Contract struct: contractAddress, tokenId, price, seller, listingDuration, listingStart, status, amount
    */
-  private formatListing(id: string, data: unknown[]): Listing {
-    const [
-      seller,
-      collectionAddress,
-      tokenId,
-      price,
-      paymentToken,
-      startTime,
-      endTime,
-      status,
-    ] = data as [string, string, bigint, bigint, string, bigint, bigint, number];
+  private formatListing(id: string, data: ethers.Result): Listing {
+    const contractAddress = String(data.contractAddress);
+    const tokenId = BigInt(data.tokenId);
+    const price = BigInt(data.price);
+    const seller = String(data.seller);
+    const listingDuration = BigInt(data.listingDuration);
+    const listingStart = BigInt(data.listingStart);
+    const status = Number(data.status);
 
+    // Contract enum: 0=Pending, 1=Active, 2=Sold, 3=Failed, 4=Cancelled
     const statusMap: Record<number, Listing['status']> = {
-      0: 'active',
-      1: 'sold',
-      2: 'cancelled',
+      0: 'pending',
+      1: 'active',
+      2: 'sold',
       3: 'expired',
+      4: 'cancelled',
     };
+
+    const startTime = Number(listingStart);
+    const endTime = startTime + Number(listingDuration);
 
     return {
       id,
       seller,
-      collectionAddress,
+      collectionAddress: contractAddress,
       tokenId: tokenId.toString(),
       price: ethers.formatEther(price),
-      paymentToken,
-      startTime: Number(startTime),
-      endTime: Number(endTime),
+      paymentToken: ethers.ZeroAddress,
+      startTime,
+      endTime,
       status: statusMap[status] || 'active',
-      createdAt: new Date(Number(startTime) * 1000).toISOString(),
+      createdAt: new Date(startTime * 1000).toISOString(),
     };
   }
 
   /**
-   * Batch list multiple NFTs using the batchExecute utility
+   * Batch list multiple NFTs from the SAME collection in 1 transaction
    */
-  async batchListNFT(
-    paramsArray: ListNFTParams[],
-    options?: { continueOnError?: boolean; maxConcurrency?: number }
-  ): Promise<Array<{ success: boolean; data?: { listingId: string; tx: TransactionReceipt }; error?: ZunoSDKError }>> {
-    if (!paramsArray.length) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'Parameters array cannot be empty');
+  async batchListNFT(params: BatchListNFTParams): Promise<{ listingIds: string[]; tx: TransactionReceipt }> {
+    const { collectionAddress, tokenIds, prices, duration, options } = params;
+
+    if (tokenIds.length === 0) {
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'Token IDs array cannot be empty');
+    }
+    if (tokenIds.length !== prices.length) {
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'Token IDs and prices arrays must have same length');
     }
 
-    const operations = paramsArray.map(params => () => this.listNFT(params));
+    validateAddress(collectionAddress);
 
-    return this.batchExecute(operations, {
-      continueOnError: options?.continueOnError ?? true,
-      maxConcurrency: options?.maxConcurrency ?? 3
-    });
+    const txManager = this.ensureTxManager();
+    const provider = this.ensureProvider();
+    const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
+
+    await this.ensureApproval(collectionAddress, sellerAddress);
+
+    const exchangeContract = await this.contractRegistry.getContract(
+      'ERC721NFTExchange',
+      this.getNetworkId(),
+      provider,
+      undefined,
+      this.signer
+    );
+
+    const pricesInWei = prices.map(p => ethers.parseEther(p));
+
+    const tx = await txManager.sendTransaction(
+      exchangeContract,
+      'batchListNFT',
+      [collectionAddress, tokenIds, pricesInWei, duration],
+      { ...options, module: 'Exchange' }
+    );
+
+    const listingIds = this.extractListingIdsFromLogs(tx);
+    return { listingIds, tx };
   }
 
   /**
-   * Extract listing ID from transaction receipt logs
+   * Extract listing IDs from transaction logs
    */
-  private async extractListingId(receipt: TransactionReceipt): Promise<string> {
-    // Look for ListingCreated event in logs
-    for (const logEntry of receipt.logs) {
-      try {
-        const log = logEntry as { topics?: string[] };
-        if (log.topics && Array.isArray(log.topics) && log.topics.length > 1) {
-          // Listing ID is typically the first indexed parameter (after event signature)
-          const listingIdHex = log.topics[1];
-          const listingId = ethers.toBigInt(listingIdHex);
-          return listingId.toString();
-        }
-      } catch {
-        continue;
+  private extractListingIdsFromLogs(receipt: TransactionReceipt): string[] {
+    const listingIds: string[] = [];
+    for (const log of receipt.logs) {
+      const topics = (log as { topics?: string[] }).topics;
+      if (topics && topics.length > 1) {
+        listingIds.push(topics[1]);
       }
     }
+    return listingIds;
+  }
 
-    throw this.error(
-      ErrorCodes.CONTRACT_CALL_FAILED,
-      'Could not extract listing ID from transaction'
-    );
+  /**
+   * Extract single listing ID from transaction receipt
+   */
+  private async extractListingId(receipt: TransactionReceipt): Promise<string> {
+    const listingIds = this.extractListingIdsFromLogs(receipt);
+    if (listingIds.length === 0) {
+      throw this.error(ErrorCodes.CONTRACT_CALL_FAILED, 'Could not extract listing ID from transaction');
+    }
+    return listingIds[0];
   }
 }

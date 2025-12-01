@@ -5,8 +5,9 @@
 
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Logger, LogMetadata } from '../utils/logger';
-import { ZunoContext } from '../react/provider/ZunoContextProvider';
+import { logStore, type LogEntry } from '../../utils/logStore';
+import { transactionStore, type TransactionEntry } from '../../utils/transactionStore';
+import { ZunoContext } from '../provider/ZunoContextProvider';
 
 export interface DevToolsConfig {
   /** Show transaction history panel */
@@ -28,27 +29,8 @@ export interface DevToolsConfig {
 }
 
 export interface ZunoDevToolsProps {
-  /** Custom logger to intercept */
-  logger?: Logger;
   /** DevTools configuration */
   config?: DevToolsConfig;
-}
-
-interface LogEntry {
-  id: number;
-  level: 'debug' | 'info' | 'warn' | 'error';
-  message: string;
-  timestamp: Date;
-  meta?: LogMetadata;
-}
-
-interface TransactionEntry {
-  id: number;
-  hash: string;
-  action: string;
-  status: 'pending' | 'success' | 'failed';
-  timestamp: Date;
-  gasUsed?: string;
 }
 
 const DEFAULT_CONFIG: Required<DevToolsConfig> = {
@@ -191,6 +173,64 @@ const styles = {
 };
 
 /**
+ * Format data for display
+ */
+function formatData(data: unknown): string {
+  try {
+    return JSON.stringify(data, null, 2);
+  } catch {
+    return String(data);
+  }
+}
+
+/**
+ * Log Entry Item Component with expandable data
+ */
+function LogEntryItem({ log }: { log: LogEntry }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasData = log.data !== undefined && log.data !== null;
+
+  return (
+    <div style={styles.logEntry(log.level)}>
+      <div 
+        style={{ cursor: hasData ? 'pointer' : 'default', display: 'flex', alignItems: 'flex-start', gap: '4px' }}
+        onClick={() => hasData && setExpanded(!expanded)}
+      >
+        {hasData && (
+          <span style={{ color: '#888', fontSize: '10px', marginTop: '2px' }}>
+            {expanded ? '▼' : '▶'}
+          </span>
+        )}
+        <div style={{ flex: 1 }}>
+          <span style={styles.timestamp}>{log.timestamp.toLocaleTimeString()}</span>
+          <span style={{ color: log.level === 'error' ? '#ff4757' : log.level === 'warn' ? '#ffa502' : '#e0e0e0' }}>
+            [{log.level.toUpperCase()}]
+          </span>{' '}
+          {log.module && <span style={{ color: '#00d9ff' }}>[{log.module}] </span>}
+          {log.message}
+        </div>
+      </div>
+      {expanded && hasData && (
+        <pre style={{
+          margin: '8px 0 0 16px',
+          padding: '8px',
+          backgroundColor: '#0d0d1a',
+          borderRadius: '4px',
+          fontSize: '11px',
+          overflow: 'auto',
+          maxHeight: '200px',
+          color: '#a0e0a0',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-all',
+        }}>
+          {formatData(log.data)}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+/**
  * Zuno DevTools Component
  * Provides visual debugging tools for SDK operations
  *
@@ -217,7 +257,7 @@ const styles = {
  * }
  * ```
  */
-export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) {
+export function ZunoDevTools({ config: userConfig }: ZunoDevToolsProps) {
   const config = { ...DEFAULT_CONFIG, ...userConfig };
 
   // Get SDK from context (safe - returns null if not in provider)
@@ -231,42 +271,17 @@ export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) 
   const [transactions, setTransactions] = useState<TransactionEntry[]>([]);
   const [cacheEntries, setCacheEntries] = useState<{ key: string; state: string }[]>([]);
 
-  // Intercept SDK logger automatically
+  // Subscribe to logStore
   useEffect(() => {
-    const sdkLogger = logger || sdk?.logger;
-    if (!sdkLogger) return;
+    logStore.setMaxEntries(config.maxLogEntries);
+    return logStore.subscribe(setLogs);
+  }, [config.maxLogEntries]);
 
-    let logId = 0;
-    const originalMethods = {
-      debug: sdkLogger.debug.bind(sdkLogger),
-      info: sdkLogger.info.bind(sdkLogger),
-      warn: sdkLogger.warn.bind(sdkLogger),
-      error: sdkLogger.error.bind(sdkLogger),
-    };
-
-    const createInterceptor = (level: LogEntry['level']) => (message: string, meta?: LogMetadata) => {
-      setLogs((prev) => {
-        const newLogs = [
-          { id: logId++, level, message, timestamp: new Date(), meta },
-          ...prev,
-        ].slice(0, config.maxLogEntries);
-        return newLogs;
-      });
-      originalMethods[level](message, meta);
-    };
-
-    sdkLogger.debug = createInterceptor('debug');
-    sdkLogger.info = createInterceptor('info');
-    sdkLogger.warn = createInterceptor('warn');
-    sdkLogger.error = createInterceptor('error');
-
-    return () => {
-      sdkLogger.debug = originalMethods.debug;
-      sdkLogger.info = originalMethods.info;
-      sdkLogger.warn = originalMethods.warn;
-      sdkLogger.error = originalMethods.error;
-    };
-  }, [sdk, logger, config.maxLogEntries]);
+  // Subscribe to transactionStore
+  useEffect(() => {
+    transactionStore.setMaxEntries(config.maxTransactions);
+    return transactionStore.subscribe(setTransactions);
+  }, [config.maxTransactions]);
 
   // Refresh cache entries
   const refreshCache = useCallback(() => {
@@ -291,8 +306,8 @@ export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) 
   }, [activeTab, refreshCache]);
 
   // Clear logs
-  const clearLogs = () => setLogs([]);
-  const clearTransactions = () => setTransactions([]);
+  const clearLogs = () => logStore.clear();
+  const clearTransactions = () => transactionStore.clear();
 
   // Get network info from SDK
   const networkInfo = sdk?.getConfig() ?? { network: 'unknown', apiKey: '' };
@@ -355,17 +370,15 @@ export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) 
               </button>
             </div>
             {logs.length === 0 ? (
-              <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>No logs yet</div>
+              <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
+                <div>No logs yet</div>
+                <div style={{ fontSize: '10px', marginTop: '8px', color: '#555' }}>
+                  Enable logging: {`{ debug: true }`} or {`{ logger: { level: 'debug' } }`}
+                </div>
+              </div>
             ) : (
               logs.map((log) => (
-                <div key={log.id} style={styles.logEntry(log.level)}>
-                  <span style={styles.timestamp}>{log.timestamp.toLocaleTimeString()}</span>
-                  <span style={{ color: log.level === 'error' ? '#ff4757' : log.level === 'warn' ? '#ffa502' : '#e0e0e0' }}>
-                    [{log.level.toUpperCase()}]
-                  </span>{' '}
-                  {log.message}
-                  {log.meta?.module && <span style={{ color: '#00d9ff' }}> [{log.meta.module}]</span>}
-                </div>
+                <LogEntryItem key={log.id} log={log} />
               ))
             )}
           </>
@@ -379,17 +392,28 @@ export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) 
               </button>
             </div>
             {transactions.length === 0 ? (
-              <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>No transactions yet</div>
+              <div style={{ color: '#666', textAlign: 'center', padding: '20px' }}>
+                <div>No transactions yet</div>
+                <div style={{ fontSize: '10px', marginTop: '8px', color: '#555' }}>
+                  Transactions will appear when SDK methods are called
+                </div>
+              </div>
             ) : (
               transactions.map((tx) => (
                 <div key={tx.id} style={styles.cacheEntry}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span>{tx.action}</span>
+                    <span style={{ color: '#00d9ff' }}>[{tx.module}]</span>
                     <span style={styles.txStatus(tx.status)}>{tx.status}</span>
                   </div>
+                  <div style={{ marginBottom: '4px' }}>{tx.action}</div>
                   <div style={{ fontSize: '10px', color: '#666' }}>
                     {tx.hash.slice(0, 10)}...{tx.hash.slice(-8)}
                   </div>
+                  {tx.error && (
+                    <div style={{ fontSize: '10px', color: '#ff4757', marginTop: '4px' }}>
+                      {tx.error}
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -418,6 +442,11 @@ export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) 
 
         {activeTab === 'network' && (
           <>
+            {!sdk && (
+              <div style={{ color: '#ffa502', padding: '12px', backgroundColor: '#3d3d1f', borderRadius: '4px', marginBottom: '12px', fontSize: '11px' }}>
+                SDK not found in context. Make sure DevTools is inside ZunoProvider.
+              </div>
+            )}
             <div style={styles.networkStatus(hasProvider)}>
               <span style={styles.dot(hasProvider ? '#2ed573' : '#ff4757')} />
               <span>Provider: {hasProvider ? 'Connected' : 'Not Connected'}</span>
@@ -432,7 +461,9 @@ export function ZunoDevTools({ logger, config: userConfig }: ZunoDevToolsProps) 
             </div>
             <div style={styles.cacheEntry}>
               <div style={{ marginBottom: '4px', color: '#888' }}>API Key</div>
-              <div style={{ color: '#2ed573' }}>{networkInfo.apiKey ? '••••••••' : 'Not Set'}</div>
+              <div style={{ color: networkInfo.apiKey ? '#2ed573' : '#ff4757' }}>
+                {networkInfo.apiKey ? '••••••••' + networkInfo.apiKey.slice(-4) : 'Not Set'}
+              </div>
             </div>
           </>
         )}

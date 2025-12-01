@@ -5,8 +5,9 @@
 
 import { ZunoSDK } from '../core/ZunoSDK';
 import { ZunoAPIClient } from '../core/ZunoAPIClient';
-import { ZunoSDKError, ErrorCodes } from '../utils/errors';
+import { ZunoSDKError } from '../utils/errors';
 import { ZunoLogger } from '../utils/logger';
+import { logStore } from '../utils/logStore';
 import { ethers } from 'ethers';
 
 // Mock axios for API tests
@@ -384,14 +385,12 @@ describe('Edge Cases - Input Validation', () => {
 });
 
 describe('Edge Cases - Logger', () => {
-  let consoleSpy: jest.SpyInstance;
-
   beforeEach(() => {
-    consoleSpy = jest.spyOn(console, 'info').mockImplementation();
+    logStore.clear();
   });
 
   afterEach(() => {
-    consoleSpy.mockRestore();
+    logStore.clear();
   });
 
   describe('Message Content Edge Cases', () => {
@@ -400,13 +399,13 @@ describe('Edge Cases - Logger', () => {
       const longMessage = 'A'.repeat(10000);
 
       logger.info(longMessage);
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBe(1);
     });
 
     it('should handle empty messages', () => {
       const logger = new ZunoLogger({ level: 'info' });
       logger.info('');
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle messages with special characters', () => {
@@ -414,51 +413,51 @@ describe('Edge Cases - Logger', () => {
       const specialChars = '!@#$%^&*()_+-=[]{}|;:\'",.<>?/\\`~';
 
       logger.info(specialChars);
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle messages with newlines', () => {
       const logger = new ZunoLogger({ level: 'info' });
       logger.info('Line 1\nLine 2\nLine 3');
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle messages with tabs', () => {
       const logger = new ZunoLogger({ level: 'info' });
       logger.info('Tab\tseparated\tvalues');
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle messages with unicode characters', () => {
       const logger = new ZunoLogger({ level: 'info' });
       logger.info('Hello 世界 🌍 مرحبا');
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
   });
 
   describe('Metadata Edge Cases', () => {
     it('should handle null metadata', () => {
       const logger = new ZunoLogger({ level: 'info' });
-      logger.info('Test', null as any);
-      expect(consoleSpy).toHaveBeenCalled();
+      logger.info('Test', null as unknown as undefined);
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle undefined metadata', () => {
       const logger = new ZunoLogger({ level: 'info' });
       logger.info('Test', undefined);
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle metadata with null values', () => {
       const logger = new ZunoLogger({ level: 'info' });
       logger.info('Test', { data: null });
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle metadata with undefined values', () => {
       const logger = new ZunoLogger({ level: 'info' });
       logger.info('Test', { data: undefined });
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle deeply nested metadata', () => {
@@ -476,26 +475,26 @@ describe('Edge Cases - Logger', () => {
       };
 
       logger.info('Test', { data: deepMeta });
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle metadata with arrays', () => {
       const logger = new ZunoLogger({ level: 'info' });
       logger.info('Test', { data: [1, 2, 3, [4, 5, [6, 7]]] });
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle metadata with functions', () => {
       const logger = new ZunoLogger({ level: 'info' });
       logger.info('Test', { data: { fn: () => {} } });
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle metadata with symbols', () => {
       const logger = new ZunoLogger({ level: 'info' });
       const sym = Symbol('test');
       logger.info('Test', { data: { [sym]: 'value' } });
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
 
     it('should handle very large metadata objects', () => {
@@ -506,7 +505,7 @@ describe('Edge Cases - Logger', () => {
       }
 
       logger.info('Test', { data: largeMeta });
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(logStore.getAll().length).toBeGreaterThan(0);
     });
   });
 

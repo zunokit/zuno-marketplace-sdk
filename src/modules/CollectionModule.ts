@@ -15,18 +15,26 @@ import type {
 } from '../types/contracts';
 import type { TransactionReceipt } from '../types/entities';
 import { validateAddress, ErrorCodes } from '../utils/errors';
+import { safeCall } from '../utils/helpers';
 
 /**
  * CollectionModule handles NFT collection creation and minting
  */
 export class CollectionModule extends BaseModule {
+  private log(message: string, data?: unknown) {
+    this.logger.debug(message, { module: 'Collection', data });
+  }
+
   /**
    * Create a new ERC721 collection
    */
   async createERC721Collection(
     params: CreateERC721CollectionParams
   ): Promise<{ address: string; tx: TransactionReceipt }> {
-    return this.createCollection(params, 'ERC721CollectionFactory', 'createERC721Collection');
+    this.log('createERC721Collection started', { name: params.name, symbol: params.symbol });
+    const result = await this.createCollection(params, 'ERC721CollectionFactory', 'createERC721Collection');
+    this.log('createERC721Collection completed', { address: result.address, txHash: result.tx.hash });
+    return result;
   }
 
   /**
@@ -35,7 +43,10 @@ export class CollectionModule extends BaseModule {
   async createERC1155Collection(
     params: CreateERC1155CollectionParams
   ): Promise<{ address: string; tx: TransactionReceipt }> {
-    return this.createCollection(params, 'ERC1155CollectionFactory', 'createERC1155Collection');
+    this.log('createERC1155Collection started', { name: params.name, symbol: params.symbol });
+    const result = await this.createCollection(params, 'ERC1155CollectionFactory', 'createERC1155Collection');
+    this.log('createERC1155Collection completed', { address: result.address, txHash: result.tx.hash });
+    return result;
   }
 
   /**
@@ -52,6 +63,7 @@ export class CollectionModule extends BaseModule {
     const provider = this.ensureProvider();
     this.ensureSigner();
 
+    this.log('Getting factory contract', { factoryType });
     const factoryContract = await this.contractRegistry.getContract(
       factoryType,
       this.getNetworkId(),
@@ -61,15 +73,17 @@ export class CollectionModule extends BaseModule {
     );
 
     const contractParams = await this.buildCollectionParams(collectionParams);
+    this.log('Sending transaction', { methodName });
 
     const receipt = await txManager.sendTransaction(
       factoryContract,
       methodName,
       [contractParams],
-      options
+      { ...options, module: 'Collection' }
     );
 
     const address = await this.extractCollectionAddress(receipt);
+    this.log('Collection address extracted', { address });
 
     return { address, tx: receipt };
   }
@@ -81,18 +95,22 @@ export class CollectionModule extends BaseModule {
     const signerAddress = await this.signer!.getAddress();
     const { ethers } = await import('ethers');
 
+    const mintPriceWei = params.mintPrice ? ethers.parseEther(params.mintPrice) : 0n;
+    
     return {
       name: params.name,
       symbol: params.symbol,
       owner: params.owner || signerAddress,
       description: params.description || '',
-      mintPrice: params.mintPrice ? ethers.parseEther(params.mintPrice) : 0n,
+      mintPrice: mintPriceWei,
       royaltyFee: params.royaltyFee || 0,
       maxSupply: params.maxSupply,
-      mintLimitPerWallet: params.mintLimitPerWallet || 0,
-      mintStartTime: params.mintStartTime || 0,
-      allowlistMintPrice: params.allowlistMintPrice ? ethers.parseEther(params.allowlistMintPrice) : 0n,
-      publicMintPrice: params.publicMintPrice ? ethers.parseEther(params.publicMintPrice) : 0n,
+      // Default to maxSupply if not specified (0 blocks all minting)
+      mintLimitPerWallet: params.mintLimitPerWallet ?? params.maxSupply,
+      mintStartTime: params.mintStartTime || Math.floor(Date.now() / 1000),
+      // Default allowlist/public prices to mintPrice if not specified
+      allowlistMintPrice: params.allowlistMintPrice ? ethers.parseEther(params.allowlistMintPrice) : mintPriceWei,
+      publicMintPrice: params.publicMintPrice ? ethers.parseEther(params.publicMintPrice) : mintPriceWei,
       allowlistStageDuration: params.allowlistStageDuration || 0,
       tokenURI: params.tokenURI || '',
     };
@@ -105,42 +123,25 @@ export class CollectionModule extends BaseModule {
     params: MintERC721Params
   ): Promise<{ tokenId: string; tx: TransactionReceipt }> {
     const { collectionAddress, recipient, value, options } = params;
+    this.log('mintERC721 started', { collectionAddress, recipient, value });
 
     validateAddress(collectionAddress, 'collectionAddress');
     validateAddress(recipient, 'recipient');
 
     const txManager = this.ensureTxManager();
-    this.ensureProvider(); // Ensure provider is available
+    this.ensureProvider();
 
-    // Minimal ABI for ERC721 mint function
-    const mintABI = [
-      'function mint(address to) payable',
-    ];
-
-    // Create contract instance
+    const mintABI = ['function mint(address to) payable'];
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(
-      collectionAddress,
-      mintABI,
-      this.signer
-    );
+    const collectionContract = new ethers.Contract(collectionAddress, mintABI, this.signer);
 
-    // Prepare transaction options with value (for payable mint)
-    const txOptions = {
-      ...options,
-      value: value || options?.value,
-    };
+    const txOptions = { ...options, value: value || options?.value };
 
-    // Mint NFT - contract expects: (address to) payable
-    const receipt = await txManager.sendTransaction(
-      collectionContract,
-      'mint',
-      [recipient],
-      txOptions
-    );
+    this.log('Sending mint transaction');
+    const receipt = await txManager.sendTransaction(collectionContract, 'mint', [recipient], { ...txOptions, module: 'Collection' });
 
-    // Extract token ID from event logs
     const tokenId = await this.extractTokenId(receipt);
+    this.log('mintERC721 completed', { tokenId, txHash: receipt.hash });
 
     return { tokenId, tx: receipt };
   }
@@ -152,6 +153,7 @@ export class CollectionModule extends BaseModule {
     params: BatchMintERC721Params
   ): Promise<{ tx: TransactionReceipt }> {
     const { collectionAddress, recipient, amount, value, options } = params;
+    this.log('batchMintERC721 started', { collectionAddress, recipient, amount, value });
 
     validateAddress(collectionAddress, 'collectionAddress');
     validateAddress(recipient, 'recipient');
@@ -161,73 +163,76 @@ export class CollectionModule extends BaseModule {
     }
 
     const txManager = this.ensureTxManager();
-    this.ensureProvider(); // Ensure provider is available
+    this.ensureProvider();
 
-    // Minimal ABI for ERC721 batch mint function
-    const batchMintABI = [
-      'function batchMintERC721(address to, uint256 amount) payable',
-    ];
-
-    // Create contract instance
+    const batchMintABI = ['function batchMintERC721(address to, uint256 amount) payable'];
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(
-      collectionAddress,
-      batchMintABI,
-      this.signer
-    );
+    const collectionContract = new ethers.Contract(collectionAddress, batchMintABI, this.signer);
 
-    // Prepare transaction options with value (for payable mint)
-    const txOptions = {
-      ...options,
-      value: value || options?.value,
-    };
+    const txOptions = { ...options, value: value || options?.value };
 
-    // Batch mint NFTs - contract expects: (address to, uint256 amount) payable
-    const receipt = await txManager.sendTransaction(
-      collectionContract,
-      'batchMintERC721',
-      [recipient, amount],
-      txOptions
-    );
+    this.log('Sending batch mint transaction', { amount });
+    const receipt = await txManager.sendTransaction(collectionContract, 'batchMintERC721', [recipient, amount], { ...txOptions, module: 'Collection' });
+    this.log('batchMintERC721 completed', { txHash: receipt.hash });
 
     return { tx: receipt };
   }
 
   /**
-   * Mint an ERC1155 NFT
+   * Mint ERC1155 NFTs
    */
   async mintERC1155(
     params: MintERC1155Params
   ): Promise<{ tx: TransactionReceipt }> {
-    const { collectionAddress, recipient, tokenId, amount, data, options } =
-      params;
+    const { collectionAddress, recipient, amount, value, options } = params;
+    this.log('mintERC1155 started', { collectionAddress, recipient, amount, value });
 
     validateAddress(collectionAddress, 'collectionAddress');
     validateAddress(recipient, 'recipient');
 
     const txManager = this.ensureTxManager();
-    this.ensureProvider(); // Ensure provider is available
+    this.ensureProvider();
 
-    // Minimal ABI for ERC1155 mint function
-    const mintABI = [
-      'function mint(address to, uint256 id, uint256 amount, bytes data) payable',
-    ];
-
-    // Create contract instance
+    const mintABI = ['function mint(address to, uint256 amount) payable'];
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(
+    const collectionContract = new ethers.Contract(collectionAddress, mintABI, this.signer);
+
+    const txOptions = { ...options, value: value || options?.value };
+
+    this.log('Sending mint transaction');
+    const tx = await txManager.sendTransaction(collectionContract, 'mint', [recipient, amount], { ...txOptions, module: 'Collection' });
+    this.log('mintERC1155 completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
+   * Batch mint ERC1155 NFTs
+   */
+  async batchMintERC1155(
+    params: MintERC1155Params
+  ): Promise<{ tx: TransactionReceipt }> {
+    const { collectionAddress, recipient, amount, value, options } = params;
+    this.log('batchMintERC1155 started', { collectionAddress, recipient, amount, value });
+
+    validateAddress(collectionAddress, 'collectionAddress');
+    validateAddress(recipient, 'recipient');
+
+    if (amount <= 0) throw new Error('Amount must be greater than 0');
+
+    const txManager = this.ensureTxManager();
+    this.ensureProvider();
+
+    const { ethers } = await import('ethers');
+    const contract = new ethers.Contract(
       collectionAddress,
-      mintABI,
+      ['function batchMintERC1155(address to, uint256 amount) payable'],
       this.signer
     );
 
-    // Mint NFT
-    const tx = await txManager.sendTransaction(
-      collectionContract,
-      'mint',
-      [recipient, tokenId, amount, data || '0x'],
-      options
-    );
+    const txOptions = { ...options, value: value || options?.value };
+    const tx = await txManager.sendTransaction(contract, 'batchMintERC1155', [recipient, amount], { ...txOptions, module: 'Collection' });
+    this.log('batchMintERC1155 completed', { txHash: tx.hash });
 
     return { tx };
   }
@@ -239,25 +244,18 @@ export class CollectionModule extends BaseModule {
     isValid: boolean;
     tokenType: TokenStandard;
   }> {
+    this.log('verifyCollection started', { address });
     validateAddress(address);
 
     const provider = this.ensureProvider();
 
     try {
-      const tokenType = await this.contractRegistry.verifyTokenStandard(
-        address,
-        provider
-      );
-
-      return {
-        isValid: tokenType !== 'Unknown',
-        tokenType,
-      };
+      const tokenType = await this.contractRegistry.verifyTokenStandard(address, provider);
+      this.log('verifyCollection completed', { address, tokenType, isValid: tokenType !== 'Unknown' });
+      return { isValid: tokenType !== 'Unknown', tokenType };
     } catch {
-      return {
-        isValid: false,
-        tokenType: 'Unknown',
-      };
+      this.log('verifyCollection failed', { address });
+      return { isValid: false, tokenType: 'Unknown' };
     }
   }
 
@@ -269,49 +267,372 @@ export class CollectionModule extends BaseModule {
     symbol: string;
     totalSupply: string;
     tokenType: TokenStandard;
+    description: string;
+    maxSupply: string;
+    mintPrice: string;
+    royaltyFee: number;
+    mintLimitPerWallet: number;
+    owner: string;
   }> {
+    this.log('getCollectionInfo started', { address });
     validateAddress(address);
 
     const provider = this.ensureProvider();
 
-    // Verify token standard first
-    const tokenType = await this.contractRegistry.verifyTokenStandard(
-      address,
-      provider
-    );
-
+    const tokenType = await this.contractRegistry.verifyTokenStandard(address, provider);
     if (tokenType === 'Unknown') {
-      throw this.error(
-        ErrorCodes.CONTRACT_CALL_FAILED,
-        'Unable to detect token standard'
-      );
+      this.log('getCollectionInfo failed - unknown token standard', { address });
+      throw this.error(ErrorCodes.CONTRACT_CALL_FAILED, 'Unable to detect token standard');
     }
+    this.log('Token standard detected', { address, tokenType });
 
-    // Use minimal ABI for standard ERC721/ERC1155 view functions
-    // These are standard across all collections regardless of implementation
     const minimalABI = [
       'function name() view returns (string)',
       'function symbol() view returns (string)',
+      'function getDescription() view returns (string)',
+      'function getRoyaltyFee() view returns (uint256)',
+      'function owner() view returns (address)',
+      'function getMintInfo(address) view returns (uint256,uint256,uint256,uint8,uint256,uint256,uint256,uint256,uint256,uint256,uint256,bool)',
+      'function getTotalMinted() view returns (uint256)',
       'function totalSupply() view returns (uint256)',
     ];
 
-    // Create contract instance with minimal ABI
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(address, minimalABI, provider);
+    const contract = new ethers.Contract(address, minimalABI, provider);
 
-    // Get collection details
-    const [name, symbol, totalSupply] = await Promise.all([
-      collectionContract.name() as Promise<string>,
-      collectionContract.symbol() as Promise<string>,
-      collectionContract.totalSupply() as Promise<bigint>,
+    const [name, symbol, description, royaltyFee, owner] = await Promise.all([
+      safeCall(() => contract.name(), 'Unknown Collection'),
+      safeCall(() => contract.symbol(), 'UNKNOWN'),
+      safeCall(() => contract.getDescription(), ''),
+      safeCall(() => contract.getRoyaltyFee().then((v: bigint) => Number(v)), 0),
+      safeCall(() => contract.owner(), ''),
     ]);
 
+    let totalSupply = '0';
+    let maxSupply = '0';
+    let mintPrice = '0';
+    let mintLimitPerWallet = 0;
+
+    // getMintInfo returns all mint data in one call (Zuno collections)
+    const mintInfo = await safeCall(() => contract.getMintInfo(ethers.ZeroAddress), null);
+    if (mintInfo) {
+      totalSupply = mintInfo[7].toString();
+      maxSupply = mintInfo[8].toString();
+      mintPrice = ethers.formatEther(mintInfo[4]);
+      mintLimitPerWallet = Number(mintInfo[10]);
+      this.log('getMintInfo success', { totalSupply, maxSupply, mintPrice, mintLimitPerWallet });
+    } else {
+      this.log('getMintInfo not available, using fallback');
+      totalSupply = await safeCall(
+        () => contract.getTotalMinted().then((v: bigint) => v.toString()),
+        await safeCall(() => contract.totalSupply().then((v: bigint) => v.toString()), '0')
+      );
+    }
+
+    this.log('getCollectionInfo completed', { name, symbol, totalSupply, maxSupply, owner });
     return {
       name,
       symbol,
-      totalSupply: totalSupply.toString(),
+      totalSupply,
       tokenType,
+      description,
+      maxSupply,
+      mintPrice,
+      royaltyFee,
+      mintLimitPerWallet,
+      owner,
     };
+  }
+
+  /**
+   * Get all created collections from factory events
+   * @param options - Optional filter options
+   * @returns Array of collection addresses with creator info
+   */
+  async getCreatedCollections(options?: {
+    creator?: string;
+    fromBlock?: number;
+    toBlock?: number | 'latest';
+  }): Promise<Array<{
+    address: string;
+    creator: string;
+    blockNumber: number;
+    transactionHash: string;
+    type: 'ERC721' | 'ERC1155';
+  }>> {
+    this.log('getCreatedCollections started', options);
+    const provider = this.ensureProvider();
+    const { ethers } = await import('ethers');
+
+    // Get factory contract addresses
+    const erc721Factory = await this.contractRegistry.getContract(
+      'ERC721CollectionFactory',
+      this.getNetworkId(),
+      provider
+    );
+    const erc1155Factory = await this.contractRegistry.getContract(
+      'ERC1155CollectionFactory',
+      this.getNetworkId(),
+      provider
+    );
+
+    const ERC721_CREATED_SIG = ethers.id('ERC721CollectionCreated(address,address)');
+    const ERC1155_CREATED_SIG = ethers.id('ERC1155CollectionCreated(address,address)');
+
+    const fromBlock = options?.fromBlock ?? 0;
+    const toBlock = options?.toBlock ?? 'latest';
+
+    const collections: Array<{
+      address: string;
+      creator: string;
+      blockNumber: number;
+      transactionHash: string;
+      type: 'ERC721' | 'ERC1155';
+    }> = [];
+
+    // Fetch ERC721 collection events
+    try {
+      const erc721Logs = await provider.getLogs({
+        address: await erc721Factory.getAddress(),
+        topics: [
+          ERC721_CREATED_SIG,
+          null,
+          options?.creator ? ethers.zeroPadValue(options.creator, 32) : null,
+        ],
+        fromBlock,
+        toBlock,
+      });
+
+      for (const log of erc721Logs) {
+        const collectionAddress = ethers.getAddress('0x' + log.topics[1].slice(26));
+        const creator = ethers.getAddress('0x' + log.topics[2].slice(26));
+        collections.push({
+          address: collectionAddress,
+          creator,
+          blockNumber: log.blockNumber,
+          transactionHash: log.transactionHash,
+          type: 'ERC721',
+        });
+      }
+    } catch (error) {
+      this.log('Failed to fetch ERC721 events', error);
+    }
+
+    // Fetch ERC1155 collection events
+    try {
+      const erc1155Logs = await provider.getLogs({
+        address: await erc1155Factory.getAddress(),
+        topics: [
+          ERC1155_CREATED_SIG,
+          null,
+          options?.creator ? ethers.zeroPadValue(options.creator, 32) : null,
+        ],
+        fromBlock,
+        toBlock,
+      });
+
+      for (const log of erc1155Logs) {
+        const collectionAddress = ethers.getAddress('0x' + log.topics[1].slice(26));
+        const creator = ethers.getAddress('0x' + log.topics[2].slice(26));
+        collections.push({
+          address: collectionAddress,
+          creator,
+          blockNumber: log.blockNumber,
+          transactionHash: log.transactionHash,
+          type: 'ERC1155',
+        });
+      }
+    } catch (error) {
+      this.log('Failed to fetch ERC1155 events', error);
+    }
+
+    // Sort by block number descending (newest first)
+    collections.sort((a, b) => b.blockNumber - a.blockNumber);
+
+    this.log('getCreatedCollections completed', { count: collections.length });
+    return collections;
+  }
+
+  /**
+   * Get tokens minted by a user (internal - doesn't verify current ownership)
+   */
+  private async getMintedTokens(
+    collectionAddress: string,
+    userAddress: string
+  ): Promise<Array<{ tokenId: string; amount: number }>> {
+    this.log('getMintedTokens started', { collectionAddress, userAddress });
+    validateAddress(collectionAddress, 'collectionAddress');
+    validateAddress(userAddress, 'userAddress');
+
+    const provider = this.ensureProvider();
+    const { ethers } = await import('ethers');
+    
+    // Normalize addresses to proper checksum format
+    const normalizedCollection = ethers.getAddress(collectionAddress);
+    const normalizedUser = ethers.getAddress(userAddress);
+    
+    const tokensMap = new Map<string, number>();
+
+    // 1. Check custom Minted event (Zuno collections)
+    const mintedLogs = await safeCall(
+      () => provider.getLogs({
+        address: normalizedCollection,
+        topics: [
+          ethers.id('Minted(address,uint256,uint256)'),
+          ethers.zeroPadValue(normalizedUser, 32),
+        ],
+        fromBlock: 0,
+        toBlock: 'latest',
+      }),
+      []
+    );
+    this.log('Minted logs found', { count: mintedLogs.length });
+
+    for (const log of mintedLogs) {
+      const tokenId = ethers.toBigInt(log.topics[2]).toString();
+      const amount = Number(ethers.toBigInt(log.data));
+      tokensMap.set(tokenId, (tokensMap.get(tokenId) || 0) + amount);
+    }
+
+    // 2. Check ERC-1155 TransferSingle events (mint = from zero address to user)
+    // TransferSingle(operator, from, to, id, value) - from=zero means mint
+    const transferSingleLogs = await safeCall(
+      () => provider.getLogs({
+        address: normalizedCollection,
+        topics: [
+          ethers.id('TransferSingle(address,address,address,uint256,uint256)'),
+          null, // operator (any)
+          ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = zero (mint)
+          ethers.zeroPadValue(normalizedUser, 32), // to = user
+        ],
+        fromBlock: 0,
+        toBlock: 'latest',
+      }),
+      []
+    );
+    this.log('TransferSingle (mint) logs found', { count: transferSingleLogs.length });
+
+    for (const log of transferSingleLogs) {
+      // data contains: id (uint256), value (uint256)
+      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(['uint256', 'uint256'], log.data);
+      const tokenId = decoded[0].toString();
+      const amount = Number(decoded[1]);
+      tokensMap.set(tokenId, (tokensMap.get(tokenId) || 0) + amount);
+    }
+
+    // 3. Check ERC-1155 TransferBatch events (mint = from zero address to user)
+    // TransferBatch(operator, from, to, ids[], values[])
+    const transferBatchLogs = await safeCall(
+      () => provider.getLogs({
+        address: normalizedCollection,
+        topics: [
+          ethers.id('TransferBatch(address,address,address,uint256[],uint256[])'),
+          null, // operator (any)
+          ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = zero (mint)
+          ethers.zeroPadValue(normalizedUser, 32), // to = user
+        ],
+        fromBlock: 0,
+        toBlock: 'latest',
+      }),
+      []
+    );
+    this.log('TransferBatch (mint) logs found', { count: transferBatchLogs.length });
+
+    for (const log of transferBatchLogs) {
+      // data contains: ids (uint256[]), values (uint256[])
+      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(['uint256[]', 'uint256[]'], log.data);
+      const ids = decoded[0] as bigint[];
+      const values = decoded[1] as bigint[];
+      for (let i = 0; i < ids.length; i++) {
+        const tokenId = ids[i].toString();
+        const amount = Number(values[i]);
+        tokensMap.set(tokenId, (tokensMap.get(tokenId) || 0) + amount);
+      }
+    }
+
+    // 4. Check ERC-721 Transfer events (mint = from zero address to user)
+    const erc721TransferLogs = await safeCall(
+      () => provider.getLogs({
+        address: normalizedCollection,
+        topics: [
+          ethers.id('Transfer(address,address,uint256)'),
+          ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = zero (mint)
+          ethers.zeroPadValue(normalizedUser, 32), // to = user
+        ],
+        fromBlock: 0,
+        toBlock: 'latest',
+      }),
+      []
+    );
+    this.log('ERC721 Transfer (mint) logs found', { count: erc721TransferLogs.length });
+
+    for (const log of erc721TransferLogs) {
+      const tokenId = ethers.toBigInt(log.topics[3]).toString();
+      tokensMap.set(tokenId, 1); // ERC-721 always amount = 1
+    }
+
+    const tokens = Array.from(tokensMap.entries()).map(([tokenId, amount]) => ({ tokenId, amount }));
+    this.log('getMintedTokens completed', { count: tokens.length, tokens });
+    return tokens;
+  }
+
+  /**
+   * Get tokens currently owned by a user from a specific collection
+   * Verifies actual on-chain ownership using ownerOf/balanceOf
+   */
+  async getUserOwnedTokens(
+    collectionAddress: string,
+    userAddress: string
+  ): Promise<Array<{ tokenId: string; amount: number }>> {
+    this.log('getUserOwnedTokens started', { collectionAddress, userAddress });
+    validateAddress(collectionAddress, 'collectionAddress');
+    validateAddress(userAddress, 'userAddress');
+
+    const { ethers } = await import('ethers');
+    
+    // Normalize addresses to proper checksum format
+    const normalizedCollection = ethers.getAddress(collectionAddress);
+    const normalizedUser = ethers.getAddress(userAddress);
+
+    // First get minted tokens as candidates
+    const mintedTokens = await this.getMintedTokens(normalizedCollection, normalizedUser);
+    
+    if (mintedTokens.length === 0) {
+      return [];
+    }
+
+    const provider = this.ensureProvider();
+
+    const ERC721_ABI = ['function ownerOf(uint256 tokenId) view returns (address)'];
+    const ERC1155_ABI = ['function balanceOf(address account, uint256 id) view returns (uint256)'];
+
+    const erc721Contract = new ethers.Contract(normalizedCollection, ERC721_ABI, provider);
+    const erc1155Contract = new ethers.Contract(normalizedCollection, ERC1155_ABI, provider);
+
+    const ownedTokens: Array<{ tokenId: string; amount: number }> = [];
+
+    for (const token of mintedTokens) {
+      try {
+        // Try ERC721 ownerOf first
+        const owner = await erc721Contract.ownerOf(token.tokenId);
+        if (owner.toLowerCase() === normalizedUser.toLowerCase()) {
+          ownedTokens.push({ tokenId: token.tokenId, amount: 1 });
+        }
+      } catch {
+        // Fallback to ERC1155 balanceOf
+        try {
+          const balance = await erc1155Contract.balanceOf(normalizedUser, token.tokenId);
+          if (balance > 0n) {
+            ownedTokens.push({ tokenId: token.tokenId, amount: Number(balance) });
+          }
+        } catch {
+          // Token not owned or invalid - skip
+        }
+      }
+    }
+
+    this.log('getUserOwnedTokens completed', { count: ownedTokens.length });
+    return ownedTokens;
   }
 
   /**
@@ -321,64 +642,39 @@ export class CollectionModule extends BaseModule {
     receipt: TransactionReceipt
   ): Promise<string> {
     const { ethers } = await import('ethers');
-    
-    // Debug: log receipt info
-    console.log('[SDK] extractCollectionAddress - logs count:', receipt.logs?.length || 0);
-    console.log('[SDK] extractCollectionAddress - receipt status:', receipt.status);
-    
+
     // Event signatures for collection creation
     const ERC721_CREATED_SIG = ethers.id('ERC721CollectionCreated(address,address)');
     const ERC1155_CREATED_SIG = ethers.id('ERC1155CollectionCreated(address,address)');
-    
-    console.log('[SDK] Looking for event sigs:', { ERC721_CREATED_SIG, ERC1155_CREATED_SIG });
 
     // Look for CollectionCreated event in logs
-    for (let i = 0; i < receipt.logs.length; i++) {
-      const logEntry = receipt.logs[i];
+    for (const logEntry of receipt.logs) {
       try {
-        // ethers v6 log structure
-        const log = logEntry as any;
+        const log = logEntry as { topics?: string[]; address?: string };
         const topics = log.topics || [];
-        
-        console.log(`[SDK] Log ${i}:`, {
-          address: log.address,
-          topicsCount: topics.length,
-          topic0: topics[0],
-          topic1: topics[1],
-        });
 
-        if (topics.length < 2) {
-          continue;
-        }
+        if (topics.length < 2) continue;
 
         const eventSig = topics[0];
-        
-        // Check if this is a collection created event
+
         if (eventSig === ERC721_CREATED_SIG || eventSig === ERC1155_CREATED_SIG) {
-          console.log('[SDK] Found collection created event!');
-          // Collection address is the first indexed parameter (topic[1])
           const address = ethers.getAddress('0x' + topics[1].slice(26));
-          console.log('[SDK] Extracted address:', address);
           if (address !== ethers.ZeroAddress) {
             return address;
           }
         }
-      } catch (err) {
-        console.log(`[SDK] Error parsing log ${i}:`, err);
+      } catch {
         continue;
       }
     }
 
-    // Fallback: try to find any valid address in topics (skip first log which is usually proxy)
-    console.log('[SDK] Fallback: searching for valid address in all logs');
-    for (let i = 0; i < receipt.logs.length; i++) {
-      const logEntry = receipt.logs[i];
+    // Fallback: try to find any valid address in topics
+    for (const logEntry of receipt.logs) {
       try {
-        const log = logEntry as any;
+        const log = logEntry as { topics?: string[] };
         const topics = log.topics || [];
         if (topics.length >= 2) {
           const address = ethers.getAddress('0x' + topics[1].slice(26));
-          console.log(`[SDK] Fallback log ${i} address:`, address);
           if (address !== ethers.ZeroAddress) {
             return address;
           }
@@ -418,5 +714,114 @@ export class CollectionModule extends BaseModule {
       ErrorCodes.CONTRACT_CALL_FAILED,
       'Could not extract token ID from transaction'
     );
+  }
+
+  /**
+   * Add addresses to collection allowlist
+   */
+  async addToAllowlist(
+    collectionAddress: string,
+    addresses: string[]
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('addToAllowlist started', { collectionAddress, count: addresses.length });
+    
+    validateAddress(collectionAddress, 'collectionAddress');
+    if (addresses.length === 0) {
+      throw this.error('INVALID_AMOUNT', 'addresses array cannot be empty');
+    }
+    if (addresses.length > 100) {
+      throw this.error('INVALID_AMOUNT', 'Maximum 100 addresses per batch');
+    }
+
+    const txManager = this.ensureTxManager();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function addToAllowlist(address[] calldata addresses) external'];
+    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+
+    const tx = await txManager.sendTransaction(contract, 'addToAllowlist', [addresses], { module: 'Collection' });
+    this.log('addToAllowlist completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
+   * Remove addresses from collection allowlist
+   */
+  async removeFromAllowlist(
+    collectionAddress: string,
+    addresses: string[]
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('removeFromAllowlist started', { collectionAddress, count: addresses.length });
+    
+    validateAddress(collectionAddress, 'collectionAddress');
+    if (addresses.length === 0) {
+      throw this.error('INVALID_AMOUNT', 'addresses array cannot be empty');
+    }
+
+    const txManager = this.ensureTxManager();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function removeFromAllowlist(address[] calldata addresses) external'];
+    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+
+    const tx = await txManager.sendTransaction(contract, 'removeFromAllowlist', [addresses], { module: 'Collection' });
+    this.log('removeFromAllowlist completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
+   * Set allowlist-only mode (disables public minting)
+   */
+  async setAllowlistOnly(
+    collectionAddress: string,
+    enabled: boolean
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('setAllowlistOnly started', { collectionAddress, enabled });
+    
+    validateAddress(collectionAddress, 'collectionAddress');
+
+    const txManager = this.ensureTxManager();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function setAllowlistOnly(bool allowlistOnly) external'];
+    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+
+    const tx = await txManager.sendTransaction(contract, 'setAllowlistOnly', [enabled], { module: 'Collection' });
+    this.log('setAllowlistOnly completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
+   * Check if address is in allowlist
+   */
+  async isInAllowlist(collectionAddress: string, address: string): Promise<boolean> {
+    validateAddress(collectionAddress, 'collectionAddress');
+    validateAddress(address, 'address');
+
+    const provider = this.ensureProvider();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function isInAllowlist(address account) external view returns (bool)'];
+    const contract = new ethers.Contract(collectionAddress, abi, provider);
+
+    return await contract.isInAllowlist(address);
+  }
+
+  /**
+   * Check if collection is in allowlist-only mode
+   */
+  async isAllowlistOnly(collectionAddress: string): Promise<boolean> {
+    validateAddress(collectionAddress, 'collectionAddress');
+
+    const provider = this.ensureProvider();
+    const { ethers } = await import('ethers');
+    
+    const abi = ['function isAllowlistOnly() external view returns (bool)'];
+    const contract = new ethers.Contract(collectionAddress, abi, provider);
+
+    return await contract.isAllowlistOnly();
   }
 }

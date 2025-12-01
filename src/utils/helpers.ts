@@ -234,7 +234,8 @@ export function buildTransactionOverrides(options?: {
   const overrides: ethers.Overrides = {};
 
   if (options?.value) {
-    overrides.value = options.value;
+    // Convert string to BigInt for ethers v6 compatibility
+    overrides.value = typeof options.value === 'string' ? BigInt(options.value) : options.value;
   }
 
   if (options?.gasLimit) {
@@ -345,4 +346,15 @@ export function throttle<T extends (...args: any[]) => any>(
       setTimeout(() => (inThrottle = false), limit);
     }
   };
+}
+
+/**
+ * Safely execute an async function with fallback value
+ */
+export async function safeCall<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await fn();
+  } catch {
+    return fallback;
+  }
 }

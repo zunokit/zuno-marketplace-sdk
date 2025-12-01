@@ -12,6 +12,7 @@ import { AuctionModule } from "../modules/AuctionModule";
 import { EventEmitter } from "../utils/events";
 import { ZunoSDKError, ErrorCodes } from "../utils/errors";
 import { ZunoLogger, createNoOpLogger, type Logger } from "../utils/logger";
+import { logStore } from "../utils/logStore";
 import type { ZunoSDKConfig, SDKOptions } from "../types/config";
 
 // Singleton instance (module-level private variable)
@@ -23,7 +24,7 @@ let _singletonInstance: ZunoSDK | null = null;
 export class ZunoSDK extends EventEmitter {
   private readonly config: ZunoSDKConfig;
   private readonly apiClient: ZunoAPIClient;
-  private readonly contractRegistry: ContractRegistry;
+  readonly contractRegistry: ContractRegistry;
   private readonly queryClient: QueryClient;
   private provider?: ethers.Provider;
   private signer?: ethers.Signer;
@@ -246,9 +247,7 @@ export class ZunoSDK extends EventEmitter {
 
     this.emit("providerUpdated", { provider, signer });
 
-    if (this.config.debug) {
-      console.log("[ZunoSDK] Provider updated");
-    }
+    this.logger.debug("Provider updated", { module: "ZunoSDK" });
   }
 
   /**
@@ -306,9 +305,7 @@ export class ZunoSDK extends EventEmitter {
       networkId
     );
 
-    if (this.config.debug) {
-      console.log("[ZunoSDK] Essential ABIs prefetched");
-    }
+    this.logger.debug("Essential ABIs prefetched", { module: "ZunoSDK" });
   }
 
   /**
@@ -320,8 +317,8 @@ export class ZunoSDK extends EventEmitter {
       "ERC1155NFTExchange",
       "ERC721CollectionFactory",
       "ERC1155CollectionFactory",
-      "EnglishAuction",
-      "DutchAuction",
+      "EnglishAuctionImplementation",
+      "DutchAuctionImplementation",
       "OfferManager",
       "BundleMarketplace",
     ] as const;
@@ -333,9 +330,7 @@ export class ZunoSDK extends EventEmitter {
 
     await this.contractRegistry.prefetchABIs([...contractTypes], networkId);
 
-    if (this.config.debug) {
-      console.log("[ZunoSDK] ABIs prefetched");
-    }
+    this.logger.debug("ABIs prefetched", { module: "ZunoSDK" });
   }
 
   /**
@@ -345,9 +340,7 @@ export class ZunoSDK extends EventEmitter {
     await this.contractRegistry.clearCache();
     this.queryClient.clear();
 
-    if (this.config.debug) {
-      console.log("[ZunoSDK] Cache cleared");
-    }
+    this.logger.debug("Cache cleared", { module: "ZunoSDK" });
   }
 
   /**
@@ -377,10 +370,9 @@ export class ZunoSDK extends EventEmitter {
       typeof config.network === "string" &&
       !validNetworks.includes(config.network)
     ) {
+      // Note: Logger not yet initialized, use logStore directly
       if (config.debug) {
-        console.warn(
-          `[ZunoSDK] Unknown network: ${config.network}. Using custom chain ID.`
-        );
+        logStore.add('warn', `Unknown network: ${config.network}. Using custom chain ID.`, { module: 'ZunoSDK' });
       }
     }
   }
