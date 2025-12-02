@@ -27,18 +27,46 @@ import { ErrorCodes } from '../utils/errors';
  * ExchangeModule handles marketplace trading operations
  */
 export class ExchangeModule extends BaseModule {
+  private approvalCache = new Map<string, boolean>();
+
+  private log(message: string, data?: unknown) {
+    this.logger.debug(message, { module: 'Exchange', data });
+  }
+
+  /**
+   * Clear the approval status cache
+   * 
+   * Use this when you need to force re-checking approval status,
+   * for example after revoking approvals or switching accounts.
+   * 
+   * @example
+   * ```typescript
+   * sdk.exchange.clearApprovalCache();
+   * ```
+   */
+  clearApprovalCache(): void {
+    this.approvalCache.clear();
+    this.log('Approval cache cleared');
+  }
+
   /**
    * Ensure NFT collection is approved for Exchange contract
-   * Checks approval status and approves if needed
+   * Checks cache first, then RPC if needed, and grants approval if required
    */
   private async ensureApproval(
     collectionAddress: string,
     ownerAddress: string
   ): Promise<void> {
+    const cacheKey = `${collectionAddress.toLowerCase()}-${ownerAddress.toLowerCase()}`;
+
+    if (this.approvalCache.get(cacheKey)) {
+      this.log('Approval cache hit', { collectionAddress, ownerAddress });
+      return;
+    }
+
     const provider = this.ensureProvider();
     const signer = this.ensureSigner();
 
-    // Get Exchange contract address
     const exchangeContract = await this.contractRegistry.getContract(
       'ERC721NFTExchange',
       this.getNetworkId(),
@@ -46,7 +74,6 @@ export class ExchangeModule extends BaseModule {
     );
     const operatorAddress = await exchangeContract.getAddress();
 
-    // Check if already approved
     const erc721Abi = [
       'function isApprovedForAll(address owner, address operator) view returns (bool)',
       'function setApprovalForAll(address operator, bool approved)',
@@ -55,10 +82,17 @@ export class ExchangeModule extends BaseModule {
 
     const isApproved = await nftContract.isApprovedForAll(ownerAddress, operatorAddress);
 
-    if (!isApproved) {
-      const tx = await nftContract.setApprovalForAll(operatorAddress, true);
-      await tx.wait();
+    if (isApproved) {
+      this.approvalCache.set(cacheKey, true);
+      this.log('Approval already granted, cached', { collectionAddress, ownerAddress });
+      return;
     }
+
+    this.log('Approving Exchange for collection', { collectionAddress, operatorAddress });
+    const tx = await nftContract.setApprovalForAll(operatorAddress, true);
+    await tx.wait();
+    this.approvalCache.set(cacheKey, true);
+    this.log('Approval confirmed and cached');
   }
 
   /**
