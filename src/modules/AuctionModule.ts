@@ -24,6 +24,7 @@ import {
   validateAmount,
   validateDuration,
 } from '../utils/errors';
+import { validateBatchSize, BATCH_LIMITS } from '../utils/batch';
 
 
 /**
@@ -337,8 +338,7 @@ export class AuctionModule extends BaseModule {
     } = params;
 
     validateAddress(collectionAddress, 'collectionAddress');
-    if (tokenIds.length === 0) throw this.error('INVALID_AMOUNT', 'tokenIds array cannot be empty');
-    if (tokenIds.length > 20) throw this.error('INVALID_AMOUNT', 'Maximum 20 auctions per batch');
+    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, 'tokenIds');
     validateAmount(startingBid, 'startingBid');
     validateDuration(duration);
 
@@ -421,8 +421,7 @@ export class AuctionModule extends BaseModule {
     } = params;
 
     validateAddress(collectionAddress, 'collectionAddress');
-    if (tokenIds.length === 0) throw this.error('INVALID_AMOUNT', 'tokenIds array cannot be empty');
-    if (tokenIds.length > 20) throw this.error('INVALID_AMOUNT', 'Maximum 20 auctions per batch');
+    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, 'tokenIds');
     validateAmount(startPrice, 'startPrice');
     validateAmount(endPrice, 'endPrice');
     validateDuration(duration);
@@ -671,12 +670,7 @@ export class AuctionModule extends BaseModule {
     auctionIds: string[],
     options?: TransactionOptions
   ): Promise<{ cancelledCount: number; tx: TransactionReceipt }> {
-    if (auctionIds.length === 0) {
-      throw this.error('INVALID_AMOUNT', 'auctionIds array cannot be empty');
-    }
-    if (auctionIds.length > 20) {
-      throw this.error('INVALID_AMOUNT', 'Maximum 20 cancellations per batch');
-    }
+    validateBatchSize(auctionIds, BATCH_LIMITS.AUCTIONS, 'auctionIds');
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
