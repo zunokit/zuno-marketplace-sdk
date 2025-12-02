@@ -30,7 +30,7 @@ export { TransactionManager } from './utils/transactions';
 export { ZunoLogger, createNoOpLogger } from './utils/logger';
 export type { Logger, LoggerConfig, LogLevel, LogMetadata } from './utils/logger';
 export { logStore } from './utils/logStore';
-export type { LogEntry } from './utils/logStore';
+export type { LogEntry, LogStoreConfig } from './utils/logStore';
 export { transactionStore } from './utils/transactionStore';
 export type { TransactionEntry } from './utils/transactionStore';
 
