@@ -191,3 +191,40 @@ export interface PaginatedResult<T> {
   pageSize: number;
   hasMore: boolean;
 }
+
+/**
+ * Batch progress event - start
+ */
+export interface BatchProgressStart {
+  operation: string;
+  module: string;
+  totalItems: number;
+  timestamp: number;
+}
+
+/**
+ * Batch progress event - item processed
+ */
+export interface BatchProgressItem {
+  operation: string;
+  module: string;
+  index: number;
+  totalItems: number;
+  success: boolean;
+  itemId?: string;
+  error?: string;
+  timestamp: number;
+}
+
+/**
+ * Batch progress event - complete
+ */
+export interface BatchProgressComplete {
+  operation: string;
+  module: string;
+  totalItems: number;
+  successCount: number;
+  failCount: number;
+  duration: number;
+  timestamp: number;
+}

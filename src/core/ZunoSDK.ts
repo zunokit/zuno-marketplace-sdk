@@ -125,6 +125,7 @@ export class ZunoSDK extends EventEmitter {
         this.queryClient,
         this.config.network,
         moduleLogger,
+        this,
         this.provider,
         this.signer
       );
@@ -149,6 +150,7 @@ export class ZunoSDK extends EventEmitter {
         this.queryClient,
         this.config.network,
         moduleLogger,
+        this,
         this.provider,
         this.signer
       );
@@ -173,6 +175,7 @@ export class ZunoSDK extends EventEmitter {
         this.queryClient,
         this.config.network,
         moduleLogger,
+        this,
         this.provider,
         this.signer
       );
