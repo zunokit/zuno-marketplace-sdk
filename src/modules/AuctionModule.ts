@@ -23,6 +23,7 @@ import {
   validateTokenId,
   validateAmount,
   validateDuration,
+  ErrorCodes,
 } from '../utils/errors';
 
 
@@ -337,8 +338,12 @@ export class AuctionModule extends BaseModule {
     } = params;
 
     validateAddress(collectionAddress, 'collectionAddress');
-    if (tokenIds.length === 0) throw this.error('INVALID_AMOUNT', 'tokenIds array cannot be empty');
-    if (tokenIds.length > 20) throw this.error('INVALID_AMOUNT', 'Maximum 20 auctions per batch');
+    if (tokenIds.length === 0) {
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'tokenIds cannot be empty');
+    }
+    if (tokenIds.length > 20) {
+      throw this.error(ErrorCodes.BATCH_SIZE_EXCEEDED, 'tokenIds exceeds maximum batch size of 20');
+    }
     validateAmount(startingBid, 'startingBid');
     validateDuration(duration);
 
@@ -421,8 +426,12 @@ export class AuctionModule extends BaseModule {
     } = params;
 
     validateAddress(collectionAddress, 'collectionAddress');
-    if (tokenIds.length === 0) throw this.error('INVALID_AMOUNT', 'tokenIds array cannot be empty');
-    if (tokenIds.length > 20) throw this.error('INVALID_AMOUNT', 'Maximum 20 auctions per batch');
+    if (tokenIds.length === 0) {
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'tokenIds cannot be empty');
+    }
+    if (tokenIds.length > 20) {
+      throw this.error(ErrorCodes.BATCH_SIZE_EXCEEDED, 'tokenIds exceeds maximum batch size of 20');
+    }
     validateAmount(startPrice, 'startPrice');
     validateAmount(endPrice, 'endPrice');
     validateDuration(duration);
@@ -672,10 +681,10 @@ export class AuctionModule extends BaseModule {
     options?: TransactionOptions
   ): Promise<{ cancelledCount: number; tx: TransactionReceipt }> {
     if (auctionIds.length === 0) {
-      throw this.error('INVALID_AMOUNT', 'auctionIds array cannot be empty');
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'auctionIds cannot be empty');
     }
     if (auctionIds.length > 20) {
-      throw this.error('INVALID_AMOUNT', 'Maximum 20 cancellations per batch');
+      throw this.error(ErrorCodes.BATCH_SIZE_EXCEEDED, 'auctionIds exceeds maximum batch size of 20');
     }
 
     const txManager = this.ensureTxManager();
