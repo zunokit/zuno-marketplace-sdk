@@ -135,13 +135,20 @@ describe('ExchangeModule', () => {
     it('should validate listingId is not empty', async () => {
       await expect(
         sdk.exchange.buyNFT({ listingId: '' })
-      ).rejects.toThrow();
+      ).rejects.toThrow('must be a valid bytes32 hex string');
     });
 
-    it('should accept valid listingId', async () => {
-      // Will fail due to no signer, but validates input
+    it('should reject invalid bytes32 format', async () => {
       await expect(
-        sdk.exchange.buyNFT({ listingId: '0x1234567890' })
+        sdk.exchange.buyNFT({ listingId: '0x123' })
+      ).rejects.toThrow('must be a valid bytes32 hex string');
+    });
+
+    it('should accept valid bytes32 listingId', async () => {
+      const validBytes32 = '0x0000000000000000000000000000000000000000000000000000000000000001';
+      // Will fail due to no signer, but validates input format is correct
+      await expect(
+        sdk.exchange.buyNFT({ listingId: validBytes32 })
       ).rejects.toThrow();
     });
   });
@@ -150,13 +157,21 @@ describe('ExchangeModule', () => {
     it('should throw error for empty listingIds array', async () => {
       await expect(
         sdk.exchange.batchBuyNFT({ listingIds: [] })
-      ).rejects.toThrow('Listing IDs array cannot be empty');
+      ).rejects.toThrow('listingIds cannot be empty');
     });
 
-    it('should accept valid array of listingIds', async () => {
-      // Will fail due to no signer, but validates input
+    it('should reject invalid bytes32 format in array', async () => {
       await expect(
         sdk.exchange.batchBuyNFT({ listingIds: ['0x123', '0x456'] })
+      ).rejects.toThrow('must be a valid bytes32 hex string');
+    });
+
+    it('should accept valid bytes32 array', async () => {
+      const validBytes32 = '0x0000000000000000000000000000000000000000000000000000000000000001';
+      const validBytes32_2 = '0x0000000000000000000000000000000000000000000000000000000000000002';
+      // Will fail due to no signer, but validates input format is correct
+      await expect(
+        sdk.exchange.batchBuyNFT({ listingIds: [validBytes32, validBytes32_2] })
       ).rejects.toThrow();
     });
   });
@@ -165,13 +180,20 @@ describe('ExchangeModule', () => {
     it('should validate listingId is not empty', async () => {
       await expect(
         sdk.exchange.cancelListing('')
-      ).rejects.toThrow();
+      ).rejects.toThrow('must be a valid bytes32 hex string');
     });
 
-    it('should accept valid listingId', async () => {
-      // Will fail due to no signer, but validates input
+    it('should reject invalid bytes32 format', async () => {
       await expect(
         sdk.exchange.cancelListing('0x1234567890')
+      ).rejects.toThrow('must be a valid bytes32 hex string');
+    });
+
+    it('should accept valid bytes32 listingId', async () => {
+      const validBytes32 = '0x0000000000000000000000000000000000000000000000000000000000000001';
+      // Will fail due to no signer, but validates input format is correct
+      await expect(
+        sdk.exchange.cancelListing(validBytes32)
       ).rejects.toThrow();
     });
   });
@@ -180,13 +202,21 @@ describe('ExchangeModule', () => {
     it('should throw error for empty listingIds array', async () => {
       await expect(
         sdk.exchange.batchCancelListing({ listingIds: [] })
-      ).rejects.toThrow('Listing IDs array cannot be empty');
+      ).rejects.toThrow('listingIds cannot be empty');
     });
 
-    it('should accept valid array of listingIds', async () => {
-      // Will fail due to no signer, but validates input
+    it('should reject invalid bytes32 format in array', async () => {
       await expect(
         sdk.exchange.batchCancelListing({ listingIds: ['0x123', '0x456'] })
+      ).rejects.toThrow('must be a valid bytes32 hex string');
+    });
+
+    it('should accept valid bytes32 array', async () => {
+      const validBytes32 = '0x0000000000000000000000000000000000000000000000000000000000000001';
+      const validBytes32_2 = '0x0000000000000000000000000000000000000000000000000000000000000002';
+      // Will fail due to no signer, but validates input format is correct
+      await expect(
+        sdk.exchange.batchCancelListing({ listingIds: [validBytes32, validBytes32_2] })
       ).rejects.toThrow();
     });
   });
@@ -195,7 +225,13 @@ describe('ExchangeModule', () => {
     it('should validate listingId is not empty', async () => {
       await expect(
         sdk.exchange.getListing('')
-      ).rejects.toThrow();
+      ).rejects.toThrow('must be a valid bytes32 hex string');
+    });
+
+    it('should reject invalid bytes32 format', async () => {
+      await expect(
+        sdk.exchange.getListing('0x123')
+      ).rejects.toThrow('must be a valid bytes32 hex string');
     });
   });
 
@@ -235,10 +271,11 @@ describe('ExchangeModule - Listing Status', () => {
   });
 
   it('should parse listing status correctly', async () => {
+    const validBytes32 = '0x0000000000000000000000000000000000000000000000000000000000000001';
     // Active listing has status = 1
     // This tests that the module correctly interprets contract data
     await expect(
-      sdk.exchange.getListing('0x123')
+      sdk.exchange.getListing(validBytes32)
     ).rejects.toThrow();
   });
 });
@@ -254,9 +291,10 @@ describe('ExchangeModule - Price Formatting', () => {
   });
 
   it('should format price as ETH string', async () => {
+    const validBytes32 = '0x0000000000000000000000000000000000000000000000000000000000000001';
     // Validates that formatEther is called on prices
     await expect(
-      sdk.exchange.getListing('0x123')
+      sdk.exchange.getListing(validBytes32)
     ).rejects.toThrow();
   });
 });
@@ -274,13 +312,20 @@ describe('ExchangeModule - getBuyerPrice', () => {
   it('should validate listingId is not empty', async () => {
     await expect(
       sdk.exchange.getBuyerPrice('')
-    ).rejects.toThrow();
+    ).rejects.toThrow('must be a valid bytes32 hex string');
   });
 
-  it('should accept valid listingId', async () => {
-    // Will fail due to no provider, but validates input
+  it('should reject invalid bytes32 format', async () => {
     await expect(
       sdk.exchange.getBuyerPrice('0x1234567890')
+    ).rejects.toThrow('must be a valid bytes32 hex string');
+  });
+
+  it('should accept valid bytes32 listingId', async () => {
+    const validBytes32 = '0x0000000000000000000000000000000000000000000000000000000000000001';
+    // Will fail due to no provider, but validates input format is correct
+    await expect(
+      sdk.exchange.getBuyerPrice(validBytes32)
     ).rejects.toThrow();
   });
 });

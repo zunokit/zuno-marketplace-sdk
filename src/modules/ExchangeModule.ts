@@ -20,8 +20,9 @@ import {
   validateAddress,
   validateTokenId,
   validateListNFTParams,
+  ErrorCodes,
 } from '../utils/errors';
-import { ErrorCodes } from '../utils/errors';
+import { validateBytes32 } from '../utils/helpers';
 
 /**
  * ExchangeModule handles marketplace trading operations
@@ -108,12 +109,13 @@ export class ExchangeModule extends BaseModule {
   
   /**
    * Buy an NFT from a listing
+   * @param params.listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
    * @param params.value - Price in ETH (e.g., "1.5")
    */
   async buyNFT(params: BuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingId, value, options } = params;
 
-    validateTokenId(listingId, 'listingId');
+    validateBytes32(listingId, 'listingId');
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -149,14 +151,19 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Batch buy multiple NFTs from listings
+   * @param params.listingIds - Array of listing IDs in bytes32 hex format
    * @param params.value - Total price in ETH (e.g., "3.0" for 3 NFTs at 1 ETH each)
    */
   async batchBuyNFT(params: BatchBuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingIds, value, options } = params;
 
     if (listingIds.length === 0) {
-      throw new Error('Listing IDs array cannot be empty');
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'listingIds cannot be empty');
     }
+
+    listingIds.forEach((id, index) => {
+      validateBytes32(id, `listingIds[${index}]`);
+    });
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -192,12 +199,14 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Cancel an NFT listing
+   * @param listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
+   * @param options - Optional transaction options
    */
   async cancelListing(
     listingId: string,
     options?: TransactionOptions
   ): Promise<{ tx: TransactionReceipt }> {
-    validateTokenId(listingId, 'listingId');
+    validateBytes32(listingId, 'listingId');
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -224,6 +233,8 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Batch cancel multiple NFT listings
+   * @param params.listingIds - Array of listing IDs in bytes32 hex format
+   * @param params.options - Optional transaction options
    */
   async batchCancelListing(
     params: BatchCancelListingParams
@@ -231,8 +242,12 @@ export class ExchangeModule extends BaseModule {
     const { listingIds, options } = params;
 
     if (listingIds.length === 0) {
-      throw new Error('Listing IDs array cannot be empty');
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'listingIds cannot be empty');
     }
+
+    listingIds.forEach((id, index) => {
+      validateBytes32(id, `listingIds[${index}]`);
+    });
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -259,11 +274,11 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Get the total price buyer needs to pay (including royalty and taker fee)
-   * @param listingId - The listing ID
+   * @param listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
    * @returns Total price in ETH (e.g., "1.05" for 1 ETH + 5% fees)
    */
   async getBuyerPrice(listingId: string): Promise<string> {
-    validateTokenId(listingId, 'listingId');
+    validateBytes32(listingId, 'listingId');
 
     const provider = this.ensureProvider();
     const exchangeContract = await this.contractRegistry.getContract(
@@ -284,9 +299,10 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Get listing details
+   * @param listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
    */
   async getListing(listingId: string): Promise<Listing> {
-    validateTokenId(listingId, 'listingId');
+    validateBytes32(listingId, 'listingId');
 
     const provider = this.ensureProvider();
     const exchangeContract = await this.contractRegistry.getContract(
