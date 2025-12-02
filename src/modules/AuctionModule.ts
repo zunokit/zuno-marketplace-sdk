@@ -656,15 +656,27 @@ export class AuctionModule extends BaseModule {
   /**
    * Cancel multiple auctions in a single transaction
    *
-   * @param auctionIds - Array of auction IDs to cancel
-   * @param options - Optional transaction options
+   * This method allows sellers to batch cancel their active auctions.
+   * Only the auction seller can cancel their auctions.
+   * Cancelling returns NFTs to sellers and refunds any pending bids.
+   *
+   * @param auctionIds - Array of auction IDs to cancel (max 20)
+   * @param options - Optional transaction options (gas limit, gas price, etc.)
    *
    * @returns Promise resolving to cancelled count and transaction receipt
    *
+   * @throws {ZunoSDKError} INVALID_PARAMETER - If auctionIds array is empty
+   * @throws {ZunoSDKError} BATCH_SIZE_EXCEEDED - If auctionIds exceeds max batch size (20)
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller doesn't own any of the auctions
+   *
    * @example
    * ```typescript
-   * const { cancelledCount, tx } = await sdk.auction.batchCancelAuction(["1", "2", "3"]);
-   * console.log(`Cancelled ${cancelledCount} auctions`);
+   * // Cancel multiple auctions at once
+   * const { cancelledCount, tx } = await sdk.auction.batchCancelAuction([
+   *   "1", "2", "3"
+   * ]);
+   * console.log(`Cancelled ${cancelledCount} auctions in tx: ${tx.transactionHash}`);
    * ```
    */
   async batchCancelAuction(
@@ -792,12 +804,33 @@ export class AuctionModule extends BaseModule {
   }
 
   /**
-   * Get pending refund amount for a bidder
+   * Get pending refund amount for a bidder on an auction
+   *
+   * In English auctions, when a higher bid is placed, the previous bidder's
+   * funds become available for refund. This method returns the amount a
+   * bidder can claim.
    *
    * @param auctionId - ID of the auction
-   * @param bidder - Address of the bidder
+   * @param bidder - Address of the bidder to check
    *
-   * @returns Promise resolving to pending refund amount in ETH
+   * @returns Promise resolving to pending refund amount in ETH (e.g., "1.5")
+   *
+   * @throws {ZunoSDKError} INVALID_TOKEN_ID - If auctionId is invalid
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If bidder address is invalid
+   * @throws {ZunoSDKError} CONTRACT_CALL_FAILED - If auction not found
+   *
+   * @example
+   * ```typescript
+   * const refund = await sdk.auction.getPendingRefund(
+   *   "1",
+   *   "0x1234567890abcdef1234567890abcdef12345678"
+   * );
+   * console.log(`Pending refund: ${refund} ETH`);
+   *
+   * if (parseFloat(refund) > 0) {
+   *   await sdk.auction.claimRefund("1");
+   * }
+   * ```
    */
   async getPendingRefund(auctionId: string, bidder: string): Promise<string> {
     validateTokenId(auctionId, 'auctionId');
