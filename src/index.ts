@@ -16,7 +16,8 @@ export { CollectionModule } from './modules/CollectionModule';
 export { AuctionModule } from './modules/AuctionModule';
 export { BaseModule } from './modules/BaseModule';
 
-// Types
+// Types & Constants
+export { DEFAULT_CACHE_TIMES } from './types/config';
 export type * from './types/config';
 export type * from './types/entities';
 export type * from './types/api';
@@ -31,7 +32,7 @@ export { BATCH_EVENTS, createBatchProgressTracker, BatchProgressTracker } from '
 export { ZunoLogger, createNoOpLogger } from './utils/logger';
 export type { Logger, LoggerConfig, LogLevel, LogMetadata } from './utils/logger';
 export { logStore } from './utils/logStore';
-export type { LogEntry } from './utils/logStore';
+export type { LogEntry, LogStoreConfig } from './utils/logStore';
 export { transactionStore } from './utils/transactionStore';
 export type { TransactionEntry } from './utils/transactionStore';
 
