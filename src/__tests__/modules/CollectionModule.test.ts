@@ -69,14 +69,14 @@ describe('CollectionModule', () => {
     it('should throw error for empty addresses array', async () => {
       await expect(
         sdk.collection.addToAllowlist('0x1234567890123456789012345678901234567890', [])
-      ).rejects.toThrow('addresses array cannot be empty');
+      ).rejects.toThrow('addresses cannot be empty');
     });
 
     it('should throw error for array exceeding max limit', async () => {
       const tooManyAddresses = Array(101).fill('0x1234567890123456789012345678901234567890');
       await expect(
         sdk.collection.addToAllowlist('0x1234567890123456789012345678901234567890', tooManyAddresses)
-      ).rejects.toThrow('Maximum 100 addresses per batch');
+      ).rejects.toThrow('addresses exceeds maximum batch size of 100');
     });
 
     it('should validate collection address', async () => {
@@ -93,7 +93,7 @@ describe('CollectionModule', () => {
     it('should throw error for empty addresses array', async () => {
       await expect(
         sdk.collection.removeFromAllowlist('0x1234567890123456789012345678901234567890', [])
-      ).rejects.toThrow('addresses array cannot be empty');
+      ).rejects.toThrow('addresses cannot be empty');
     });
 
     it('should validate collection address', async () => {
