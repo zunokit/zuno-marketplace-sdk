@@ -18,7 +18,7 @@ import { injected, walletConnect, coinbaseWallet } from "wagmi/connectors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserProvider } from "ethers";
 import { ZunoContextProvider, useZuno } from "./ZunoContextProvider";
-import type { ZunoSDKConfig } from "../../types/config";
+import { DEFAULT_CACHE_TIMES, type ZunoSDKConfig } from "../../types/config";
 
 export interface ZunoProviderProps {
   config: ZunoSDKConfig;
@@ -69,8 +69,8 @@ export function ZunoProvider({ config, children }: ZunoProviderProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: config.cache?.ttl || 5 * 60 * 1000,
-            gcTime: config.cache?.gcTime || 10 * 60 * 1000,
+            staleTime: config.cache?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
+            gcTime: config.cache?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
             retry: config.retryPolicy?.maxRetries || 3,
             retryDelay: (attemptIndex) => {
               const delay = config.retryPolicy?.initialDelay || 1000;
