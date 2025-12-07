@@ -34,7 +34,7 @@ export type { Logger, LoggerConfig, LogLevel, LogMetadata } from './utils/logger
 export { logStore } from './utils/logStore';
 export type { LogEntry, LogStoreConfig } from './utils/logStore';
 export { transactionStore } from './utils/transactionStore';
-export type { TransactionEntry } from './utils/transactionStore';
+export type { TransactionEntry, RetryConfig, PreviousAttempt } from './utils/transactionStore';
 
 // Query factories (for advanced usage)
 export {
