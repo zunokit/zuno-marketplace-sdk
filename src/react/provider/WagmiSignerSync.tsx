@@ -91,7 +91,7 @@ export function WagmiSignerSync({
         }
       } else if (!isConnected && clearOnDisconnect) {
         // Clear signer on disconnect
-        sdk.updateProvider(undefined as any, undefined);
+        sdk.updateProvider(undefined, undefined);
       }
     };
 

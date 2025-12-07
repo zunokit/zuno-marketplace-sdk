@@ -116,7 +116,7 @@ export function useSignerSync({
       sync();
     } else if (!isConnected && clearOnDisconnect) {
       // Clear signer on disconnect
-      sdk.updateProvider(undefined as any, undefined);
+      sdk.updateProvider(undefined, undefined);
       setIsSynced(false);
     }
   }, [isConnected, walletClient, isInitialized, clearOnDisconnect, sync, sdk]);
