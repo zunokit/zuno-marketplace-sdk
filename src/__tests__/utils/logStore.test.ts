@@ -54,6 +54,11 @@ describe('LogStore', () => {
   });
 
   describe('Subscription', () => {
+    beforeEach(() => {
+      // Configure for immediate notifications (no debounce) for testing
+      logStore.configure({ debounceMs: 0 });
+    });
+
     it('should notify subscribers when logs are added', () => {
       const callback = jest.fn();
       const unsubscribe = logStore.subscribe(callback);
@@ -67,10 +72,10 @@ describe('LogStore', () => {
     it('should stop notifying after unsubscribe', () => {
       const callback = jest.fn();
       const unsubscribe = logStore.subscribe(callback);
-      
+
       unsubscribe();
       callback.mockClear();
-      
+
       logStore.add('info', 'Test');
       expect(callback).not.toHaveBeenCalled();
     });
