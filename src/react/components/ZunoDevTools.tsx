@@ -236,7 +236,7 @@ function LogEntryItem({ log }: { log: LogEntry }) {
  *
  * @example
  * ```tsx
- * import { ZunoDevTools } from 'zuno-marketplace-sdk/devtools';
+ * import { ZunoDevTools } from 'zuno-marketplace-sdk/react';
  *
  * function App() {
  *   return (
