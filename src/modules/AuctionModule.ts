@@ -23,7 +23,6 @@ import {
   validateTokenId,
   validateAmount,
   validateDuration,
-  ErrorCodes,
 } from '../utils/errors';
 import { validateBatchSize, BATCH_LIMITS } from '../utils/batch';
 
