@@ -8,7 +8,6 @@
  */
 
 import { ZunoSDK } from '../../core/ZunoSDK';
-import { ZunoSDKError, ErrorCodes } from '../../utils/errors';
 
 // Mock ethers
 jest.mock('ethers', () => {
