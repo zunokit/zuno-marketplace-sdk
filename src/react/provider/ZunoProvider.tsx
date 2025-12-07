@@ -5,54 +5,22 @@
 
 "use client";
 
-import React, { useState, useEffect, type ReactNode } from "react";
+import React, { useState, type ReactNode } from "react";
 import {
   WagmiProvider,
   createConfig,
   http,
-  useAccount,
-  useWalletClient,
 } from "wagmi";
-import { mainnet, sepolia, polygon, arbitrum, type Chain } from "wagmi/chains";
-import { injected, walletConnect, coinbaseWallet } from "wagmi/connectors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserProvider } from "ethers";
-import { ZunoContextProvider, useZuno } from "./ZunoContextProvider";
+import { ZunoContextProvider } from "./ZunoContextProvider";
+import { WagmiSignerSync } from "./WagmiSignerSync";
+import { getChainFromNetwork } from "../utils/chains";
+import { createDefaultConnectors } from "../utils/connectors";
 import type { ZunoSDKConfig } from "../../types/config";
 
 export interface ZunoProviderProps {
   config: ZunoSDKConfig;
   children: ReactNode;
-}
-
-/**
- * Get chain config from network
- */
-function getChainFromNetwork(network: ZunoSDKConfig["network"]): Chain {
-  switch (network) {
-    case "mainnet":
-      return mainnet;
-    case "sepolia":
-      return sepolia;
-    case "polygon":
-      return polygon;
-    case "arbitrum":
-      return arbitrum;
-    default:
-      // For local development or custom networks - use sepolia as default
-      if (typeof network === "number") {
-        return {
-          id: network,
-          name: "Anvil",
-          nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-          rpcUrls: {
-            default: { http: ["http://127.0.0.1:8545"] },
-          },
-          testnet: true,
-        } as const satisfies Chain;
-      }
-      return sepolia;
-  }
 }
 
 /**
@@ -83,24 +51,15 @@ export function ZunoProvider({ config, children }: ZunoProviderProps) {
       })
   );
 
-  // Create Wagmi config
+  // Create Wagmi config with SSR support
   const [wagmiConfig] = useState(() => {
-    const chain = getChainFromNetwork(config.network);
+    const chain = getChainFromNetwork(config.network, {
+      rpcUrl: config.rpcUrl,
+    });
 
-    const baseConnectors = [
-      injected(),
-      coinbaseWallet({ appName: "Zuno Marketplace" }),
-    ];
-
-    const connectors = config.walletConnectProjectId
-      ? [
-          ...baseConnectors,
-          walletConnect({
-            projectId: config.walletConnectProjectId,
-            showQrModal: true,
-          }),
-        ]
-      : baseConnectors;
+    const connectors = createDefaultConnectors({
+      walletConnectProjectId: config.walletConnectProjectId,
+    });
 
     return createConfig({
       chains: [chain],
@@ -108,6 +67,7 @@ export function ZunoProvider({ config, children }: ZunoProviderProps) {
       transports: {
         [chain.id]: http(config.rpcUrl),
       },
+      ssr: true, // Enable SSR support
     });
   });
 
@@ -123,34 +83,6 @@ export function ZunoProvider({ config, children }: ZunoProviderProps) {
   );
 }
 
-/**
- * Syncs wagmi wallet connection with SDK signer
- */
-function WagmiSignerSync() {
-  const sdk = useZuno();
-  const { isConnected } = useAccount();
-  const { data: walletClient } = useWalletClient();
-
-  useEffect(() => {
-    const updateSigner = async () => {
-      if (isConnected && walletClient) {
-        try {
-          const provider = new BrowserProvider(walletClient.transport, {
-            chainId: walletClient.chain.id,
-            name: walletClient.chain.name,
-          });
-          const signer = await provider.getSigner();
-          sdk.updateProvider(provider, signer);
-        } catch {
-          // Ignore errors
-        }
-      }
-    };
-    updateSigner();
-  }, [isConnected, walletClient, sdk]);
-
-  return null;
-}
-
-// Re-export useZuno for convenience
+// Re-export for convenience
 export { useZuno } from "./ZunoContextProvider";
+export { WagmiSignerSync } from "./WagmiSignerSync";
