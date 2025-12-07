@@ -16,7 +16,8 @@ export { CollectionModule } from './modules/CollectionModule';
 export { AuctionModule } from './modules/AuctionModule';
 export { BaseModule } from './modules/BaseModule';
 
-// Types
+// Types & Constants
+export { DEFAULT_CACHE_TIMES } from './types/config';
 export type * from './types/config';
 export type * from './types/entities';
 export type * from './types/api';
