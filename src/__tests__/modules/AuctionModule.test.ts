@@ -142,4 +142,22 @@ describe('AuctionModule', () => {
       ).rejects.toThrow();
     });
   });
+
+  describe('clearApprovalCache', () => {
+    it('should be a callable method', () => {
+      expect(typeof sdk.auction.clearApprovalCache).toBe('function');
+    });
+
+    it('should not throw when called', () => {
+      expect(() => sdk.auction.clearApprovalCache()).not.toThrow();
+    });
+
+    it('should be safe to call multiple times', () => {
+      expect(() => {
+        sdk.auction.clearApprovalCache();
+        sdk.auction.clearApprovalCache();
+        sdk.auction.clearApprovalCache();
+      }).not.toThrow();
+    });
+  });
 });
