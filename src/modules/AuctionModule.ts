@@ -301,11 +301,31 @@ export class AuctionModule extends BaseModule {
     // Drop per hour = totalDropBps / durationInHours
     const durationInHours = BigInt(Math.max(1, Math.ceil(duration / 3600)));
     const totalDropBps = ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
-    let priceDropPerHourBps = totalDropBps / durationInHours;
+    const originalPriceDropPerHourBps = totalDropBps / durationInHours;
+    let priceDropPerHourBps = originalPriceDropPerHourBps;
     
-    // Clamp to valid range: 100-5000 basis points
-    if (priceDropPerHourBps < 100n) priceDropPerHourBps = 100n;
-    if (priceDropPerHourBps > 5000n) priceDropPerHourBps = 5000n;
+    // Clamp to valid range: 100-5000 basis points with warning
+    if (priceDropPerHourBps < 100n || priceDropPerHourBps > 5000n) {
+      const clampedValue = priceDropPerHourBps < 100n ? 100n : 5000n;
+      this.logger.warn('Dutch auction price drop rate adjusted', {
+        module: 'Auction',
+        data: {
+          originalBpsPerHour: Number(originalPriceDropPerHourBps),
+          clampedBpsPerHour: Number(clampedValue),
+          allowedRange: '100-5000 bps/hour',
+          reason: priceDropPerHourBps < 100n
+            ? 'Price drop too slow for contract constraints'
+            : 'Price drop too fast for contract constraints',
+          recommendation: priceDropPerHourBps < 100n
+            ? 'Increase price difference or reduce duration'
+            : 'Decrease price difference or increase duration',
+          startPrice,
+          endPrice,
+          durationHours: Number(durationInHours),
+        },
+      });
+      priceDropPerHourBps = clampedValue;
+    }
 
     const receipt = await txManager.sendTransaction(
       auctionFactory,
@@ -487,9 +507,32 @@ export class AuctionModule extends BaseModule {
     // Calculate priceDropPerHour in basis points
     const durationInHours = BigInt(Math.max(1, Math.ceil(duration / 3600)));
     const totalDropBps = ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
-    let priceDropPerHourBps = totalDropBps / durationInHours;
-    if (priceDropPerHourBps < 100n) priceDropPerHourBps = 100n;
-    if (priceDropPerHourBps > 5000n) priceDropPerHourBps = 5000n;
+    const originalPriceDropPerHourBps = totalDropBps / durationInHours;
+    let priceDropPerHourBps = originalPriceDropPerHourBps;
+    
+    // Clamp to valid range: 100-5000 basis points with warning
+    if (priceDropPerHourBps < 100n || priceDropPerHourBps > 5000n) {
+      const clampedValue = priceDropPerHourBps < 100n ? 100n : 5000n;
+      this.logger.warn('Dutch auction price drop rate adjusted', {
+        module: 'Auction',
+        data: {
+          originalBpsPerHour: Number(originalPriceDropPerHourBps),
+          clampedBpsPerHour: Number(clampedValue),
+          allowedRange: '100-5000 bps/hour',
+          reason: priceDropPerHourBps < 100n
+            ? 'Price drop too slow for contract constraints'
+            : 'Price drop too fast for contract constraints',
+          recommendation: priceDropPerHourBps < 100n
+            ? 'Increase price difference or reduce duration'
+            : 'Decrease price difference or increase duration',
+          startPrice,
+          endPrice,
+          durationHours: Number(durationInHours),
+          batchSize: tokenIds.length,
+        },
+      });
+      priceDropPerHourBps = clampedValue;
+    }
 
     const receipt = await txManager.sendTransaction(
       auctionFactory,
