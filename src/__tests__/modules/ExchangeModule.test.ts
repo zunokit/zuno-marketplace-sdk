@@ -338,3 +338,30 @@ describe('ExchangeModule - getListingsBySeller', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('ExchangeModule - clearApprovalCache', () => {
+  let sdk: ZunoSDK;
+
+  beforeEach(() => {
+    sdk = new ZunoSDK({
+      apiKey: 'test-api-key',
+      network: 'sepolia',
+    });
+  });
+
+  it('should be a callable method', () => {
+    expect(typeof sdk.exchange.clearApprovalCache).toBe('function');
+  });
+
+  it('should not throw when called', () => {
+    expect(() => sdk.exchange.clearApprovalCache()).not.toThrow();
+  });
+
+  it('should be safe to call multiple times', () => {
+    expect(() => {
+      sdk.exchange.clearApprovalCache();
+      sdk.exchange.clearApprovalCache();
+      sdk.exchange.clearApprovalCache();
+    }).not.toThrow();
+  });
+});
