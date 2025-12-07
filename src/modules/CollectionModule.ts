@@ -160,7 +160,7 @@ export class CollectionModule extends BaseModule {
     validateAddress(recipient, 'recipient');
 
     if (amount <= 0) {
-      throw new Error('Amount must be greater than 0');
+      throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
     }
 
     const txManager = this.ensureTxManager();
@@ -219,7 +219,9 @@ export class CollectionModule extends BaseModule {
     validateAddress(collectionAddress, 'collectionAddress');
     validateAddress(recipient, 'recipient');
 
-    if (amount <= 0) throw new Error('Amount must be greater than 0');
+    if (amount <= 0) {
+      throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
+    }
 
     const txManager = this.ensureTxManager();
     this.ensureProvider();
