@@ -16,6 +16,7 @@ import type {
 import type { TransactionReceipt } from '../types/entities';
 import { validateAddress, ErrorCodes } from '../utils/errors';
 import { safeCall } from '../utils/helpers';
+import { validateBatchSize, BATCH_LIMITS } from '../utils/batch';
 
 /**
  * CollectionModule handles NFT collection creation and minting
@@ -728,12 +729,7 @@ export class CollectionModule extends BaseModule {
     this.log('addToAllowlist started', { collectionAddress, count: addresses.length });
     
     validateAddress(collectionAddress, 'collectionAddress');
-    if (addresses.length === 0) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'addresses cannot be empty');
-    }
-    if (addresses.length > 100) {
-      throw this.error(ErrorCodes.BATCH_SIZE_EXCEEDED, 'addresses exceeds maximum batch size of 100');
-    }
+    validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');
@@ -757,9 +753,7 @@ export class CollectionModule extends BaseModule {
     this.log('removeFromAllowlist started', { collectionAddress, count: addresses.length });
     
     validateAddress(collectionAddress, 'collectionAddress');
-    if (addresses.length === 0) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'addresses cannot be empty');
-    }
+    validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');

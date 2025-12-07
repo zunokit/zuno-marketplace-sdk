@@ -23,8 +23,8 @@ import {
   validateTokenId,
   validateAmount,
   validateDuration,
-  ErrorCodes,
 } from '../utils/errors';
+import { validateBatchSize, BATCH_LIMITS } from '../utils/batch';
 
 
 /**
@@ -386,12 +386,7 @@ export class AuctionModule extends BaseModule {
     } = params;
 
     validateAddress(collectionAddress, 'collectionAddress');
-    if (tokenIds.length === 0) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'tokenIds cannot be empty');
-    }
-    if (tokenIds.length > 20) {
-      throw this.error(ErrorCodes.BATCH_SIZE_EXCEEDED, 'tokenIds exceeds maximum batch size of 20');
-    }
+    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, 'tokenIds');
     validateAmount(startingBid, 'startingBid');
     validateDuration(duration);
 
@@ -474,12 +469,7 @@ export class AuctionModule extends BaseModule {
     } = params;
 
     validateAddress(collectionAddress, 'collectionAddress');
-    if (tokenIds.length === 0) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'tokenIds cannot be empty');
-    }
-    if (tokenIds.length > 20) {
-      throw this.error(ErrorCodes.BATCH_SIZE_EXCEEDED, 'tokenIds exceeds maximum batch size of 20');
-    }
+    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, 'tokenIds');
     validateAmount(startPrice, 'startPrice');
     validateAmount(endPrice, 'endPrice');
     validateDuration(duration);
@@ -751,12 +741,7 @@ export class AuctionModule extends BaseModule {
     auctionIds: string[],
     options?: TransactionOptions
   ): Promise<{ cancelledCount: number; tx: TransactionReceipt }> {
-    if (auctionIds.length === 0) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'auctionIds cannot be empty');
-    }
-    if (auctionIds.length > 20) {
-      throw this.error(ErrorCodes.BATCH_SIZE_EXCEEDED, 'auctionIds exceeds maximum batch size of 20');
-    }
+    validateBatchSize(auctionIds, BATCH_LIMITS.AUCTIONS, 'auctionIds');
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
