@@ -18,7 +18,6 @@ import type {
 } from '../types/entities';
 import {
   validateAddress,
-  validateTokenId,
   validateListNFTParams,
   ErrorCodes,
 } from '../utils/errors';
