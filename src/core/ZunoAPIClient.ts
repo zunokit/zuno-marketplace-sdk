@@ -14,6 +14,7 @@ import type {
   GetContractInfoResponse,
   GetNetworksResponse,
 } from '../types/api';
+import { DEFAULT_CACHE_TIMES, type CacheConfig } from '../types/config';
 import { ZunoSDKError, ErrorCodes } from '../utils/errors';
 
 /**
@@ -339,17 +340,23 @@ export class ZunoAPIClient {
 
 /**
  * Create query options for fetching ABI
+ *
+ * @param client - ZunoAPIClient instance
+ * @param contractName - Contract name
+ * @param network - Network identifier
+ * @param cacheConfig - Optional cache configuration to override defaults
  */
 export function createABIQueryOptions(
   client: ZunoAPIClient,
   contractName: string,
-  network: string
+  network: string,
+  cacheConfig?: CacheConfig
 ) {
   return {
     queryKey: abiQueryKeys.detail(contractName, network),
     queryFn: () => client.getABI(contractName, network),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
+    gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
     retry: 3,
     retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
   };
@@ -357,16 +364,21 @@ export function createABIQueryOptions(
 
 /**
  * Create query options for fetching ABI by ID
+ *
+ * @param client - ZunoAPIClient instance
+ * @param abiId - ABI identifier
+ * @param cacheConfig - Optional cache configuration to override defaults
  */
 export function createABIByIdQueryOptions(
   client: ZunoAPIClient,
-  abiId: string
+  abiId: string,
+  cacheConfig?: CacheConfig
 ) {
   return {
     queryKey: abiQueryKeys.byId(abiId),
     queryFn: () => client.getABIById(abiId),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
+    gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
     retry: 3,
     retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
   };
@@ -374,17 +386,23 @@ export function createABIByIdQueryOptions(
 
 /**
  * Create query options for fetching contract info
+ *
+ * @param client - ZunoAPIClient instance
+ * @param address - Contract address
+ * @param network - Network identifier
+ * @param cacheConfig - Optional cache configuration to override defaults
  */
 export function createContractInfoQueryOptions(
   client: ZunoAPIClient,
   address: string,
-  network: string
+  network: string,
+  cacheConfig?: CacheConfig
 ) {
   return {
     queryKey: abiQueryKeys.contracts(address, network),
     queryFn: () => client.getContractInfo(address, network),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
+    gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
     retry: 3,
     retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
   };
@@ -392,13 +410,20 @@ export function createContractInfoQueryOptions(
 
 /**
  * Create query options for fetching networks
+ * Uses extended cache times since network data rarely changes
+ *
+ * @param client - ZunoAPIClient instance
+ * @param cacheConfig - Optional cache configuration to override defaults
  */
-export function createNetworksQueryOptions(client: ZunoAPIClient) {
+export function createNetworksQueryOptions(
+  client: ZunoAPIClient,
+  cacheConfig?: CacheConfig
+) {
   return {
     queryKey: abiQueryKeys.networks(),
     queryFn: () => client.getNetworks(),
-    staleTime: 30 * 60 * 1000, // 30 minutes
-    gcTime: 60 * 60 * 1000, // 1 hour
+    staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME_EXTENDED,
+    gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME_EXTENDED,
     retry: 3,
     retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
   };
