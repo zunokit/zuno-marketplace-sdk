@@ -58,14 +58,14 @@ describe('AuctionModule', () => {
   describe('batchCancelAuction', () => {
     it('should throw error for empty array', async () => {
       await expect(sdk.auction.batchCancelAuction([])).rejects.toThrow(
-        'auctionIds array cannot be empty'
+        'auctionIds cannot be empty'
       );
     });
 
     it('should throw error for array exceeding max limit', async () => {
       const tooManyIds = Array(21).fill('0x1234');
       await expect(sdk.auction.batchCancelAuction(tooManyIds)).rejects.toThrow(
-        'Maximum 20 cancellations per batch'
+        'auctionIds exceeds maximum batch size of 20'
       );
     });
 

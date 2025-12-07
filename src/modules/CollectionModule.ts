@@ -159,7 +159,7 @@ export class CollectionModule extends BaseModule {
     validateAddress(recipient, 'recipient');
 
     if (amount <= 0) {
-      throw new Error('Amount must be greater than 0');
+      throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
     }
 
     const txManager = this.ensureTxManager();
@@ -218,7 +218,9 @@ export class CollectionModule extends BaseModule {
     validateAddress(collectionAddress, 'collectionAddress');
     validateAddress(recipient, 'recipient');
 
-    if (amount <= 0) throw new Error('Amount must be greater than 0');
+    if (amount <= 0) {
+      throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
+    }
 
     const txManager = this.ensureTxManager();
     this.ensureProvider();
@@ -727,10 +729,10 @@ export class CollectionModule extends BaseModule {
     
     validateAddress(collectionAddress, 'collectionAddress');
     if (addresses.length === 0) {
-      throw this.error('INVALID_AMOUNT', 'addresses array cannot be empty');
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'addresses cannot be empty');
     }
     if (addresses.length > 100) {
-      throw this.error('INVALID_AMOUNT', 'Maximum 100 addresses per batch');
+      throw this.error(ErrorCodes.BATCH_SIZE_EXCEEDED, 'addresses exceeds maximum batch size of 100');
     }
 
     const txManager = this.ensureTxManager();
@@ -756,7 +758,7 @@ export class CollectionModule extends BaseModule {
     
     validateAddress(collectionAddress, 'collectionAddress');
     if (addresses.length === 0) {
-      throw this.error('INVALID_AMOUNT', 'addresses array cannot be empty');
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'addresses cannot be empty');
     }
 
     const txManager = this.ensureTxManager();
