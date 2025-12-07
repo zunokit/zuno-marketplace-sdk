@@ -1,3 +1,9 @@
+## [2.0.1-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.1-beta-claude.1...v2.0.1-beta-claude.2) (2025-12-07)
+
+### ♻️ Code Refactoring
+
+* update CLAUDE.md and .gitignore for improved documentation and file management ([8c1d679](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/8c1d679b5bda5ada74f971c5cbc240415af12b4a))
+
 ## [2.0.1-beta-claude.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0...v2.0.1-beta-claude.1) (2025-12-07)
 
 ### ♻️ Code Refactoring
