@@ -183,9 +183,32 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Batch buy multiple NFTs from listings
-   * @param params.listingIds - Array of listing IDs in bytes32 hex format
-   * @param params.value - Total price in ETH (e.g., "3.0" for 3 NFTs at 1 ETH each)
+   * Batch buy multiple NFTs from active listings in a single transaction
+   *
+   * @param params - Batch purchase parameters
+   * @param params.listingIds - Array of listing IDs to purchase (bytes32 format)
+   * @param params.value - Total price in ETH covering all listings (e.g., "3.0")
+   * @param params.options - Transaction options (gas limit, gas price, etc.)
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {Error} If listingIds array is empty
+   * @throws {ZunoSDKError} INVALID_LISTING_ID - If any listingId is not bytes32 format
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} INSUFFICIENT_FUNDS - If value doesn't cover total price
+   *
+   * @example
+   * ```typescript
+   * // Buy 3 NFTs at once
+   * const { tx } = await sdk.exchange.batchBuyNFT({
+   *   listingIds: [
+   *     '0x1234...', // Listing 1: 1.0 ETH
+   *     '0x5678...', // Listing 2: 1.5 ETH
+   *     '0x9abc...', // Listing 3: 0.5 ETH
+   *   ],
+   *   value: '3.0', // Total: 3.0 ETH
+   * });
+   * ```
    */
   async batchBuyNFT(params: BatchBuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingIds, value, options } = params;
@@ -231,9 +254,25 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Cancel an NFT listing
-   * @param listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
-   * @param options - Optional transaction options
+   * Cancel an active NFT listing and return the NFT to the seller
+   *
+   * @param listingId - The listing ID to cancel (bytes32 format)
+   * @param options - Transaction options (gas limit, gas price, etc.)
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {ZunoSDKError} INVALID_LISTING_ID - If listingId is not valid bytes32 format
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller is not the listing owner
+   *
+   * @example
+   * ```typescript
+   * // Cancel a listing
+   * const { tx } = await sdk.exchange.cancelListing(
+   *   '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+   * );
+   * console.log('Listing cancelled:', tx.transactionHash);
+   * ```
    */
   async cancelListing(
     listingId: string,
@@ -265,9 +304,31 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Batch cancel multiple NFT listings
-   * @param params.listingIds - Array of listing IDs in bytes32 hex format
-   * @param params.options - Optional transaction options
+   * Batch cancel multiple NFT listings in a single transaction
+   *
+   * @param params - Batch cancel parameters
+   * @param params.listingIds - Array of listing IDs to cancel (bytes32 format)
+   * @param params.options - Transaction options (gas limit, gas price, etc.)
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {Error} If listingIds array is empty
+   * @throws {ZunoSDKError} INVALID_LISTING_ID - If any listingId is not bytes32 format
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller doesn't own any of the listings
+   *
+   * @example
+   * ```typescript
+   * // Cancel multiple listings at once
+   * const { tx } = await sdk.exchange.batchCancelListing({
+   *   listingIds: [
+   *     '0x1234...', // Listing 1
+   *     '0x5678...', // Listing 2
+   *     '0x9abc...', // Listing 3
+   *   ],
+   * });
+   * console.log('Cancelled all listings:', tx.transactionHash);
+   * ```
    */
   async batchCancelListing(
     params: BatchCancelListingParams
@@ -306,9 +367,35 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Get the total price buyer needs to pay (including royalty and taker fee)
-   * @param listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
-   * @returns Total price in ETH (e.g., "1.05" for 1 ETH + 5% fees)
+   * Get the total price buyer needs to pay for a listing (including royalty and taker fee)
+   *
+   * This method calculates the final price including:
+   * - Base listing price
+   * - Creator royalty (if applicable)
+   * - Marketplace taker fee
+   *
+   * @param listingId - The listing ID to query (bytes32 format)
+   *
+   * @returns Total price in ETH as string (e.g., "1.05" for 1 ETH + 5% fees)
+   *
+   * @throws {ZunoSDKError} INVALID_LISTING_ID - If listingId is not valid bytes32 format
+   * @throws {ZunoSDKError} LISTING_NOT_FOUND - If listing doesn't exist
+   *
+   * @example
+   * ```typescript
+   * // Get total price for a listing
+   * const totalPrice = await sdk.exchange.getBuyerPrice(
+   *   '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+   * );
+   * console.log('Total price:', totalPrice, 'ETH');
+   * // Output: "Total price: 1.05 ETH" (1.0 base + 5% fees)
+   *
+   * // Use for buying
+   * await sdk.exchange.buyNFT({
+   *   listingId: '0x1234...',
+   *   value: totalPrice,
+   * });
+   * ```
    */
   async getBuyerPrice(listingId: string): Promise<string> {
     validateBytes32(listingId, 'listingId');
