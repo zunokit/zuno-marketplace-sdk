@@ -1,8 +1,7 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(npm publish)"
-    ],
+    "defaultMode": "bypassPermissions",
+    "allow": ["Bash(npm publish)"],
     "deny": [],
     "ask": []
   }
