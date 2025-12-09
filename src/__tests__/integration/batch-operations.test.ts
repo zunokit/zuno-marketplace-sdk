@@ -98,7 +98,7 @@ describe('Batch Operations Integration Tests', () => {
             startingBid: '1.0',
             duration: 86400,
           })
-        ).rejects.toThrow('tokenIds array cannot be empty');
+        ).rejects.toThrow('tokenIds cannot be empty');
       });
 
       it('should reject array exceeding batch limit', async () => {
@@ -110,7 +110,7 @@ describe('Batch Operations Integration Tests', () => {
             startingBid: '1.0',
             duration: 86400,
           })
-        ).rejects.toThrow('Maximum 20 auctions per batch');
+        ).rejects.toThrow('tokenIds exceeds maximum batch size of 20');
       });
 
       it('should validate collection address', async () => {
@@ -160,7 +160,7 @@ describe('Batch Operations Integration Tests', () => {
             endPrice: '1.0',
             duration: 86400,
           })
-        ).rejects.toThrow('tokenIds array cannot be empty');
+        ).rejects.toThrow('tokenIds cannot be empty');
       });
 
       it('should reject array exceeding batch limit', async () => {
@@ -173,7 +173,7 @@ describe('Batch Operations Integration Tests', () => {
             endPrice: '1.0',
             duration: 86400,
           })
-        ).rejects.toThrow('Maximum 20 auctions per batch');
+        ).rejects.toThrow('tokenIds exceeds maximum batch size of 20');
       });
 
       it('should validate start price greater than end price', async () => {
@@ -192,14 +192,14 @@ describe('Batch Operations Integration Tests', () => {
     describe('batchCancelAuction', () => {
       it('should reject empty auctionIds array', async () => {
         await expect(sdk.auction.batchCancelAuction([])).rejects.toThrow(
-          'auctionIds array cannot be empty'
+          'auctionIds cannot be empty'
         );
       });
 
       it('should reject array exceeding batch limit', async () => {
         const tooManyIds = Array(21).fill('1');
         await expect(sdk.auction.batchCancelAuction(tooManyIds)).rejects.toThrow(
-          'Maximum 20 cancellations per batch'
+          'auctionIds exceeds maximum batch size of 20'
         );
       });
 
@@ -219,7 +219,7 @@ describe('Batch Operations Integration Tests', () => {
             listingIds: [],
             value: '1.0',
           })
-        ).rejects.toThrow('Listing IDs array cannot be empty');
+        ).rejects.toThrow('listingIds cannot be empty');
       });
     });
 
@@ -229,7 +229,7 @@ describe('Batch Operations Integration Tests', () => {
           sdk.exchange.batchCancelListing({
             listingIds: [],
           })
-        ).rejects.toThrow('Listing IDs array cannot be empty');
+        ).rejects.toThrow('listingIds cannot be empty');
       });
     });
   });
@@ -242,7 +242,7 @@ describe('Batch Operations Integration Tests', () => {
             '0x1234567890123456789012345678901234567890',
             []
           )
-        ).rejects.toThrow('addresses array cannot be empty');
+        ).rejects.toThrow('addresses cannot be empty');
       });
 
       it('should reject array exceeding batch limit', async () => {
@@ -252,7 +252,7 @@ describe('Batch Operations Integration Tests', () => {
             '0x1234567890123456789012345678901234567890',
             tooManyAddresses
           )
-        ).rejects.toThrow('Maximum 100 addresses per batch');
+        ).rejects.toThrow('addresses exceeds maximum batch size of 100');
       });
 
       it('should validate collection address', async () => {
@@ -274,7 +274,7 @@ describe('Batch Operations Integration Tests', () => {
             '0x1234567890123456789012345678901234567890',
             []
           )
-        ).rejects.toThrow('addresses array cannot be empty');
+        ).rejects.toThrow('addresses cannot be empty');
       });
 
       it('should validate collection address', async () => {
