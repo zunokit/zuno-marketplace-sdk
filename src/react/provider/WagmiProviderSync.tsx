@@ -90,7 +90,7 @@ export function WagmiProviderSync({
           onError?.(error as Error);
         }
       } else if (!isConnected && clearOnDisconnect) {
-        // Clear signer on disconnect
+        // Clear provider and signer on disconnect
         sdk.updateProvider(undefined, undefined);
       }
     };
