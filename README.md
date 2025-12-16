@@ -37,16 +37,26 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 | Testnet (Sepolia) | ❌ | Coming soon |
 | Mainnet | ❌ | Coming soon |
 
-## 🆕 What's New in v2.0.0
+## 🆕 What's New in v2.1.0
 
 ### ✨ New Features
 
-- **Batch Auction Operations** - Create/cancel multiple auctions in one transaction
-- **Allowlist Management** - Add/remove addresses, set allowlist-only mode
-- **Improved Defaults** - `mintLimitPerWallet` defaults to `maxSupply` (was 0)
-- **Hex Listing IDs** - Listing IDs returned in bytes32 hex format
+- **WagmiProviderSync & SSR Support** - Sync provider state with SSR-safe initialization
+- **Transaction Retry Logic** - Enhanced transactionStore with retry and history tracking
+- **Batch Progress Events** - Real-time progress updates for batch operations
+- **ListingId Validation** - Strict bytes32 format validation for listing IDs
+- **Dutch Auction Warnings** - Warning logs for price clamp adjustments
 
-### 📖 Batch Operations
+### ⚡️ Performance Improvements
+
+- **Approval Caching** - Reduced RPC calls with approval status caching
+- **LogStore Optimization** - Better performance under high-frequency logging
+
+---
+
+## 📖 v2.0.0 Features
+
+### Batch Auction Operations
 
 ```typescript
 // Batch create English auctions (max 20 per tx)
@@ -83,7 +93,7 @@ const isAllowed = await sdk.collection.isInAllowlist({
 });
 ```
 
-### Previous Highlights
+### v2.0.0 Highlights
 
 - Tree-shakeable imports for smaller bundles
 - Testing utilities (`zuno-marketplace-sdk/testing`)
