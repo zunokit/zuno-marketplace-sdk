@@ -11,7 +11,7 @@
 
 export interface LogEntry {
   id: number;
-  level: 'debug' | 'info' | 'warn' | 'error';
+  level: "debug" | "info" | "warn" | "error";
   message: string;
   timestamp: Date;
   module?: string;
@@ -45,7 +45,11 @@ class LogStore {
   /**
    * Add a single log entry
    */
-  add(level: LogEntry['level'], message: string, meta?: { module?: string; data?: unknown }) {
+  add(
+    level: LogEntry["level"],
+    message: string,
+    meta?: { module?: string; data?: unknown }
+  ) {
     const entry: LogEntry = {
       id: this.idCounter++,
       level,
@@ -57,7 +61,7 @@ class LogStore {
 
     // Add to beginning efficiently
     this.logs.unshift(entry);
-    
+
     // Trim if over limit
     if (this.logs.length > this.config.maxEntries) {
       this.logs.length = this.config.maxEntries;
@@ -70,8 +74,14 @@ class LogStore {
   /**
    * Add multiple log entries at once (batch operation)
    */
-  addBatch(entries: Array<{ level: LogEntry['level']; message: string; meta?: { module?: string; data?: unknown } }>) {
-    const newEntries = entries.map(e => ({
+  addBatch(
+    entries: Array<{
+      level: LogEntry["level"];
+      message: string;
+      meta?: { module?: string; data?: unknown };
+    }>
+  ) {
+    const newEntries = entries.map((e) => ({
       id: this.idCounter++,
       level: e.level,
       message: e.message,
@@ -82,7 +92,7 @@ class LogStore {
 
     // Add all at once
     this.logs.unshift(...newEntries);
-    
+
     // Trim if over limit
     if (this.logs.length > this.config.maxEntries) {
       this.logs.length = this.config.maxEntries;
@@ -102,22 +112,22 @@ class LogStore {
   /**
    * Get logs by level
    */
-  getByLevel(level: LogEntry['level']): LogEntry[] {
-    return this.logs.filter(log => log.level === level);
+  getByLevel(level: LogEntry["level"]): LogEntry[] {
+    return this.logs.filter((log) => log.level === level);
   }
 
   /**
    * Get logs by module
    */
   getByModule(module: string): LogEntry[] {
-    return this.logs.filter(log => log.module === module);
+    return this.logs.filter((log) => log.module === module);
   }
 
   /**
    * Get logs since a timestamp
    */
   getSince(since: Date): LogEntry[] {
-    return this.logs.filter(log => log.timestamp >= since);
+    return this.logs.filter((log) => log.timestamp >= since);
   }
 
   /**
@@ -170,7 +180,11 @@ class LogStore {
   /**
    * Get store statistics
    */
-  getStats(): { totalEntries: number; pendingNotifications: number; subscriberCount: number } {
+  getStats(): {
+    totalEntries: number;
+    pendingNotifications: number;
+    subscriberCount: number;
+  } {
     return {
       totalEntries: this.logs.length,
       pendingNotifications: this.pendingCount,
@@ -211,12 +225,19 @@ class LogStore {
       this.pendingNotification = null;
     }
     this.pendingCount = 0;
-    this.subscribers.forEach(fn => {
+    this.subscribers.forEach((fn) => {
       try {
         fn(this.logs);
       } catch (err) {
         // Log subscriber errors in debug mode
-        console.debug('LogStore subscriber error:', err);
+        this.logs.push({
+          id: this.idCounter++,
+          level: "error",
+          message: `Subscriber error: ${err}`,
+          timestamp: new Date(),
+          module: "LogStore",
+          data: err,
+        });
       }
     });
   }
