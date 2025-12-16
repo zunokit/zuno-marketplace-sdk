@@ -8,7 +8,7 @@
 import React, { useState, type ReactNode } from "react";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiSignerSync } from "./WagmiSignerSync";
+import { WagmiProviderSync } from "./WagmiProviderSync";
 import { getChainFromNetwork } from "../utils/chains";
 import { createDefaultConnectors } from "../utils/connectors";
 import { DEFAULT_CACHE_TIMES, type ZunoSDKConfig } from "../../types/config";
@@ -71,7 +71,7 @@ export function ZunoProvider({ config, children }: ZunoProviderProps) {
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <ZunoContextProvider config={config} queryClient={queryClient}>
-          <WagmiSignerSync />
+          <WagmiProviderSync />
           {children}
         </ZunoContextProvider>
       </QueryClientProvider>
@@ -81,4 +81,4 @@ export function ZunoProvider({ config, children }: ZunoProviderProps) {
 
 // Re-export for convenience
 export { useZuno } from "./ZunoContextProvider";
-export { WagmiSignerSync } from "./WagmiSignerSync";
+export { WagmiProviderSync } from "./WagmiProviderSync";

@@ -1,14 +1,14 @@
 /**
- * useSignerSync - Hook to sync wagmi wallet with SDK signer
+ * useProviderSync - Hook to sync wagmi wallet with SDK provider/signer
  * 
- * Alternative to WagmiSignerSync component for hook-based usage.
+ * Alternative to WagmiProviderSync component for hook-based usage.
  * 
  * @example
  * ```tsx
- * import { useSignerSync } from "zuno-marketplace-sdk/react";
+ * import { useProviderSync } from "zuno-marketplace-sdk/react";
  * 
  * function App() {
- *   const { isSynced, isInitialized, error } = useSignerSync();
+ *   const { isSynced, isInitialized, error } = useProviderSync();
  *   
  *   if (!isInitialized) return <Loading />;
  *   if (error) return <Error message={error.message} />;
@@ -25,7 +25,7 @@ import { useAccount, useWalletClient } from 'wagmi';
 import { BrowserProvider } from 'ethers';
 import { useZuno } from '../provider/ZunoContextProvider';
 
-export interface UseSignerSyncOptions {
+export interface UseProviderSyncOptions {
   /**
    * Delay in ms before attempting to sync on mount (for reconnection)
    * @default 500
@@ -33,15 +33,15 @@ export interface UseSignerSyncOptions {
   reconnectDelay?: number;
   
   /**
-   * Whether to clear signer on disconnect
+   * Whether to clear provider/signer on disconnect
    * @default true
    */
   clearOnDisconnect?: boolean;
 }
 
-export interface UseSignerSyncReturn {
+export interface UseProviderSyncReturn {
   /**
-   * Whether the signer has been synced successfully
+   * Whether the provider/signer has been synced successfully
    */
   isSynced: boolean;
   
@@ -62,13 +62,13 @@ export interface UseSignerSyncReturn {
 }
 
 /**
- * Hook that syncs wagmi wallet connection with SDK signer.
- * Alternative to WagmiSignerSync component.
+ * Hook that syncs wagmi wallet connection with SDK provider/signer.
+ * Alternative to WagmiProviderSync component.
  */
-export function useSignerSync({
+export function useProviderSync({
   reconnectDelay = 500,
   clearOnDisconnect = true,
-}: UseSignerSyncOptions = {}): UseSignerSyncReturn {
+}: UseProviderSyncOptions = {}): UseProviderSyncReturn {
   const sdk = useZuno();
   const { isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -108,14 +108,14 @@ export function useSignerSync({
     attemptReconnect();
   }, [reconnectDelay]);
 
-  // Sync signer when wallet state changes
+  // Sync provider/signer when wallet state changes
   useEffect(() => {
     if (!isInitialized) return;
 
     if (isConnected && walletClient) {
       sync();
     } else if (!isConnected && clearOnDisconnect) {
-      // Clear signer on disconnect
+      // Clear provider/signer on disconnect
       sdk.updateProvider(undefined, undefined);
       setIsSynced(false);
     }
@@ -129,4 +129,4 @@ export function useSignerSync({
   };
 }
 
-export default useSignerSync;
+export default useProviderSync;
