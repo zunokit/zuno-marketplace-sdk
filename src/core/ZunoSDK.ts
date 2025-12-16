@@ -9,7 +9,6 @@ import { ContractRegistry } from "./ContractRegistry";
 import { ExchangeModule } from "../modules/ExchangeModule";
 import { CollectionModule } from "../modules/CollectionModule";
 import { AuctionModule } from "../modules/AuctionModule";
-import { EventEmitter } from "../utils/events";
 import { ZunoSDKError, ErrorCodes } from "../utils/errors";
 import { ZunoLogger, createNoOpLogger, type Logger } from "../utils/logger";
 import { logStore } from "../utils/logStore";
@@ -21,7 +20,7 @@ let _singletonInstance: ZunoSDK | null = null;
 /**
  * Main Zuno SDK class
  */
-export class ZunoSDK extends EventEmitter {
+export class ZunoSDK {
   private readonly config: ZunoSDKConfig;
   private readonly apiClient: ZunoAPIClient;
   readonly contractRegistry: ContractRegistry;
@@ -43,8 +42,6 @@ export class ZunoSDK extends EventEmitter {
   private _bundles?: any; // Placeholder for BundlesModule
 
   constructor(config: ZunoSDKConfig, options?: SDKOptions) {
-    super();
-
     // Validate config
     this.validateConfig(config);
 
@@ -227,8 +224,9 @@ export class ZunoSDK extends EventEmitter {
 
   /**
    * Update provider and signer
+   * Pass undefined to clear provider/signer on wallet disconnect
    */
-  updateProvider(provider: ethers.Provider, signer?: ethers.Signer): void {
+  updateProvider(provider: ethers.Provider | undefined, signer?: ethers.Signer): void {
     this.provider = provider;
     this.signer = signer;
 
@@ -244,8 +242,6 @@ export class ZunoSDK extends EventEmitter {
     if (this._auction) {
       this._auction.updateProvider(provider, signer);
     }
-
-    this.emit("providerUpdated", { provider, signer });
 
     this.logger.debug("Provider updated", { module: "ZunoSDK" });
   }

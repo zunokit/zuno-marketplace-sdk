@@ -7,10 +7,12 @@
 // Providers
 export { ZunoProvider } from './provider/ZunoProvider';
 export { ZunoContextProvider, ZunoContext, useZuno } from './provider/ZunoContextProvider';
+export { WagmiProviderSync } from './provider/WagmiProviderSync';
 
 // Types
 export type { ZunoContextValue, ZunoContextProviderProps } from './provider/ZunoContextProvider';
 export type { ZunoProviderProps } from './provider/ZunoProvider';
+export type { WagmiProviderSyncProps } from './provider/WagmiProviderSync';
 
 // SDK Instance Access Hooks
 export { useZunoSDK } from './hooks/useZunoSDK';
@@ -50,6 +52,22 @@ export {
 export { useWallet } from './hooks/useWallet';
 export { useBalance } from './hooks/useBalance';
 export { useApprove } from './hooks/useApprove';
+export { useProviderSync } from './hooks/useProviderSync';
+export type { UseProviderSyncOptions, UseProviderSyncReturn } from './hooks/useProviderSync';
+
+// Utilities - Chains & Connectors
+export { 
+  getChainFromNetwork, 
+  getChainsFromNetworks,
+} from './utils/chains';
+export type { CustomChainConfig } from './utils/chains';
+
+export { 
+  createDefaultConnectors,
+  createSSRSafeConnectors,
+  isBrowser,
+} from './utils/connectors';
+export type { CreateDefaultConnectorsOptions } from './utils/connectors';
 
 // DevTools
 export { ZunoDevTools } from './components/ZunoDevTools';
