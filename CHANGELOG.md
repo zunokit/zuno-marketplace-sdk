@@ -1,3 +1,37 @@
+## [2.1.0-beta-claude.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.1-beta-claude.2...v2.1.0-beta-claude.1) (2025-12-16)
+
+### ✨ Features
+
+* add batch progress events for better UX ([61a831e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/61a831e110364bb4c246f59cb811ba16863b1ce9)), closes [#28](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/28)
+* add listingId bytes32 format validation ([b7d6a94](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b7d6a948f9c6bb43cca0f7b0770462b06aafa081)), closes [#20](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/20)
+* Add WagmiSignerSync export and SSR support (Issues [#44](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/44), [#45](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/45)) ([ec069ed](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/ec069edff12aa22423a82159f22311def3833ee2))
+* add warning logs for Dutch auction price clamp adjustments ([6f33ff1](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/6f33ff1b772494e43a28718995d7fdc2fe1c7ac3)), closes [#24](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/24)
+* enhance transactionStore with retry logic and history ([b83aab3](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b83aab34bbf2994c463fa2931f4cd727aef22b38)), closes [#29](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/29)
+
+### 🐛 Bug Fixes
+
+* remove unused ErrorCodes import after batch validation refactor ([1f1de5c](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/1f1de5c1f4fd4ece09e9a039c234d65788e88195))
+* remove unused imports from integration test ([d2a39f1](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d2a39f1f0ed6995e7cba5e7d2631a1690ec577e7))
+* remove unused validateTokenId import ([22e24b4](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/22e24b4f9ec1ffe341912a1a77ddd800f9a2509c))
+* replace require() with ES6 imports in testing utilities ([d3cb76c](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d3cb76ca03781fcb45af3e0cdad8c78235f5756e))
+* resolve type safety violations in updateProvider ([fd17366](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/fd173667f2d993c87c3b13e352a2665aa68a10cf))
+* update src/react/provider/WagmiProviderSync.tsx ([63baa78](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/63baa78e6ef6600aebc3711ee29037958a514d29))
+* update src/utils/logStore.ts ([b4f74ec](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b4f74eca55f159c3e77ee59c9550601c615518ea))
+
+### ⚡️ Performance Improvements
+
+* implement approval status caching to reduce RPC calls ([65a62f2](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/65a62f204fb7b66b68c22ab50d95e1271df66dc2)), closes [#19](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/19)
+* improve logStore performance under high-frequency logging ([46cb9bc](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/46cb9bcdc8779e1d524c5ee3cf43e3ec91986d6a)), closes [#30](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/30)
+
+### ♻️ Code Refactoring
+
+* enhance settings configuration and streamline migration documentation ([dd82826](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/dd8282629878ada6d26dcf879a20d0f0f7fd520f))
+* extract batch validation into shared utility (DRY) ([6344e1a](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/6344e1a69e263e0320c7c866945889e66eab7594)), closes [#25](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/25)
+* improve settings validation and update migration instructions ([090a993](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/090a993aec36e32ac04575daa8270163a7bfdb60))
+* standardize error messages across validation functions ([f35364e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/f35364e2aff2b829871fb49902b0c16ee2066384)), closes [#21](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/21)
+* standardize string quotes and improve code formatting in AuctionModule, useProviderSync, batch utilities, and logStore ([d26bead](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d26beadc7c75eaaf65ad7822a93d26f945bb8777))
+* update permissions structure in settings and remove outdated migration guide ([a3f9fd0](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a3f9fd080a8de67a89ee5d50ffa6a008d8bc1d59))
+
 ## [2.0.1-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.1-beta-claude.1...v2.0.1-beta-claude.2) (2025-12-07)
 
 ### ♻️ Code Refactoring
