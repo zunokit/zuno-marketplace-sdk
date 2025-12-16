@@ -214,8 +214,9 @@ class LogStore {
     this.subscribers.forEach(fn => {
       try {
         fn(this.logs);
-      } catch {
-        // Ignore subscriber errors
+      } catch (err) {
+        // Log subscriber errors in debug mode
+        console.debug('LogStore subscriber error:', err);
       }
     });
   }
