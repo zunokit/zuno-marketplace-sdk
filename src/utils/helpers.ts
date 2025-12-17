@@ -358,3 +358,30 @@ export async function safeCall<T>(fn: () => Promise<T>, fallback: T): Promise<T>
     return fallback;
   }
 }
+
+/**
+ * Validate bytes32 hex string format
+ * 
+ * @param value - The value to validate
+ * @param paramName - Parameter name for error messages
+ * @throws {ZunoSDKError} INVALID_PARAMETER if not a valid bytes32 hex string
+ * 
+ * @example
+ * ```typescript
+ * validateBytes32('0x0000000000000000000000000000000000000000000000000000000000000001', 'listingId');
+ * // Valid - no error
+ * 
+ * validateBytes32('invalid', 'listingId');
+ * // Throws: listingId must be a valid bytes32 hex string (0x followed by 64 hex characters)
+ * ```
+ */
+export function validateBytes32(value: string, paramName: string): void {
+  const BYTES32_REGEX = /^0x[0-9a-fA-F]{64}$/;
+  
+  if (!BYTES32_REGEX.test(value)) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_PARAMETER,
+      `${paramName} must be a valid bytes32 hex string (0x followed by 64 hex characters). Got: ${value}`
+    );
+  }
+}

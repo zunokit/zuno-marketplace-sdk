@@ -5,8 +5,10 @@
  * @packageDocumentation
  */
 
-import type { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import type { Logger } from '../utils/logger';
+import * as React from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 // ============================================
 // MOCK TYPES
@@ -347,9 +349,6 @@ export function createMockSDK(options: CreateMockSDKOptions = {}): MockZunoSDK {
  * Create a mock QueryClient for testing
  */
 export function createMockQueryClient(): QueryClient {
-  // Dynamic import to avoid bundling React Query in non-React environments
-  const { QueryClient } = require('@tanstack/react-query');
-
   return new QueryClient({
     defaultOptions: {
       queries: {
@@ -395,8 +394,6 @@ export interface MockZunoProviderProps {
 export function createMockZunoProvider() {
   // This returns a factory function to avoid React import issues
   return function MockZunoProvider({ children, sdk, queryClient }: MockZunoProviderProps) {
-    const React = require('react');
-    const { QueryClientProvider } = require('@tanstack/react-query');
 
     const mockSdk = sdk || createMockSDK();
     const mockQueryClient = queryClient || createMockQueryClient();

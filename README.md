@@ -435,7 +435,7 @@ The SDK provides a powerful logging system with built-in DevTools integration. A
 Add DevTools to your app to view all SDK logs in a floating panel:
 
 ```tsx
-import { ZunoDevTools } from 'zuno-marketplace-sdk/devtools';
+import { ZunoDevTools } from 'zuno-marketplace-sdk/react';
 
 function App() {
   return (

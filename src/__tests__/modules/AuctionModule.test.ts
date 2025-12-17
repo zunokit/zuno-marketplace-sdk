@@ -58,14 +58,14 @@ describe('AuctionModule', () => {
   describe('batchCancelAuction', () => {
     it('should throw error for empty array', async () => {
       await expect(sdk.auction.batchCancelAuction([])).rejects.toThrow(
-        'auctionIds array cannot be empty'
+        'auctionIds cannot be empty'
       );
     });
 
     it('should throw error for array exceeding max limit', async () => {
       const tooManyIds = Array(21).fill('0x1234');
       await expect(sdk.auction.batchCancelAuction(tooManyIds)).rejects.toThrow(
-        'Maximum 20 cancellations per batch'
+        'auctionIds exceeds maximum batch size of 20'
       );
     });
 
@@ -140,6 +140,24 @@ describe('AuctionModule', () => {
       await expect(
         sdk.auction.getPendingRefund('0x1234', 'invalid')
       ).rejects.toThrow();
+    });
+  });
+
+  describe('clearApprovalCache', () => {
+    it('should be a callable method', () => {
+      expect(typeof sdk.auction.clearApprovalCache).toBe('function');
+    });
+
+    it('should not throw when called', () => {
+      expect(() => sdk.auction.clearApprovalCache()).not.toThrow();
+    });
+
+    it('should be safe to call multiple times', () => {
+      expect(() => {
+        sdk.auction.clearApprovalCache();
+        sdk.auction.clearApprovalCache();
+        sdk.auction.clearApprovalCache();
+      }).not.toThrow();
     });
   });
 });

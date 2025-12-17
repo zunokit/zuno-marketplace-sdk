@@ -8,6 +8,8 @@ import type { ZunoAPIClient } from '../core/ZunoAPIClient';
 import type { ContractRegistry } from '../core/ContractRegistry';
 import { TransactionManager } from '../utils/transactions';
 import { ZunoSDKError, ErrorCodes } from '../utils/errors';
+import { EventEmitter } from '../utils/events';
+import { createBatchProgressTracker, type BatchProgressTracker } from '../utils/batchProgress';
 import type { NetworkType } from '../types/config';
 import type { Logger } from '../utils/logger';
 
@@ -20,6 +22,7 @@ export abstract class BaseModule {
   protected readonly queryClient: QueryClient;
   protected readonly network: NetworkType;
   protected readonly logger: Logger;
+  protected readonly events: EventEmitter;
   protected provider?: ethers.Provider;
   protected signer?: ethers.Signer;
   protected txManager?: TransactionManager;
@@ -30,6 +33,7 @@ export abstract class BaseModule {
     queryClient: QueryClient,
     network: NetworkType,
     logger: Logger,
+    events: EventEmitter,
     provider?: ethers.Provider,
     signer?: ethers.Signer
   ) {
@@ -38,6 +42,7 @@ export abstract class BaseModule {
     this.queryClient = queryClient;
     this.network = network;
     this.logger = logger;
+    this.events = events;
     this.provider = provider;
     this.signer = signer;
 
@@ -47,12 +52,28 @@ export abstract class BaseModule {
   }
 
   /**
-   * Update provider and signer
+   * Create a batch progress tracker for monitoring batch operation progress
+   *
+   * @param operation - Name of the batch operation
+   * @param moduleName - Module name (e.g., 'Auction', 'Exchange')
+   * @param totalItems - Total items in the batch
    */
-  updateProvider(provider: ethers.Provider, signer?: ethers.Signer): void {
+  protected createBatchTracker(
+    operation: string,
+    moduleName: string,
+    totalItems: number
+  ): BatchProgressTracker {
+    return createBatchProgressTracker(this.events, operation, moduleName, totalItems);
+  }
+
+  /**
+   * Update provider and signer
+   * Pass undefined to clear provider/signer on wallet disconnect
+   */
+  updateProvider(provider: ethers.Provider | undefined, signer?: ethers.Signer): void {
     this.provider = provider;
     this.signer = signer;
-    this.txManager = new TransactionManager(provider, signer);
+    this.txManager = provider ? new TransactionManager(provider, signer) : undefined;
   }
 
   /**
