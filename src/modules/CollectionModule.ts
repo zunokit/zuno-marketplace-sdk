@@ -755,17 +755,23 @@ export class CollectionModule extends BaseModule {
     addresses: string[]
   ): Promise<{ tx: TransactionReceipt }> {
     this.log('addToAllowlist started', { collectionAddress, count: addresses.length });
-    
-    validateAddress(collectionAddress, 'collectionAddress');
+
+    // Validate and normalize collection address
+    const normalizedCollectionAddress = validateAddress(collectionAddress, 'collectionAddress');
     validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
+
+    // Validate and normalize all allowlist addresses
+    const normalizedAddresses = addresses.map((addr, index) =>
+      validateAddress(addr, `addresses[${index}]`)
+    );
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');
-    
-    const abi = ['function addToAllowlist(address[] calldata addresses) external'];
-    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
 
-    const tx = await txManager.sendTransaction(contract, 'addToAllowlist', [addresses], { module: 'Collection' });
+    const abi = ['function addToAllowlist(address[] calldata addresses) external'];
+    const contract = new ethers.Contract(normalizedCollectionAddress, abi, this.signer);
+
+    const tx = await txManager.sendTransaction(contract, 'addToAllowlist', [normalizedAddresses], { module: 'Collection' });
     this.log('addToAllowlist completed', { txHash: tx.hash });
 
     return { tx };
@@ -802,17 +808,23 @@ export class CollectionModule extends BaseModule {
     addresses: string[]
   ): Promise<{ tx: TransactionReceipt }> {
     this.log('removeFromAllowlist started', { collectionAddress, count: addresses.length });
-    
-    validateAddress(collectionAddress, 'collectionAddress');
+
+    // Validate and normalize collection address
+    const normalizedCollectionAddress = validateAddress(collectionAddress, 'collectionAddress');
     validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
+
+    // Validate and normalize all addresses
+    const normalizedAddresses = addresses.map((addr, index) =>
+      validateAddress(addr, `addresses[${index}]`)
+    );
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');
-    
-    const abi = ['function removeFromAllowlist(address[] calldata addresses) external'];
-    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
 
-    const tx = await txManager.sendTransaction(contract, 'removeFromAllowlist', [addresses], { module: 'Collection' });
+    const abi = ['function removeFromAllowlist(address[] calldata addresses) external'];
+    const contract = new ethers.Contract(normalizedCollectionAddress, abi, this.signer);
+
+    const tx = await txManager.sendTransaction(contract, 'removeFromAllowlist', [normalizedAddresses], { module: 'Collection' });
     this.log('removeFromAllowlist completed', { txHash: tx.hash });
 
     return { tx };
@@ -847,14 +859,15 @@ export class CollectionModule extends BaseModule {
     enabled: boolean
   ): Promise<{ tx: TransactionReceipt }> {
     this.log('setAllowlistOnly started', { collectionAddress, enabled });
-    
-    validateAddress(collectionAddress, 'collectionAddress');
+
+    // Validate and normalize collection address
+    const normalizedCollectionAddress = validateAddress(collectionAddress, 'collectionAddress');
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');
-    
+
     const abi = ['function setAllowlistOnly(bool allowlistOnly) external'];
-    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+    const contract = new ethers.Contract(normalizedCollectionAddress, abi, this.signer);
 
     const tx = await txManager.sendTransaction(contract, 'setAllowlistOnly', [enabled], { module: 'Collection' });
     this.log('setAllowlistOnly completed', { txHash: tx.hash });
@@ -884,16 +897,17 @@ export class CollectionModule extends BaseModule {
    * ```
    */
   async isInAllowlist(collectionAddress: string, address: string): Promise<boolean> {
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateAddress(address, 'address');
+    // Validate and normalize both addresses
+    const normalizedCollectionAddress = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedAddress = validateAddress(address, 'address');
 
     const provider = this.ensureProvider();
     const { ethers } = await import('ethers');
-    
-    const abi = ['function isInAllowlist(address account) external view returns (bool)'];
-    const contract = new ethers.Contract(collectionAddress, abi, provider);
 
-    return await contract.isInAllowlist(address);
+    const abi = ['function isInAllowlist(address account) external view returns (bool)'];
+    const contract = new ethers.Contract(normalizedCollectionAddress, abi, provider);
+
+    return await contract.isInAllowlist(normalizedAddress);
   }
 
   /**
@@ -916,14 +930,80 @@ export class CollectionModule extends BaseModule {
    * ```
    */
   async isAllowlistOnly(collectionAddress: string): Promise<boolean> {
-    validateAddress(collectionAddress, 'collectionAddress');
+    // Validate and normalize collection address
+    const normalizedCollectionAddress = validateAddress(collectionAddress, 'collectionAddress');
 
     const provider = this.ensureProvider();
     const { ethers } = await import('ethers');
-    
+
     const abi = ['function isAllowlistOnly() external view returns (bool)'];
-    const contract = new ethers.Contract(collectionAddress, abi, provider);
+    const contract = new ethers.Contract(normalizedCollectionAddress, abi, provider);
 
     return await contract.isAllowlistOnly();
+  }
+
+  /**
+   * Setup allowlist with addresses and mode in a single transaction
+   *
+   * This is more gas-efficient and requires only ONE Metamask confirmation
+   * instead of two (addToAllowlist + setAllowlistOnly).
+   *
+   * @param collectionAddress - The collection contract address
+   * @param addresses - Array of wallet addresses to add (max 100)
+   * @param enableAllowlistOnly - If true, only allowlisted addresses can ever mint
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If any address is invalid
+   * @throws {ZunoSDKError} INVALID_AMOUNT - If addresses array exceeds 100
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller is not collection owner
+   *
+   * @example
+   * ```typescript
+   * // Setup allowlist with addresses and enable allowlist-only mode in ONE transaction
+   * const { tx } = await sdk.collection.setupAllowlist(
+   *   "0x1234...",
+   *   ["0xabc...", "0xdef..."],
+   *   true // Enable allowlist-only mode
+   * );
+   * console.log('Allowlist setup complete:', tx.transactionHash);
+   * ```
+   */
+  async setupAllowlist(
+    collectionAddress: string,
+    addresses: string[],
+    enableAllowlistOnly: boolean
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('setupAllowlist started', {
+      collectionAddress,
+      count: addresses.length,
+      enableAllowlistOnly,
+    });
+
+    // Validate and normalize collection address
+    const normalizedCollectionAddress = validateAddress(collectionAddress, 'collectionAddress');
+    validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
+
+    // Validate and normalize all allowlist addresses
+    const normalizedAddresses = addresses.map((addr, index) =>
+      validateAddress(addr, `addresses[${index}]`)
+    );
+
+    const txManager = this.ensureTxManager();
+    const { ethers } = await import('ethers');
+
+    const abi = ['function setupAllowlist(address[] calldata addresses, bool enableAllowlistOnly) external'];
+    const contract = new ethers.Contract(normalizedCollectionAddress, abi, this.signer);
+
+    const tx = await txManager.sendTransaction(
+      contract,
+      'setupAllowlist',
+      [normalizedAddresses, enableAllowlistOnly],
+      { module: 'Collection' }
+    );
+    this.log('setupAllowlist completed', { txHash: tx.hash });
+
+    return { tx };
   }
 }

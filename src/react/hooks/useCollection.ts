@@ -97,6 +97,23 @@ export function useCollection() {
     },
   });
 
+  const setupAllowlist = useMutation({
+    mutationFn: ({
+      collectionAddress,
+      addresses,
+      enableAllowlistOnly,
+    }: {
+      collectionAddress: string;
+      addresses: string[];
+      enableAllowlistOnly: boolean;
+    }) => sdk.collection.setupAllowlist(collectionAddress, addresses, enableAllowlistOnly),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+      queryClient.invalidateQueries({ queryKey: ['allowlist', variables.collectionAddress] });
+      queryClient.invalidateQueries({ queryKey: ['allowlistOnly', variables.collectionAddress] });
+    },
+  });
+
   return {
     createERC721,
     createERC1155,
@@ -108,6 +125,7 @@ export function useCollection() {
     addToAllowlist,
     removeFromAllowlist,
     setAllowlistOnly,
+    setupAllowlist,
   };
 }
 
