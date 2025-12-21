@@ -69,6 +69,22 @@ export function useCollection() {
     },
   });
 
+  const ownerMint = useMutation({
+    mutationFn: ({
+      collectionAddress,
+      recipient,
+      amount,
+    }: {
+      collectionAddress: string;
+      recipient: string;
+      amount: number;
+    }) => sdk.collection.ownerMint(collectionAddress, recipient, amount),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['nfts'] });
+      queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+    },
+  });
+
   const verifyCollection = useMutation({
     mutationFn: (address: string) => sdk.collection.verifyCollection(address),
   });
@@ -121,6 +137,7 @@ export function useCollection() {
     batchMintERC721,
     mintERC1155,
     batchMintERC1155,
+    ownerMint,
     verifyCollection,
     addToAllowlist,
     removeFromAllowlist,

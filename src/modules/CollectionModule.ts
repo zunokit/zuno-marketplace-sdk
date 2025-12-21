@@ -241,6 +241,81 @@ export class CollectionModule extends BaseModule {
   }
 
   /**
+   * Owner-only mint function - bypasses payment, timing, allowlist, and per-wallet limits
+   *
+   * This function allows collection owners to mint NFTs without restrictions:
+   * - No payment required (free minting)
+   * - Can mint before mintStartTime
+   * - Can mint even in allowlist-only mode
+   * - Bypasses per-wallet mint limits
+   * - Only respects maxSupply limit
+   *
+   * @param collectionAddress - The collection contract address
+   * @param recipient - Address to receive the minted NFTs
+   * @param amount - Number of tokens to mint
+   * @param options - Optional transaction options
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If address is invalid
+   * @throws {ZunoSDKError} INVALID_AMOUNT - If amount is 0 or negative
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller is not collection owner
+   *
+   * @example
+   * ```typescript
+   * // Owner mints 10 NFTs to their own wallet
+   * const { tx } = await sdk.collection.ownerMint(
+   *   "0x1234...",
+   *   "0xOwnerAddress...",
+   *   10
+   * );
+   *
+   * // Owner mints 5 NFTs to another address (airdrop)
+   * const { tx } = await sdk.collection.ownerMint(
+   *   "0x1234...",
+   *   "0xRecipientAddress...",
+   *   5
+   * );
+   * ```
+   */
+  async ownerMint(
+    collectionAddress: string,
+    recipient: string,
+    amount: number,
+    options?: { gasLimit?: number }
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('ownerMint started', { collectionAddress, recipient, amount });
+
+    const normalizedCollectionAddress = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedRecipient = validateAddress(recipient, 'recipient');
+
+    if (amount <= 0) {
+      throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
+    }
+
+    const txManager = this.ensureTxManager();
+    this.ensureProvider();
+
+    const { ethers } = await import('ethers');
+    const contract = new ethers.Contract(
+      normalizedCollectionAddress,
+      ['function ownerMint(address to, uint256 amount) external'],
+      this.signer
+    );
+
+    const tx = await txManager.sendTransaction(
+      contract,
+      'ownerMint',
+      [normalizedRecipient, amount],
+      { ...options, module: 'Collection' }
+    );
+    this.log('ownerMint completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
    * Verify collection contract and detect token standard
    */
   async verifyCollection(address: string): Promise<{
