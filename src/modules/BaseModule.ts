@@ -48,11 +48,12 @@ export abstract class BaseModule {
 
   /**
    * Update provider and signer
+   * Pass undefined to clear provider/signer on wallet disconnect
    */
-  updateProvider(provider: ethers.Provider, signer?: ethers.Signer): void {
+  updateProvider(provider: ethers.Provider | undefined, signer?: ethers.Signer): void {
     this.provider = provider;
     this.signer = signer;
-    this.txManager = new TransactionManager(provider, signer);
+    this.txManager = provider ? new TransactionManager(provider, signer) : undefined;
   }
 
   /**

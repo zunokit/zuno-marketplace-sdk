@@ -2,9 +2,25 @@
  * SDK Configuration Types
  */
 
+import ms from 'ms';
 import type { QueryClient } from '@tanstack/react-query';
 import type { ethers } from 'ethers';
 import type { LoggerConfig } from '../utils/logger';
+
+/**
+ * Default cache time constants (in milliseconds)
+ * These can be overridden via CacheConfig
+ */
+export const DEFAULT_CACHE_TIMES = {
+  /** Default stale time for queries (5 minutes) */
+  STALE_TIME: ms('5m'),
+  /** Default garbage collection time (10 minutes) */
+  GC_TIME: ms('10m'),
+  /** Extended stale time for rarely changing data like networks (30 minutes) */
+  STALE_TIME_EXTENDED: ms('30m'),
+  /** Extended garbage collection time (1 hour) */
+  GC_TIME_EXTENDED: ms('1h'),
+} as const;
 
 /**
  * Supported blockchain networks

@@ -16,6 +16,7 @@ import type {
 import type { TransactionReceipt } from '../types/entities';
 import { validateAddress, ErrorCodes } from '../utils/errors';
 import { safeCall } from '../utils/helpers';
+import { validateBatchSize, BATCH_LIMITS } from '../utils/batch';
 
 /**
  * CollectionModule handles NFT collection creation and minting
@@ -159,7 +160,7 @@ export class CollectionModule extends BaseModule {
     validateAddress(recipient, 'recipient');
 
     if (amount <= 0) {
-      throw new Error('Amount must be greater than 0');
+      throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
     }
 
     const txManager = this.ensureTxManager();
@@ -218,7 +219,9 @@ export class CollectionModule extends BaseModule {
     validateAddress(collectionAddress, 'collectionAddress');
     validateAddress(recipient, 'recipient');
 
-    if (amount <= 0) throw new Error('Amount must be greater than 0');
+    if (amount <= 0) {
+      throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
+    }
 
     const txManager = this.ensureTxManager();
     this.ensureProvider();
@@ -717,7 +720,35 @@ export class CollectionModule extends BaseModule {
   }
 
   /**
-   * Add addresses to collection allowlist
+   * Add addresses to collection allowlist for allowlist-only minting
+   *
+   * When allowlist mode is enabled, only addresses on the allowlist
+   * can mint NFTs from the collection. This is useful for whitelist
+   * sales and restricted access minting.
+   *
+   * @param collectionAddress - The collection contract address
+   * @param addresses - Array of wallet addresses to add (max 100)
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If collection address is invalid
+   * @throws {ZunoSDKError} INVALID_AMOUNT - If addresses array is empty or exceeds 100
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller is not collection owner
+   *
+   * @example
+   * ```typescript
+   * // Add addresses to allowlist
+   * const { tx } = await sdk.collection.addToAllowlist(
+   *   "0x1234...",
+   *   [
+   *     "0xabc...", // User 1
+   *     "0xdef...", // User 2
+   *     "0x123...", // User 3
+   *   ]
+   * );
+   * console.log('Added to allowlist:', tx.transactionHash);
+   * ```
    */
   async addToAllowlist(
     collectionAddress: string,
@@ -726,12 +757,7 @@ export class CollectionModule extends BaseModule {
     this.log('addToAllowlist started', { collectionAddress, count: addresses.length });
     
     validateAddress(collectionAddress, 'collectionAddress');
-    if (addresses.length === 0) {
-      throw this.error('INVALID_AMOUNT', 'addresses array cannot be empty');
-    }
-    if (addresses.length > 100) {
-      throw this.error('INVALID_AMOUNT', 'Maximum 100 addresses per batch');
-    }
+    validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');
@@ -747,6 +773,29 @@ export class CollectionModule extends BaseModule {
 
   /**
    * Remove addresses from collection allowlist
+   *
+   * Removes wallet addresses from the collection's allowlist. Removed
+   * addresses will no longer be able to mint when allowlist mode is enabled.
+   *
+   * @param collectionAddress - The collection contract address
+   * @param addresses - Array of wallet addresses to remove
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If collection address is invalid
+   * @throws {ZunoSDKError} INVALID_AMOUNT - If addresses array is empty
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller is not collection owner
+   *
+   * @example
+   * ```typescript
+   * // Remove addresses from allowlist
+   * const { tx } = await sdk.collection.removeFromAllowlist(
+   *   "0x1234...",
+   *   ["0xabc...", "0xdef..."]
+   * );
+   * console.log('Removed from allowlist:', tx.transactionHash);
+   * ```
    */
   async removeFromAllowlist(
     collectionAddress: string,
@@ -755,9 +804,7 @@ export class CollectionModule extends BaseModule {
     this.log('removeFromAllowlist started', { collectionAddress, count: addresses.length });
     
     validateAddress(collectionAddress, 'collectionAddress');
-    if (addresses.length === 0) {
-      throw this.error('INVALID_AMOUNT', 'addresses array cannot be empty');
-    }
+    validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');
@@ -772,7 +819,28 @@ export class CollectionModule extends BaseModule {
   }
 
   /**
-   * Set allowlist-only mode (disables public minting)
+   * Enable or disable allowlist-only minting mode for a collection
+   *
+   * When enabled, only addresses on the allowlist can mint NFTs.
+   * When disabled, anyone can mint NFTs (public minting).
+   *
+   * @param collectionAddress - The collection contract address
+   * @param enabled - True to enable allowlist mode, false to disable
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If collection address is invalid
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller is not collection owner
+   *
+   * @example
+   * ```typescript
+   * // Enable allowlist-only mode
+   * await sdk.collection.setAllowlistOnly("0x1234...", true);
+   *
+   * // Disable allowlist-only mode (open public minting)
+   * await sdk.collection.setAllowlistOnly("0x1234...", false);
+   * ```
    */
   async setAllowlistOnly(
     collectionAddress: string,
@@ -795,7 +863,25 @@ export class CollectionModule extends BaseModule {
   }
 
   /**
-   * Check if address is in allowlist
+   * Check if an address is on the collection's allowlist
+   *
+   * @param collectionAddress - The collection contract address
+   * @param address - The wallet address to check
+   *
+   * @returns Promise resolving to true if address is on allowlist, false otherwise
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If collection or address is invalid
+   *
+   * @example
+   * ```typescript
+   * const isAllowed = await sdk.collection.isInAllowlist(
+   *   "0x1234...",
+   *   "0xabc..."
+   * );
+   * if (isAllowed) {
+   *   console.log('Address can mint during allowlist phase');
+   * }
+   * ```
    */
   async isInAllowlist(collectionAddress: string, address: string): Promise<boolean> {
     validateAddress(collectionAddress, 'collectionAddress');
@@ -811,7 +897,23 @@ export class CollectionModule extends BaseModule {
   }
 
   /**
-   * Check if collection is in allowlist-only mode
+   * Check if a collection is in allowlist-only minting mode
+   *
+   * @param collectionAddress - The collection contract address
+   *
+   * @returns Promise resolving to true if allowlist mode is enabled, false otherwise
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If collection address is invalid
+   *
+   * @example
+   * ```typescript
+   * const isRestricted = await sdk.collection.isAllowlistOnly("0x1234...");
+   * if (isRestricted) {
+   *   console.log('Collection requires allowlist for minting');
+   * } else {
+   *   console.log('Collection is open for public minting');
+   * }
+   * ```
    */
   async isAllowlistOnly(collectionAddress: string): Promise<boolean> {
     validateAddress(collectionAddress, 'collectionAddress');
