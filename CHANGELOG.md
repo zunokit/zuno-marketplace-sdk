@@ -1,3 +1,9 @@
+## [2.1.0-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0-beta-claude.1...v2.1.0-beta-claude.2) (2025-12-30)
+
+### ✨ Features
+
+* enhance settings.json with additional hooks for improved command execution ([f207f86](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/f207f86833914165677fc2d6ebbca9ad8d46c3ff))
+
 ## [2.1.0-beta-claude.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.1-beta-claude.2...v2.1.0-beta-claude.1) (2025-12-16)
 
 ### ✨ Features
