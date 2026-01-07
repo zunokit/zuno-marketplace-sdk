@@ -1,3 +1,9 @@
+## [2.1.0-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0-beta-claude.2...v2.1.0-beta-claude.3) (2026-01-07)
+
+### ✨ Features
+
+* add release manifest for version 2.2.0 and update environment configuration ([d654f14](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d654f149eccec2b6b25b7852db69a88c8e087aa5))
+
 ## [2.1.0-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0-beta-claude.1...v2.1.0-beta-claude.2) (2025-12-30)
 
 ### ✨ Features
