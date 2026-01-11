@@ -1,3 +1,19 @@
+## [2.2.0-beta-claude.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.2.0-beta-claude.1) (2026-01-11)
+
+### ✨ Features
+
+* add release manifest for version 2.2.0 and update environment configuration ([d654f14](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d654f149eccec2b6b25b7852db69a88c8e087aa5))
+* enhance settings.json with additional hooks for improved command execution ([f207f86](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/f207f86833914165677fc2d6ebbca9ad8d46c3ff))
+
+### 🐛 Bug Fixes
+
+* update src/react/provider/WagmiProviderSync.tsx ([63baa78](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/63baa78e6ef6600aebc3711ee29037958a514d29))
+* update src/utils/logStore.ts ([b4f74ec](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b4f74eca55f159c3e77ee59c9550601c615518ea))
+
+### ♻️ Code Refactoring
+
+* standardize string quotes and improve code formatting in AuctionModule, useProviderSync, batch utilities, and logStore ([d26bead](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d26beadc7c75eaaf65ad7822a93d26f945bb8777))
+
 ## [2.1.0](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0...v2.1.0) (2026-01-11)
 
 ### ✨ Features
