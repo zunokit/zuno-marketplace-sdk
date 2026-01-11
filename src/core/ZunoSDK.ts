@@ -13,7 +13,7 @@ import { EventEmitter } from "../utils/events";
 import { ZunoSDKError, ErrorCodes } from "../utils/errors";
 import { ZunoLogger, createNoOpLogger, type Logger } from "../utils/logger";
 import { logStore } from "../utils/logStore";
-import type { ZunoSDKConfig, SDKOptions } from "../types/config";
+import { DEFAULT_CACHE_TIMES, type ZunoSDKConfig, type SDKOptions } from "../types/config";
 
 // Singleton instance (module-level private variable)
 let _singletonInstance: ZunoSDK | null = null;
@@ -125,6 +125,7 @@ export class ZunoSDK extends EventEmitter {
         this.queryClient,
         this.config.network,
         moduleLogger,
+        this,
         this.provider,
         this.signer
       );
@@ -149,6 +150,7 @@ export class ZunoSDK extends EventEmitter {
         this.queryClient,
         this.config.network,
         moduleLogger,
+        this,
         this.provider,
         this.signer
       );
@@ -173,6 +175,7 @@ export class ZunoSDK extends EventEmitter {
         this.queryClient,
         this.config.network,
         moduleLogger,
+        this,
         this.provider,
         this.signer
       );
@@ -227,8 +230,9 @@ export class ZunoSDK extends EventEmitter {
 
   /**
    * Update provider and signer
+   * Pass undefined to clear provider/signer on wallet disconnect
    */
-  updateProvider(provider: ethers.Provider, signer?: ethers.Signer): void {
+  updateProvider(provider: ethers.Provider | undefined, signer?: ethers.Signer): void {
     this.provider = provider;
     this.signer = signer;
 
@@ -386,8 +390,8 @@ export class ZunoSDK extends EventEmitter {
     return new QueryClient({
       defaultOptions: {
         queries: {
-          staleTime: cacheConfig.ttl || 5 * 60 * 1000, // 5 minutes
-          gcTime: cacheConfig.gcTime || 10 * 60 * 1000, // 10 minutes
+          staleTime: cacheConfig.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
+          gcTime: cacheConfig.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
           retry: this.config.retryPolicy?.maxRetries || 3,
           retryDelay: (attemptIndex) => {
             const delay = this.config.retryPolicy?.initialDelay || 1000;

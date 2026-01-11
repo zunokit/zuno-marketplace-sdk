@@ -16,7 +16,8 @@ export { CollectionModule } from './modules/CollectionModule';
 export { AuctionModule } from './modules/AuctionModule';
 export { BaseModule } from './modules/BaseModule';
 
-// Types
+// Types & Constants
+export { DEFAULT_CACHE_TIMES } from './types/config';
 export type * from './types/config';
 export type * from './types/entities';
 export type * from './types/api';
@@ -27,12 +28,13 @@ export { ZunoSDKError, ErrorCodes } from './utils/errors';
 export type { ErrorContext, ErrorCode } from './utils/errors';
 export { EventEmitter } from './utils/events';
 export { TransactionManager } from './utils/transactions';
+export { BATCH_EVENTS, createBatchProgressTracker, BatchProgressTracker } from './utils/batchProgress';
 export { ZunoLogger, createNoOpLogger } from './utils/logger';
 export type { Logger, LoggerConfig, LogLevel, LogMetadata } from './utils/logger';
 export { logStore } from './utils/logStore';
-export type { LogEntry } from './utils/logStore';
+export type { LogEntry, LogStoreConfig } from './utils/logStore';
 export { transactionStore } from './utils/transactionStore';
-export type { TransactionEntry } from './utils/transactionStore';
+export type { TransactionEntry, RetryConfig, PreviousAttempt } from './utils/transactionStore';
 
 // Query factories (for advanced usage)
 export {
