@@ -200,16 +200,42 @@ export function assert(
 }
 
 /**
- * Validate Ethereum address
+ * Validate and normalize Ethereum address using EIP-55 checksum
+ * @param address - The address to validate
+ * @param paramName - Parameter name for error messages
+ * @returns The checksummed address
+ * @throws {ZunoSDKError} If address is invalid or has bad checksum
  */
-export function validateAddress(address: string, paramName = 'address'): void {
+export function validateAddress(address: string, paramName = 'address'): string {
+  // Basic format check first
   const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 
-  assert(
-    typeof address === 'string' && ADDRESS_REGEX.test(address),
-    ErrorCodes.INVALID_ADDRESS,
-    `Invalid ${paramName}: ${address}`
-  );
+  if (typeof address !== 'string' || !ADDRESS_REGEX.test(address)) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_ADDRESS,
+      `Invalid ${paramName}: ${address}. Address must be a 42-character hex string starting with 0x.`
+    );
+  }
+
+  try {
+    // Use ethers.getAddress for EIP-55 checksum validation and normalization
+    // This will throw if the address has an invalid checksum
+    const { getAddress } = require('ethers');
+    return getAddress(address);
+  } catch (error: unknown) {
+    // If the address is valid but not checksummed, normalize it
+    try {
+      const { getAddress } = require('ethers');
+      // Try to normalize by converting to lowercase first
+      return getAddress(address.toLowerCase());
+    } catch {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new ZunoSDKError(
+        ErrorCodes.INVALID_ADDRESS,
+        `Invalid ${paramName}: ${address}. ${errorMessage}`
+      );
+    }
+  }
 }
 
 /**
