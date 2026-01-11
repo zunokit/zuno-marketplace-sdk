@@ -7,35 +7,32 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 [![License](https://img.shields.io/npm/l/zuno-marketplace-sdk)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
 
-## ✨ Features
+## Features
 
-- 🎨 **Complete NFT Marketplace** - Exchange, Auctions, Offers, Bundles
-- ⚛️ **React Integration** - 21+ hooks with Wagmi & React Query
-- 🔐 **Type-Safe** - Full TypeScript support with strict typing
-- 📦 **Smart Caching** - Built-in ABI caching with TanStack Query
-- 🎯 **Modular Design** - Use only what you need
-- 🚀 **Production Ready** - Robust error handling and retries
-- 🪝 **Modern React** - useCallback, useMemo optimization
-- 📱 **Wallet Support** - WalletConnect, MetaMask, Coinbase Wallet
+- **Complete NFT Marketplace** - Exchange, Auctions, Offers, Bundles
+- **React Integration** - 21+ hooks with Wagmi & React Query
+- **Type-Safe** - Full TypeScript support with strict typing
+- **Smart Caching** - Built-in ABI caching with TanStack Query
+- **Modular Design** - Use only what you need
+- **Production Ready** - Robust error handling and retries
+- **DevTools** - In-app debugging panel
 
-## 🌐 Platform Support
+## Platform Support
 
-### Contract & ABI Support
-
-| Feature | Status | Description |
-|---------|:------:|-------------|
-| Zuno ABIs | ✅ | Fully supported with built-in registry |
-| Zuno Contracts | ✅ | Full integration with Zuno marketplace contracts |
-| Other ABIs | ❌ | Not supported yet |
-| Other Contracts | ❌ | Custom contract support not available |
+| Feature         | Status | Description                                      |
+| --------------- | :----: | ------------------------------------------------ |
+| Zuno ABIs       |   ✅   | Fully supported with built-in registry           |
+| Zuno Contracts  |   ✅   | Full integration with Zuno marketplace contracts |
+| Other ABIs      |   ❌   | Not supported yet                                |
+| Other Contracts |   ❌   | Custom contract support not available            |
 
 ### Network Support
 
-| Network | Status | Description |
-|---------|:------:|-------------|
-| Local Development | ✅ | Full support for local testing |
-| Testnet (Sepolia) | ❌ | Coming soon |
-| Mainnet | ❌ | Coming soon |
+| Network           | Status | Description                    |
+| ----------------- | :----: | ------------------------------ |
+| Local Development |   ✅   | Full support for local testing |
+| Testnet (Sepolia) |   ❌   | Coming soon                    |
+| Mainnet           |   ❌   | Coming soon                    |
 
 ## 🆕 What's New in v2.1.0
 
@@ -61,14 +58,18 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 ```typescript
 // Batch create English auctions (max 20 per tx)
 const { auctionIds, tx } = await sdk.auction.batchCreateEnglishAuction({
-  collectionAddress: '0x...',
-  tokenIds: ['1', '2', '3'],
-  startingBid: '1.0',
+  collectionAddress: "0x...",
+  tokenIds: ["1", "2", "3"],
+  startingBid: "1.0",
   duration: 86400 * 7,
 });
 
 // Batch cancel auctions
-const { cancelledCount, tx } = await sdk.auction.batchCancelAuction(['1', '2', '3']);
+const { cancelledCount, tx } = await sdk.auction.batchCancelAuction([
+  "1",
+  "2",
+  "3",
+]);
 ```
 
 ### 📖 Allowlist Management
@@ -76,20 +77,20 @@ const { cancelledCount, tx } = await sdk.auction.batchCancelAuction(['1', '2', '
 ```typescript
 // Add addresses to allowlist
 await sdk.collection.addToAllowlist({
-  collectionAddress: '0x...',
-  addresses: ['0x...', '0x...'],
+  collectionAddress: "0x...",
+  addresses: ["0x...", "0x..."],
 });
 
 // Enable allowlist-only mode (permanent restriction)
 await sdk.collection.setAllowlistOnly({
-  collectionAddress: '0x...',
+  collectionAddress: "0x...",
   enabled: true,
 });
 
 // Check allowlist status
 const isAllowed = await sdk.collection.isInAllowlist({
-  collectionAddress: '0x...',
-  address: '0x...',
+  collectionAddress: "0x...",
+  address: "0x...",
 });
 ```
 
@@ -106,15 +107,13 @@ const isAllowed = await sdk.collection.isInAllowlist({
 npm install zuno-marketplace-sdk ethers@6 @tanstack/react-query wagmi viem
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### React with Next.js
 
-#### Basic Setup
-
 ```tsx
 // app/layout.tsx
-import { ZunoProvider } from 'zuno-marketplace-sdk/react';
+import { ZunoProvider } from "zuno-marketplace-sdk/react";
 
 export default function RootLayout({ children }) {
   return (
@@ -123,68 +122,8 @@ export default function RootLayout({ children }) {
         <ZunoProvider
           config={{
             apiKey: process.env.NEXT_PUBLIC_ZUNO_API_KEY!,
-            network: 'sepolia', // 'mainnet' | 'sepolia' | 'polygon' | 'arbitrum' | number
+            network: "sepolia",
           }}
-        >
-          {children}
-        </ZunoProvider>
-      </body>
-    </html>
-  );
-}
-```
-
-#### Advanced Setup (Full Configuration)
-
-```tsx
-// app/layout.tsx
-import { ZunoProvider } from 'zuno-marketplace-sdk/react';
-import type { ZunoSDKConfig } from 'zuno-marketplace-sdk';
-
-export default function RootLayout({ children }) {
-  const config: ZunoSDKConfig = {
-    // Required
-    apiKey: process.env.NEXT_PUBLIC_ZUNO_API_KEY!,
-    network: 'sepolia',
-
-    // Optional: Custom endpoints
-    apiUrl: 'https://api.zuno.com/v1',        // Unified API (ABIs, contracts, networks)
-    rpcUrl: 'https://sepolia.infura.io/v3/YOUR_INFURA_KEY',  // Blockchain RPC
-
-    // Optional: WalletConnect v2
-    walletConnectProjectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID,
-
-    // Optional: Caching configuration
-    cache: {
-      ttl: 300000,      // Cache time-to-live: 5 minutes
-      gcTime: 600000,   // Garbage collection: 10 minutes
-    },
-
-    // Optional: Retry policy for failed requests
-    retryPolicy: {
-      maxRetries: 3,
-      backoff: 'exponential', // 'linear' | 'exponential'
-      initialDelay: 1000,
-    },
-
-    // Optional: Debug mode
-    debug: process.env.NODE_ENV === 'development',
-
-    // Optional: Logger configuration
-    logger: {
-      level: process.env.NODE_ENV === 'development' ? 'debug' : 'error',
-      timestamp: true,
-      modulePrefix: true,
-      logTransactions: true,
-    },
-  };
-
-  return (
-    <html>
-      <body>
-        <ZunoProvider
-          config={config}
-          enableDevTools={true} // React Query DevTools (dev only)
         >
           {children}
         </ZunoProvider>
@@ -196,9 +135,9 @@ export default function RootLayout({ children }) {
 
 ```tsx
 // app/page.tsx
-'use client';
+"use client";
 
-import { useExchange, useWallet } from 'zuno-marketplace-sdk/react';
+import { useExchange, useWallet } from "zuno-marketplace-sdk/react";
 
 export default function HomePage() {
   const { address, connect, isConnected } = useWallet();
@@ -206,12 +145,12 @@ export default function HomePage() {
 
   const handleList = async () => {
     const { listingId, tx } = await listNFT.mutateAsync({
-      collectionAddress: '0x...',
-      tokenId: '1',
-      price: '1.5',
+      collectionAddress: "0x...",
+      tokenId: "1",
+      price: "1.5",
       duration: 86400,
     });
-    console.log('Listed with ID:', listingId, 'TX:', tx.hash);
+    console.log("Listed:", listingId);
   };
 
   return (
@@ -226,33 +165,24 @@ export default function HomePage() {
 }
 ```
 
-## 📖 Core Modules
+## Core Modules
 
 ### Exchange
 
 ```typescript
-// List NFT for sale
+// List NFT
 const { listingId, tx } = await sdk.exchange.listNFT({
-  collectionAddress: '0x...',
-  tokenId: '1',
-  price: '1.5',        // Price in ETH
-  duration: 86400,     // Duration in seconds
+  collectionAddress: "0x...",
+  tokenId: "1",
+  price: "1.5",
+  duration: 86400,
 });
-// listingId is bytes32 hex format: '0x...'
 
 // Buy NFT
-const { tx } = await sdk.exchange.buyNFT({
-  listingId: '0x...',  // bytes32 hex
-});
+const { tx } = await sdk.exchange.buyNFT({ listingId: "0x..." });
 
 // Cancel listing
-const { tx } = await sdk.exchange.cancelListing('0x...');
-
-// Get active listings
-const { items, total } = await sdk.exchange.getActiveListings(1, 20);
-
-// Get listings by seller
-const { items } = await sdk.exchange.getListingsBySeller('0x...', 1, 20);
+await sdk.exchange.cancelListing("0x...");
 ```
 
 ### Collection
@@ -260,32 +190,25 @@ const { items } = await sdk.exchange.getListingsBySeller('0x...', 1, 20);
 ```typescript
 // Create ERC721 collection
 const { address, tx } = await sdk.collection.createERC721Collection({
-  name: 'My NFTs',
-  symbol: 'MNFT',
+  name: "My NFTs",
+  symbol: "MNFT",
   maxSupply: 10000,
-  mintPrice: '0.1',              // Price in ETH
-  royaltyFee: 500,               // 5% (basis points)
-  mintLimitPerWallet: 10,        // Optional, defaults to maxSupply
-  allowlistStageDuration: 86400, // 1 day allowlist, then public
-  tokenURI: 'ipfs://...',
+  mintPrice: "0.1",
+  royaltyFee: 500,
+  tokenURI: "ipfs://...",
 });
 
-// Mint NFT (with payment)
+// Mint NFT
 const { tokenId, tx } = await sdk.collection.mintERC721({
-  collectionAddress: '0x...',
-  recipient: '0x...',
-  value: '0.1', // Mint price in ETH (as string)
+  collectionAddress: "0x...",
+  recipient: "0x...",
+  value: "0.1",
 });
 
 // Allowlist management
 await sdk.collection.addToAllowlist({
-  collectionAddress: '0x...',
-  addresses: ['0x...', '0x...'],
-});
-
-await sdk.collection.setAllowlistOnly({
-  collectionAddress: '0x...',
-  enabled: true, // Only allowlisted addresses can mint
+  collectionAddress: "0x...",
+  addresses: ["0x...", "0x..."],
 });
 ```
 
@@ -294,54 +217,37 @@ await sdk.collection.setAllowlistOnly({
 ```typescript
 // Create English auction
 const { auctionId, tx } = await sdk.auction.createEnglishAuction({
-  collectionAddress: '0x...',
-  tokenId: '1',
-  startingBid: '1.0',
-  reservePrice: '5.0',    // Optional minimum price
-  duration: 86400 * 7,    // 7 days
-});
-
-// Create Dutch auction (descending price)
-const { auctionId, tx } = await sdk.auction.createDutchAuction({
-  collectionAddress: '0x...',
-  tokenId: '1',
-  startPrice: '10.0',     // Starting high price
-  endPrice: '1.0',        // Minimum price
-  duration: 86400,        // 1 day
-});
-
-// Place bid (English auction)
-const { tx } = await sdk.auction.placeBid({
-  auctionId: '1',
-  amount: '1.5',
-});
-
-// Buy now (Dutch auction)
-const { tx } = await sdk.auction.buyNow('auctionId');
-
-// Cancel auction
-const { tx } = await sdk.auction.cancelAuction('auctionId');
-
-// Batch create auctions (max 20 per tx)
-const { auctionIds, tx } = await sdk.auction.batchCreateEnglishAuction({
-  collectionAddress: '0x...',
-  tokenIds: ['1', '2', '3'],
-  startingBid: '1.0',
+  collectionAddress: "0x...",
+  tokenId: "1",
+  startingBid: "1.0",
   duration: 86400 * 7,
 });
 
-// Batch cancel auctions
-const { cancelledCount, tx } = await sdk.auction.batchCancelAuction(['1', '2', '3']);
+// Create Dutch auction
+const { auctionId, tx } = await sdk.auction.createDutchAuction({
+  collectionAddress: "0x...",
+  tokenId: "1",
+  startPrice: "10.0",
+  endPrice: "1.0",
+  duration: 86400,
+});
+
+// Place bid
+const { tx } = await sdk.auction.placeBid({
+  auctionId: "1",
+  amount: "1.5",
+});
+
+// Batch operations
+const { auctionIds, tx } = await sdk.auction.batchCreateEnglishAuction({
+  collectionAddress: "0x...",
+  tokenIds: ["1", "2", "3"],
+  startingBid: "1.0",
+  duration: 86400 * 7,
+});
 ```
 
-### Offers & Bundles
-
-```typescript
-await sdk.offers.makeOffer({ collectionAddress, tokenId, price, duration });
-await sdk.bundles.createBundle({ nfts, price, duration });
-```
-
-## ⚛️ React Hooks
+## React Hooks
 
 ```tsx
 import {
@@ -349,118 +255,73 @@ import {
   useCollection,
   useAuction,
   useWallet,
-  useZunoSDK,    // NEW: Direct SDK access
-  useZunoLogger, // NEW: Logger access
-} from 'zuno-marketplace-sdk/react';
+  useZunoSDK,
+  useZunoLogger,
+} from "zuno-marketplace-sdk/react";
 
 function App() {
   const { listNFT, buyNFT } = useExchange();
   const { createERC721, mintERC721 } = useCollection();
   const { createEnglishAuction, placeBid } = useAuction();
   const { address, connect } = useWallet();
-  
-  // NEW: Direct SDK instance access
   const sdk = useZunoSDK();
   const logger = useZunoLogger();
-  
-  // Use SDK utilities
-  logger.info('App rendered');
-  const config = sdk.getConfig();
-}
-```
 
-## 🔧 SDK Access Patterns
-
-### React Components
-
-```tsx
-import { useZunoSDK, useZunoLogger } from 'zuno-marketplace-sdk/react';
-
-function MyComponent() {
-  const sdk = useZunoSDK();      // Full SDK instance
-  const logger = useZunoLogger(); // Logger only
-  
-  useEffect(() => {
-    logger.info('Component mounted');
-  }, []);
-  
+  logger.info("App rendered");
   return <div>Network: {sdk.getConfig().network}</div>;
 }
 ```
 
-### Non-React Contexts (API Routes, Utilities, Server Components)
+## SDK Access Patterns
+
+### React Components
+
+```tsx
+import { useZunoSDK, useZunoLogger } from "zuno-marketplace-sdk/react";
+
+function MyComponent() {
+  const sdk = useZunoSDK();
+  const logger = useZunoLogger();
+  return <div>Network: {sdk.getConfig().network}</div>;
+}
+```
+
+### Non-React Contexts
 
 ```typescript
-import { ZunoSDK, getSdk, getLogger } from 'zuno-marketplace-sdk';
+import { ZunoSDK, getSdk, getLogger } from "zuno-marketplace-sdk";
 
-// Initialize once in app entry point
+// Initialize once
 ZunoSDK.getInstance({
   apiKey: process.env.ZUNO_API_KEY!,
-  network: 'sepolia',
+  network: "sepolia",
 });
 
-// utils/nft-formatter.ts
-export function formatNFT(nft: NFT) {
-  const logger = getLogger();
-  logger.info('Formatting NFT', { tokenId: nft.tokenId });
-  return formatted;
-}
-
-// app/api/nfts/route.ts (Next.js API Route)
-export async function GET() {
-  const sdk = getSdk();
-  const listings = await sdk.exchange.getActiveListings();
-  return Response.json(listings);
-}
+// Use anywhere
+const sdk = getSdk();
+const logger = getLogger();
 ```
 
-### Hybrid React + Non-React
+## Logging & DevTools
+
+### Zuno DevTools
 
 ```tsx
-// app/layout.tsx
-import { ZunoSDK } from 'zuno-marketplace-sdk';
-import { ZunoContextProvider } from 'zuno-marketplace-sdk/react';
-
-// Initialize singleton
-const sdk = ZunoSDK.getInstance({
-  apiKey: process.env.NEXT_PUBLIC_ZUNO_API_KEY!,
-  network: 'sepolia',
-});
-
-export default function RootLayout({ children }) {
-  return (
-    <ZunoContextProvider sdk={sdk}>
-      {children}
-    </ZunoContextProvider>
-  );
-}
-```
-
-## 📝 Logging & DevTools
-
-The SDK provides a powerful logging system with built-in DevTools integration. All logs are captured in-memory and displayed in the Zuno DevTools panel - no need to open browser console (F12).
-
-### Zuno DevTools (Recommended)
-
-Add DevTools to your app to view all SDK logs in a floating panel:
-
-```tsx
-import { ZunoDevTools } from 'zuno-marketplace-sdk/react';
+import { ZunoDevTools } from "zuno-marketplace-sdk/react";
 
 function App() {
   return (
     <>
       <YourApp />
-      {process.env.NODE_ENV === 'development' && (
-        <ZunoDevTools 
+      {process.env.NODE_ENV === "development" && (
+        <ZunoDevTools
           config={{
-            showLogger: true,      // Show logs panel
-            showTransactions: true, // Show transactions
-            showCache: true,       // Show React Query cache
-            showNetwork: true,     // Show network status
-            position: 'bottom-right',
-            maxLogEntries: 200,
-          }} 
+            showLogger: true,
+            showTransactions: true,
+            showCache: true,
+            showNetwork: true,
+            position: "bottom-right",
+          }}
         />
       )}
     </>
@@ -468,92 +329,43 @@ function App() {
 }
 ```
 
-### Log Store API
-
-Access logs programmatically:
-
-```typescript
-import { logStore } from 'zuno-marketplace-sdk';
-
-// Get all logs
-const logs = logStore.getAll();
-
-// Subscribe to new logs
-const unsubscribe = logStore.subscribe((logs) => {
-  console.log('New logs:', logs);
-});
-
-// Clear all logs
-logStore.clear();
-```
-
 ### Logger Configuration
 
 ```typescript
 const sdk = new ZunoSDK({
-  apiKey: 'xxx',
-  network: 'sepolia',
+  apiKey: "xxx",
+  network: "sepolia",
   logger: {
-    level: 'debug',  // 'none' | 'error' | 'warn' | 'info' | 'debug'
+    level: "debug", // 'none' | 'error' | 'warn' | 'info' | 'debug'
     timestamp: true,
     modulePrefix: true,
     logTransactions: true,
-  }
+    customLogger: {
+      info: (msg, meta) => myLogger.info(msg, meta),
+      error: (msg, meta) => Sentry.captureException(new Error(msg)),
+    },
+  },
 });
-
-// All SDK operations are automatically logged to DevTools:
-await sdk.exchange.listNFT({ ... });
-// → Appears in DevTools Logs panel
 ```
 
-### Manual Logging
+## Documentation
 
-```typescript
-// Via SDK instance
-sdk.logger.info('Custom message', { module: 'MyModule', data: { foo: 'bar' } });
-sdk.logger.warn('Warning message');
-sdk.logger.error('Error occurred');
+- **[Project Overview & PDR](./docs/project-overview-pdr.md)** - Project overview and requirements
+- **[Codebase Summary](./docs/codebase-summary.md)** - Architecture and module organization
+- **[Code Standards](./docs/code-standards.md)** - TypeScript and coding conventions
+- **[System Architecture](./docs/system-architecture.md)** - Detailed architecture documentation
 
-// Standalone logger
-import { ZunoLogger } from 'zuno-marketplace-sdk';
-
-const logger = new ZunoLogger({ level: 'debug' });
-logger.info('My log'); // → Also appears in DevTools
-```
-
-### Custom Logger Integration
-
-```typescript
-logger: {
-  level: 'debug',
-  customLogger: {
-    debug: (msg, meta) => Sentry.addBreadcrumb({ message: msg }),
-    info: (msg, meta) => myLogger.info(msg, meta),
-    warn: (msg, meta) => Sentry.captureMessage(msg, 'warning'),
-    error: (msg, meta) => Sentry.captureException(new Error(msg)),
-  }
-}
-```
-
-## 📚 Documentation
-
-- **[API Reference](./docs/API.md)** - Complete API documentation with examples
-- **[Migration Guide](./docs/MIGRATION.md)** - Migrate from custom services or older versions
-- **[Examples](./examples/)** - Working code examples for Node.js and React
-
-For additional resources, visit [docs.zuno.com](https://docs.zuno.com)
-
-## 🛠️ Development
+## Development
 
 ```bash
-npm install       # Install dependencies
-npm run build     # Build package
-npm run type-check # Check types
-npm run lint      # Lint code
-npm run test      # Run tests
+npm install          # Install dependencies
+npm run build        # Build package
+npm run type-check   # Check types
+npm run lint         # Lint code
+npm run test         # Run tests
 ```
 
-## 📄 License
+## License
 
 MIT © [Zuno Team](https://github.com/ZunoKit)
 

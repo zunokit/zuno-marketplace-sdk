@@ -1,401 +1,542 @@
-# Code Standards & Development Rules
+# Zuno Marketplace SDK - Code Standards & Best Practices
 
-**Version:** 2.0.1
-**Last Updated:** 2025-12-07
+## Overview
 
----
+This document defines the code standards, conventions, and best practices for the Zuno Marketplace SDK project. All contributors and maintainers must follow these guidelines to ensure code quality, consistency, and maintainability.
 
-## Directory Structure
-
-```
-zuno-marketplace-sdk/
-├── src/
-│   ├── core/                    # Core SDK infrastructure
-│   │   ├── ZunoSDK.ts          # Main SDK class (singleton)
-│   │   ├── ZunoAPIClient.ts     # API client for Zuno services
-│   │   └── ContractRegistry.ts  # Contract/ABI management
-│   │
-│   ├── modules/                 # Feature modules (lazy-loaded)
-│   │   ├── BaseModule.ts        # Base class for all modules
-│   │   ├── ExchangeModule.ts    # NFT listing/buying operations
-│   │   ├── CollectionModule.ts  # ERC721 collection operations
-│   │   └── AuctionModule.ts     # Auction operations (English/Dutch)
-│   │
-│   ├── react/                   # React integration layer
-│   │   ├── provider/
-│   │   │   ├── ZunoProvider.tsx     # All-in-one provider with Wagmi
-│   │   │   └── ZunoContextProvider.tsx # Context-based provider
-│   │   │
-│   │   ├── hooks/               # 21+ custom React hooks
-│   │   │   ├── useZunoSDK.ts    # Direct SDK access
-│   │   │   ├── useWallet.ts     # Wallet connection
-│   │   │   ├── useExchange.ts   # Exchange operations
-│   │   │   ├── useAuction.ts    # Auction operations
-│   │   │   ├── useCollection.ts # Collection operations
-│   │   │   ├── useApprove.ts    # Approval management
-│   │   │   ├── useABIs.ts       # ABI fetching
-│   │   │   └── ...
-│   │   │
-│   │   └── components/
-│   │       └── ZunoDevTools.tsx # Visual debugging panel
-│   │
-│   ├── types/                   # Type definitions
-│   │   ├── config.ts            # SDK configuration types
-│   │   ├── entities.ts          # Data entity types
-│   │   ├── api.ts               # API response types
-│   │   └── contracts.ts         # Contract parameter types
-│   │
-│   ├── utils/                   # Utility modules
-│   │   ├── logger.ts            # ZunoLogger implementation
-│   │   ├── logStore.ts          # In-memory log store
-│   │   ├── errors.ts            # Error classes and codes
-│   │   ├── transactions.ts      # TransactionManager
-│   │   ├── events.ts            # EventEmitter
-│   │   └── transactionStore.ts  # Transaction tracking
-│   │
-│   ├── testing/                 # Testing utilities
-│   │   └── index.ts             # Mock factories and helpers
-│   │
-│   ├── __tests__/               # Test files
-│   │   ├── setup/               # Jest configuration
-│   │   ├── core/                # Core SDK tests
-│   │   ├── modules/             # Module tests
-│   │   ├── react/               # React hooks tests
-│   │   └── utils/               # Utility tests
-│   │
-│   └── index.ts                 # Main entry point exports
-│
-├── docs/                        # Documentation
-│   ├── project-overview-pdr.md  # Project vision and requirements
-│   ├── code-standards.md        # This file
-│   ├── codebase-summary.md      # Codebase statistics and overview
-│   ├── system-architecture.md   # Architecture patterns and design
-│   └── ...other-docs
-│
-├── examples/                    # Working code examples
-│   ├── basic-usage.ts           # Node.js SDK usage
-│   ├── react-example.tsx        # React component patterns
-│   └── edge-cases.md            # Production patterns
-│
-├── tests/                       # Test configuration
-│   └── setup/
-│       ├── jest.config.js       # Jest configuration
-│       └── ...setup-files
-│
-├── package.json                 # Dependencies and scripts
-├── tsconfig.json                # TypeScript configuration
-├── tsup.config.js               # Build configuration
-├── .eslintrc.json               # Linting rules
-├── .gitignore                   # Git ignores
-└── README.md                    # Quick start guide
-```
+**Last Updated:** 2026-01-11
+**TypeScript Version:** 5.6+
+**Node Version:** >=18.0.0
 
 ---
 
-## File Naming Conventions
+## TypeScript Configuration
 
-### TypeScript Files
-- **Format:** `kebab-case.ts` or `kebab-case.tsx`
-- **Purpose:** File name describes the primary purpose/export
-- **Examples:**
-  - `ZunoSDK.ts` - Main SDK class
-  - `transaction-manager.ts` - Transaction utility
-  - `use-wallet.ts` - React hook
-  - `ZunoDevTools.tsx` - React component
+### Compiler Options
 
-### Meaningful Naming
-Files should be self-documenting. When LLMs scan directory listings, they should understand purpose immediately:
+**File:** `tsconfig.json`
 
-```
-Good:
-├── useWallet.ts           # Wallet connection hook
-├── useZunoSDK.ts          # SDK access hook
-├── ZunoLogger.ts          # Logger implementation
-└── transactionStore.ts    # Transaction tracking store
-
-Bad:
-├── hook.ts                # Unclear which hook
-├── main.ts                # Too vague
-├── utils.ts               # Could be anything
-└── store.ts               # Which store?
-```
-
-### File Size Management
-- **Target:** < 200 lines per file
-- **Rationale:** Easier context management, faster comprehension
-- **When to split:**
-  - Multiple exported classes/functions (extract to separate files)
-  - Complex logic exceeding 200 lines (break into smaller functions)
-  - Testing becomes difficult (sign of complexity)
-  - Different concerns/layers (separate into modules)
-
----
-
-## TypeScript Conventions
-
-### Strict Mode
-All code must compile with TypeScript strict mode enabled:
 ```json
 {
   "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noImplicitThis": true
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "bundler",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
   }
 }
 ```
 
-### Type Definitions
-- Export all types that are part of public API
-- Use interfaces for object contracts
-- Use type aliases for union/literal types
-- Document types with JSDoc comments
+### Strict Type Checking Rules
+
+| Rule | Status | Purpose |
+|------|:------:|---------|
+| `strict: true` | ✅ Enabled | Enable all strict type checking options |
+| `noUnusedLocals` | ✅ Enabled | Error on unused local variables |
+| `noUnusedParameters` | ✅ Enabled | Error on unused parameters |
+| `noImplicitReturns` | ✅ Enabled | Error on functions without return |
+| `noFallthroughCasesInSwitch` | ✅ Enabled | Error on switch fallthrough |
+| `noUncheckedIndexedAccess` | ✅ Enabled | Undefined check for indexed access |
+
+---
+
+## Naming Conventions
+
+### General Rules
+
+- **PascalCase:** Classes, Types, Interfaces, Enums, Components
+- **camelCase:** Variables, functions, methods, properties
+- **SCREAMING_SNAKE_CASE:** Constants, environment variables
+- **kebab-case:** Files, folders, CLI commands
+
+### Examples
+
+```typescript
+// Classes - PascalCase
+export class ZunoSDK {}
+export class ExchangeModule {}
+export class BaseModule {}
+
+// Types/Interfaces - PascalCase
+export type ZunoSDKConfig = {};
+export interface Listing {
+  listingId: string;
+  price: BigNumber;
+}
+
+// Enums - PascalCase
+export enum ErrorCodes {
+  NETWORK_ERROR = 'NETWORK_ERROR',
+  CONTRACT_ERROR = 'CONTRACT_ERROR',
+}
+
+// Functions/Methods - camelCase
+function createListing() {}
+async function buyNFT() {}
+function getActiveListings() {}
+
+// Variables - camelCase
+const listingId = '0x...';
+const maxSupply = 10000;
+const isActive = true;
+
+// Constants - SCREAMING_SNAKE_CASE
+const DEFAULT_CACHE_TIME = 300000;
+const MAX_BATCH_SIZE = 20;
+const API_BASE_URL = 'https://api.zuno.com';
+
+// Files - kebab-case
+// src/core/ZunoSDK.ts
+// src/modules/ExchangeModule.ts
+// src/react/hooks/useExchange.ts
+```
+
+### Special Naming Patterns
+
+| Pattern | Convention | Example |
+|---------|------------|---------|
+| Private properties | Underscore prefix | `this._exchange`, `this._collection` |
+| Boolean variables | `is/has/can` prefix | `isActive`, `hasAllowlist`, `canMint` |
+| Event handlers | `handle` prefix | `handleConnect`, `handleSubmit` |
+| Getters | `get` prefix (property) | `get exchange()`, `get config()` |
+| Async functions | No special prefix | `createListing()`, `buyNFT()` |
+| Type parameters | `T` prefix | `TRequest`, `TResponse`, `TData` |
+
+---
+
+## Code Organization
+
+### Directory Structure
+
+```
+src/
+├── core/              # Core SDK (ZunoSDK, APIClient, ContractRegistry)
+├── modules/           # Business logic (Exchange, Collection, Auction)
+├── react/             # React integration (hooks, providers, components)
+│   ├── hooks/         # React hooks
+│   ├── provider/      # Context providers
+│   ├── components/    # React components
+│   └── utils/         # React utilities
+├── types/             # Type definitions
+├── utils/             # Shared utilities
+├── exchange/          # Exchange module exports
+├── collection/        # Collection module exports
+├── auction/           # Auction module exports
+├── logger/            # Logger module exports
+├── testing/           # Testing utilities
+└── index.ts           # Main entry point
+```
+
+### File Organization Rules
+
+1. **One export per file** for major classes/components
+2. **Barrel exports** (`index.ts`) for clean public APIs
+3. **Co-locate** related files (hooks with types, utils with modules)
+4. **Test files** in `__tests__/` directory mirroring source structure
+
+### Import Order
+
+```typescript
+// 1. External dependencies
+import { ethers } from 'ethers';
+import { useQuery } from '@tanstack/react-query';
+
+// 2. Internal dependencies (from other modules)
+import { ZunoAPIClient } from '../core/ZunoAPIClient';
+import { type Logger } from '../utils/logger';
+
+// 3. Types from same module
+import type { ZunoSDKConfig } from './types';
+
+// 4. Relative imports (same directory)
+import { helperFunction } from './helpers';
+```
+
+### Export Patterns
+
+```typescript
+// Named exports (preferred)
+export { ZunoSDK };
+export { getSdk };
+export type { ZunoSDKConfig };
+
+// NOT default exports (avoid)
+// export default ZunoSDK; // ❌ Avoid
+
+// Re-exports for public API
+export { ExchangeModule } from './ExchangeModule';
+export type * from './types';
+```
+
+---
+
+## Code Style Guidelines
+
+### Formatting Rules
+
+| Rule | Standard | Tool |
+|------|----------|------|
+| Indentation | 2 spaces | Prettier (recommended) |
+| Semicolons | Required | ESLint |
+| Quotes | Single (prefer double for JSX) | ESLint |
+| Trailing commas | Required (multi-line) | Prettier |
+| Max line length | 100 (soft) | Prettier |
+| Arrow functions | Preferred | N/A |
+
+### Code Formatting Example
+
+```typescript
+// Good ✅
+export class ExchangeModule extends BaseModule {
+  constructor(
+    apiClient: ZunoAPIClient,
+    contractRegistry: ContractRegistry,
+    queryClient: QueryClient,
+    // ... other deps
+  ) {
+    super(apiClient, contractRegistry, queryClient, /* ... */);
+  }
+
+  async listNFT(params: ListNFTParams): Promise<ListNFTResult> {
+    const { collectionAddress, tokenId, price, duration } = params;
+
+    const contract = await this.getContract(collectionAddress);
+    const tx = await contract.list(tokenId, price, duration);
+
+    return { listingId: tx.hash, tx };
+  }
+}
+
+// Bad ❌
+export class exchangeModule{ // Wrong casing
+  constructor(a, b, c){} // Undescriptive parameters
+  async list(params){ // No types
+    const tx=await contract.list() // Missing spacing
+    return tx
+  }
+}
+```
+
+### Comment Style
 
 ```typescript
 /**
- * Configuration for SDK initialization
+ * JSDoc comment for functions/classes (preferred)
+ * @param params - The listing parameters
+ * @returns The listing result with transaction hash
  */
-export interface ZunoSDKConfig {
-  /** API key for authentication */
-  apiKey: string;
-  /** Blockchain network identifier */
-  network: NetworkType;
-  // ... other properties
-}
+async function listNFT(params: ListNFTParams): Promise<ListNFTResult> {
+  // Single-line inline comment for clarification
+  const contract = await this.getContract(params.collectionAddress);
 
-/** Supported blockchain networks */
-export type NetworkType = 'mainnet' | 'sepolia' | 'polygon' | 'arbitrum' | number;
-```
+  /* Multi-line comment
+   * for complex logic
+   * that needs explanation
+   */
+  const tx = await contract.list(
+    params.tokenId,
+    params.price,
+    params.duration
+  );
 
-### Imports & Exports
-- Use named exports for better tree-shaking
-- Re-export from index.ts for module organization
-- Group imports: third-party, internal types, internal modules
-- Sort alphabetically within groups
-
-```typescript
-// Good
-import { ethers } from 'ethers';
-import type { QueryClient } from '@tanstack/react-query';
-
-import { ZunoAPIClient } from './ZunoAPIClient';
-import type { ZunoSDKConfig } from '../types/config';
-
-// Bad
-import { ZunoAPIClient } from './ZunoAPIClient';
-import type { ZunoSDKConfig } from '../types/config';
-import { ethers } from 'ethers';
-```
-
-### Generic Types
-- Use meaningful type variable names
-- Document generic constraints
-- Avoid deeply nested generics
-
-```typescript
-// Good
-export class BaseModule<TConfig extends BaseConfig = BaseConfig> {
-  protected config: TConfig;
-}
-
-// Bad
-export class BaseModule<T extends U> {
-  // Unclear what T and U represent
+  return { listingId: tx.hash, tx };
 }
 ```
 
 ---
 
-## Error Handling
+## Best Practices
 
-### Error Codes
-All SDK errors use specific error codes organized by category:
+### 1. Type Safety
+
+**Rule:** Never use `any` in public APIs
 
 ```typescript
-export const ErrorCodes = {
-  // Configuration errors (1xxx)
-  MISSING_API_KEY: 'MISSING_API_KEY',
-  INVALID_NETWORK: 'INVALID_NETWORK',
-
-  // API errors (2xxx)
-  API_REQUEST_FAILED: 'API_REQUEST_FAILED',
-  API_TIMEOUT: 'API_TIMEOUT',
-
-  // Contract errors (3xxx)
-  CONTRACT_NOT_FOUND: 'CONTRACT_NOT_FOUND',
-  ABI_NOT_FOUND: 'ABI_NOT_FOUND',
-
-  // Transaction errors (4xxx)
-  TRANSACTION_FAILED: 'TRANSACTION_FAILED',
-  INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
-
-  // Validation errors (5xxx)
-  INVALID_ADDRESS: 'INVALID_ADDRESS',
-  INVALID_TOKEN_ID: 'INVALID_TOKEN_ID',
-
-  // Module errors (6xxx)
-  MODULE_NOT_INITIALIZED: 'MODULE_NOT_INITIALIZED',
+// Good ✅
+export type Listing = {
+  listingId: string;
+  price: BigNumber;
+  seller: string;
 };
+
+function getListing(listingId: string): Promise<Listing | null> {
+  // ...
+}
+
+// Bad ❌
+function getListing(listingId: any): Promise<any> {
+  // ...
+}
 ```
 
-### Error Context
-Always provide context for debugging:
+**Exception:** Internal stub code (explicitly marked)
 
 ```typescript
-throw new ZunoSDKError('Transaction failed', ErrorCodes.TRANSACTION_FAILED, {
-  originalError: error,
-  context: {
-    network: '1',
-    method: 'listNFT',
-    contract: '0x...',
-    suggestion: 'Check gas price and wallet balance'
-  }
-});
+// Allowed for stub/placeholder
+private _offers?: any; // TODO: Implement OffersModule
 ```
 
-### Try-Catch Patterns
+### 2. Error Handling
+
+**Rule:** Always wrap async operations in try-catch
+
 ```typescript
-try {
-  const result = await operation();
-  return result;
-} catch (error) {
-  if (error instanceof ZunoSDKError) {
-    // Handle SDK errors specifically
-    logger.error('SDK error', { code: error.code, context: error.context });
-  } else {
-    // Wrap unexpected errors
-    throw new ZunoSDKError('Operation failed', ErrorCodes.UNKNOWN_ERROR, {
-      originalError: error as Error
+// Good ✅
+async function listNFT(params: ListNFTParams): Promise<ListNFTResult> {
+  try {
+    const contract = await this.getContract(params.collectionAddress);
+    const tx = await contract.list(params.tokenId, params.price, params.duration);
+
+    this.logger.info('NFT listed successfully', {
+      listingId: tx.hash,
+      tokenId: params.tokenId,
     });
-  }
-}
-```
 
----
-
-## Class Architecture
-
-### Base Module Pattern
-All feature modules extend BaseModule:
-
-```typescript
-export abstract class BaseModule {
-  protected readonly apiClient: ZunoAPIClient;
-  protected readonly contractRegistry: ContractRegistry;
-  protected readonly queryClient: QueryClient;
-  protected readonly network: NetworkType;
-  protected readonly logger: Logger;
-  protected provider?: ethers.Provider;
-  protected signer?: ethers.Signer;
-  protected txManager?: TransactionManager;
-
-  // Helper methods
-  protected ensureProvider(): ethers.Provider { ... }
-  protected ensureSigner(): ethers.Signer { ... }
-  protected ensureTxManager(): TransactionManager { ... }
-}
-```
-
-### Singleton Pattern
-SDK uses module-level singleton:
-
-```typescript
-let _singletonInstance: ZunoSDK | null = null;
-
-export class ZunoSDK {
-  static getInstance(config?: ZunoSDKConfig, options?: SDKOptions): ZunoSDK {
-    if (!_singletonInstance && !config) {
-      throw new Error('SDK not initialized');
-    }
-    if (config && !_singletonInstance) {
-      _singletonInstance = new ZunoSDK(config, options);
-    }
-    return _singletonInstance;
-  }
-}
-
-// Usage
-const sdk = ZunoSDK.getInstance(config);
-const sdk2 = ZunoSDK.getInstance(); // Returns same instance
-```
-
-### Lazy Module Loading
-Modules loaded on first access:
-
-```typescript
-private _exchange?: ExchangeModule;
-
-get exchange(): ExchangeModule {
-  if (!this._exchange) {
-    this._exchange = new ExchangeModule(
-      this.apiClient,
-      this.contractRegistry,
-      this.queryClient,
-      this.config.network,
-      this.logger
+    return { listingId: tx.hash, tx };
+  } catch (error) {
+    this.logger.error('Failed to list NFT', { error, params });
+    throw new ZunoSDKError(
+      ErrorCodes.CONTRACT_ERROR,
+      'Failed to list NFT',
+      error
     );
   }
-  return this._exchange;
+}
+
+// Bad ❌
+async function listNFT(params: ListNFTParams) {
+  const tx = await contract.list(...); // No error handling
+  return tx;
+}
+```
+
+### 3. Null/Undefined Checks
+
+**Rule:** Always validate inputs and handle null/undefined
+
+```typescript
+// Good ✅
+function getListing(listingId: string): Listing | null {
+  if (!listingId || listingId.length === 0) {
+    throw new ZunoSDKError(
+      ErrorCodes.VALIDATION_ERROR,
+      'Listing ID is required'
+    );
+  }
+
+  const listing = this.listings.get(listingId);
+  return listing ?? null;
+}
+
+// Bad ❌
+function getListing(listingId: string) {
+  return this.listings.get(listingId); // Could be undefined
+}
+```
+
+### 4. Async/Await
+
+**Rule:** Use async/await, never Promise chains
+
+```typescript
+// Good ✅
+async function listAndBuy() {
+  const { listingId } = await listNFT(params);
+  const { tx } = await buyNFT({ listingId });
+  return tx;
+}
+
+// Bad ❌
+function listAndBuy() {
+  return listNFT(params)
+    .then(({ listingId }) => buyNFT({ listingId }))
+    .then(({ tx }) => tx);
+}
+```
+
+### 5. Constants
+
+**Rule:** Extract magic numbers and strings to constants
+
+```typescript
+// Good ✅
+const MAX_BATCH_SIZE = 20;
+const DEFAULT_CACHE_TIME = 300000; // 5 minutes
+const DEFAULT_GAS_LIMIT = 300_000;
+
+function batchCreate(items: Listing[]) {
+  if (items.length > MAX_BATCH_SIZE) {
+    throw new Error(`Max batch size is ${MAX_BATCH_SIZE}`);
+  }
+  // ...
+}
+
+// Bad ❌
+function batchCreate(items: Listing[]) {
+  if (items.length > 20) { // Magic number
+    throw new Error('Max batch size is 20'); // Duplicated string
+  }
+}
+```
+
+### 6. Dependency Injection
+
+**Rule:** Inject dependencies via constructor, never import directly
+
+```typescript
+// Good ✅
+export class ExchangeModule extends BaseModule {
+  constructor(
+    apiClient: ZunoAPIClient,
+    contractRegistry: ContractRegistry,
+    queryClient: QueryClient,
+    // ... other deps
+  ) {
+    super(apiClient, contractRegistry, queryClient, /* ... */);
+  }
+}
+
+// Bad ❌
+import { apiClient } from './api-client'; // Hard dependency
+
+export class ExchangeModule {
+  private apiClient = apiClient; // Not injectable
+}
+```
+
+### 7. Logging
+
+**Rule:** Log all important operations and errors
+
+```typescript
+// Good ✅
+async function listNFT(params: ListNFTParams) {
+  this.logger.info('Listing NFT', {
+    module: 'Exchange',
+    data: { tokenId: params.tokenId, price: params.price },
+  });
+
+  try {
+    const result = await this.contract.list(...);
+    this.logger.info('NFT listed successfully', {
+      listingId: result.listingId,
+    });
+    return result;
+  } catch (error) {
+    this.logger.error('Failed to list NFT', {
+      error: error.message,
+      params,
+    });
+    throw error;
+  }
+}
+
+// Bad ❌
+async function listNFT(params: ListNFTParams) {
+  return this.contract.list(...); // No logging
 }
 ```
 
 ---
 
-## React Patterns
+## React-Specific Standards
 
-### Custom Hooks
-All hooks follow React patterns:
+### Hook Naming
+
+**Rule:** All hooks must start with `use`
 
 ```typescript
-/**
- * Access the Zuno SDK instance
- * @returns {ZunoSDK} The singleton SDK instance
- * @throws {Error} If SDK not initialized
- *
- * @example
- * const sdk = useZunoSDK();
- * const config = sdk.getConfig();
- */
-export function useZunoSDK(): ZunoSDK {
-  const context = useContext(ZunoContext);
-  if (!context) {
-    throw new Error('useZunoSDK must be called within <ZunoProvider>');
-  }
-  return context.sdk;
+// Good ✅
+export function useExchange() {
+  const sdk = useZunoSDK();
+  const listNFT = useMutation({
+    mutationFn: (params: ListNFTParams) => sdk.exchange.listNFT(params),
+  });
+  return { listNFT };
 }
+
+// Bad ❌
+export function exchange() { } // Missing 'use' prefix
+export function getExchange() { } // Wrong naming
 ```
 
-### Hook with TanStack Query
+### Hook Optimization
+
+**Rule:** Use useCallback/useMemo for stable references
+
 ```typescript
+// Good ✅
 export function useExchange() {
   const sdk = useZunoSDK();
 
   const listNFT = useMutation({
-    mutationFn: (params: ListNFTParams) =>
-      sdk.exchange.listNFT(params),
-    onSuccess: (data) => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
-    }
+    mutationFn: useCallback(
+      (params: ListNFTParams) => sdk.exchange.listNFT(params),
+      [sdk]
+    ),
   });
 
-  return { listNFT };
+  const buyNFT = useMutation({
+    mutationFn: useCallback(
+      (params: BuyNFTParams) => sdk.exchange.buyNFT(params),
+      [sdk]
+    ),
+  });
+
+  return useMemo(
+    () => ({ listNFT, buyNFT }),
+    [listNFT, buyNFT]
+  );
+}
+
+// Bad ❌
+export function useExchange() {
+  const sdk = useZunoSDK();
+
+  const listNFT = useMutation({
+    mutationFn: (params) => sdk.exchange.listNFT(params),
+    // No useCallback - creates new function on every render
+  });
+
+  return { listNFT }; // No useMemo - unstable object reference
 }
 ```
 
-### Context Provider
-```typescript
-const ZunoContext = createContext<ZunoContextValue | null>(null);
+### Component Structure
 
-export function ZunoProvider({ config, children }: Props) {
-  const [sdk] = useState(() => ZunoSDK.getInstance(config));
+```typescript
+// Good ✅
+export function ZunoDevTools({ config }: ZunoDevToolsProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'logs' | 'transactions'>('logs');
+
+  const handleToggle = useCallback(() => setIsOpen(prev => !prev), []);
+  const handleTabChange = useCallback((tab: TabType) => setActiveTab(tab), []);
+
+  if (!isOpen) {
+    return <ToggleButton onClick={handleToggle} />;
+  }
 
   return (
-    <ZunoContext.Provider value={{ sdk }}>
-      {children}
-    </ZunoContext.Provider>
+    <Panel position={config.position}>
+      <Tabs activeTab={activeTab} onChange={handleTabChange}>
+        <Tab id="logs">Logs</Tab>
+        <Tab id="transactions">Transactions</Tab>
+      </Tabs>
+      <TabContent activeTab={activeTab} />
+    </Panel>
   );
 }
 ```
@@ -404,257 +545,314 @@ export function ZunoProvider({ config, children }: Props) {
 
 ## Testing Standards
 
+### Test File Naming
+
+**Rule:** Test files must end with `.test.ts` or `.test.tsx`
+
+```
+src/
+├── core/
+│   ├── ZunoSDK.ts
+│   └── __tests__/
+│       └── ZunoSDK.test.ts
+├── react/
+│   ├── hooks/
+│   │   ├── useExchange.ts
+│   │   └── __tests__/
+│   │       └── useExchange.test.tsx
+```
+
 ### Test Structure
+
 ```typescript
+// Good ✅
 describe('ExchangeModule', () => {
-  let module: ExchangeModule;
-  let mockApiClient: jest.Mocked<ZunoAPIClient>;
-
-  beforeEach(() => {
-    mockApiClient = createMockApiClient();
-    module = new ExchangeModule(
-      mockApiClient,
-      // ... other mocks
-    );
-  });
-
   describe('listNFT', () => {
-    it('should list NFT with valid parameters', async () => {
+    it('should list NFT successfully', async () => {
       // Arrange
-      const params = createMockListNFTParams();
+      const params = { collectionAddress: '0x...', tokenId: '1', price: '1.0' };
 
       // Act
-      const result = await module.listNFT(params);
+      const result = await exchangeModule.listNFT(params);
 
       // Assert
-      expect(result.listingId).toBeDefined();
-      expect(mockApiClient.call).toHaveBeenCalled();
+      expect(result.listingId).toMatch(/^0x[a-f0-9]{64}$/);
+      expect(result.tx).toBeDefined();
     });
 
-    it('should throw on invalid address', async () => {
-      // Arrange
-      const params = { ...mockParams, collectionAddress: 'invalid' };
-
-      // Act & Assert
-      await expect(module.listNFT(params)).rejects.toThrow(ZunoSDKError);
+    it('should throw error if listing fails', async () => {
+      await expect(
+        exchangeModule.listNFT(invalidParams)
+      ).rejects.toThrow(ZunoSDKError);
     });
   });
 });
 ```
 
-### Coverage Requirements
-- **Target:** 70% across branches, functions, lines, statements
-- **Critical paths:** 100% for error handling
-- **Integration:** Test module interactions
-- **Edge cases:** Test boundary conditions
+### Test Coverage
 
-### Mock Strategy
-```typescript
-// Mock axios globally
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+**Target:** 80% minimum coverage
 
-// Mock ethers provider
-const mockProvider = {
-  getNetwork: jest.fn().mockResolvedValue({ chainId: 1 }),
-  call: jest.fn(),
-  estimateGas: jest.fn(),
-} as jest.Mocked<ethers.Provider>;
+| Category | Target | Priority |
+|----------|--------|----------|
+| Core SDK | 90% | P0 |
+| Modules | 85% | P0 |
+| Utils | 90% | P0 |
+| React Hooks | 80% | P1 |
+| Edge Cases | 70% | P1 |
 
-// Factory functions for test entities
-export function createMockNFT(overrides?: Partial<NFT>): NFT {
-  return {
-    collectionAddress: '0x1234...',
-    tokenId: '1',
-    owner: '0x5678...',
-    ...overrides
-  };
-}
+---
+
+## Linting & Formatting
+
+### ESLint Rules
+
+**File:** `eslint.config.js`
+
+```javascript
+export default [
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off', // Allow for stubs
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+];
+```
+
+### Running Linters
+
+```bash
+# Check for linting errors
+npm run lint
+
+# Fix linting errors automatically
+npm run lint:fix
+
+# Type check (no emit)
+npm run type-check
 ```
 
 ---
 
-## Commit Message Format
+## Git Commit Standards
 
-Follows [Conventional Commits](https://www.conventionalcommits.org/):
+### Commit Message Format
+
+**Convention:** Conventional Commits
 
 ```
 <type>(<scope>): <subject>
 
-<body>
+[optional body]
 
-<footer>
+[optional footer]
 ```
 
 ### Types
-- `feat:` New feature
-- `fix:` Bug fix
-- `docs:` Documentation changes
-- `refactor:` Code refactoring (no feature/fix)
-- `test:` Test additions/modifications
-- `chore:` Build, CI, dependencies
-- `perf:` Performance improvements
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| `feat` | New feature | `feat(exchange): add batch list functionality` |
+| `fix` | Bug fix | `fix(auction): handle zero bid edge case` |
+| `docs` | Documentation | `docs: update API reference` |
+| `refactor` | Code refactoring | `refactor(core): extract logger to separate module` |
+| `test` | Test changes | `test(exchange): add batch operation tests` |
+| `chore` | Build/config | `chore: update dependencies` |
 
 ### Examples
-```
-feat(exchange): add batch listing support for up to 20 NFTs
 
-Implement batchListNFT method supporting creation of multiple listings
-in a single transaction. Includes validation, gas estimation, and event
-tracking for each listing.
+```bash
+# Feature
+git commit -m "feat(collection): add allowlist-only mode"
 
-Closes #42
-```
+# Bug fix
+git commit -m "fix(exchange): handle gas estimation failures"
 
-```
-fix(collection): correct mint limit default to maxSupply
+# Documentation
+git commit -m "docs: add code standards guide"
 
-Previously mintLimitPerWallet defaulted to 0, preventing minting.
-Now correctly defaults to maxSupply when not specified.
-
-Fixes #39
-```
-
-```
-refactor(core): extract provider initialization to separate method
-
-Move provider creation logic from constructor to createDefaultProvider
-for better testability and code organization.
+# Refactoring
+git commit -m "refactor(modules): extract common logic to BaseModule"
 ```
 
 ---
 
-## Logging Standards
+## Documentation Standards
 
-### Log Levels
-- **`error`:** Critical failures, exceptions
-- **`warn`:** Recoverable issues, deprecations
-- **`info`:** Important events, state changes
-- **`debug`:** Detailed info for troubleshooting
+### Code Comments
 
-### Log Format
-```typescript
-// With module prefix and timestamp
-logger.info('Operation completed', {
-  module: 'ExchangeModule',
-  data: {
-    listingId: '0x123...',
-    price: '1.5',
-    duration: 86400
-  }
-});
-
-// Output
-[2025-12-07T10:30:45.123Z] [info] [ExchangeModule] Operation completed
-{listingId: "0x123...", price: "1.5", duration: 86400}
-```
-
-### Logger Integration
-```typescript
-// Custom Sentry integration
-logger: {
-  level: 'debug',
-  customLogger: {
-    error: (msg, meta) => Sentry.captureException(new Error(msg), { extra: meta }),
-    warn: (msg, meta) => Sentry.captureMessage(msg, 'warning'),
-    info: (msg, meta) => logger.info(msg, meta),
-    debug: (msg, meta) => logger.debug(msg, meta),
-  }
-}
-```
-
----
-
-## Code Style & Formatting
-
-### Spacing & Indentation
-- Use 2 spaces for indentation
-- 1 blank line between class methods
-- 2 blank lines between top-level definitions
-- No trailing whitespace
-
-### Naming Conventions
-- **Classes/Interfaces:** `PascalCase` (e.g., `ZunoSDK`, `ExchangeModule`)
-- **Functions/Methods:** `camelCase` (e.g., `listNFT`, `getActiveListings`)
-- **Constants:** `UPPER_SNAKE_CASE` (e.g., `DEFAULT_CACHE_TIMES`)
-- **Private:** Prefix with `_` or use `#` (e.g., `_singletonInstance`)
-- **File names:** `kebab-case` (e.g., `transaction-manager.ts`)
-
-### Comments & Documentation
+**Rule:** Document all public APIs with JSDoc
 
 ```typescript
 /**
- * List an NFT for sale on the marketplace
+ * Lists an NFT for sale on the marketplace
  *
- * @param params - Listing parameters
- * @returns Promise resolving to listing ID and transaction receipt
- * @throws {ZunoSDKError} If validation fails or transaction reverts
+ * @param params - The listing parameters
+ * @param params.collectionAddress - The NFT collection contract address
+ * @param params.tokenId - The token ID to list
+ * @param params.price - The listing price in ETH (as string)
+ * @param params.duration - The listing duration in seconds
+ *
+ * @returns The listing result with transaction hash
+ *
+ * @throws {ZunoSDKError} If listing fails (contract error, validation error)
  *
  * @example
+ * ```typescript
  * const { listingId, tx } = await sdk.exchange.listNFT({
  *   collectionAddress: '0x...',
  *   tokenId: '1',
  *   price: '1.5',
- *   duration: 86400
+ *   duration: 86400,
  * });
+ * ```
  */
-async listNFT(params: ListNFTParams): Promise<{ listingId: string; tx: TransactionReceipt }> {
-  // Validate before execution
-  validateListNFTParams(params);
-
-  // Implementation...
+async function listNFT(params: ListNFTParams): Promise<ListNFTResult> {
+  // ...
 }
+```
+
+### README Standards
+
+**Rule:** All modules must have clear documentation in README
+
+```markdown
+# Module Name
+
+Brief description (1-2 sentences).
+
+## Installation
+
+```bash
+npm install module-name
+```
+
+## Usage
+
+```typescript
+import { Module } from 'module-name';
+
+const module = new Module();
+module.doSomething();
+```
+
+## API Reference
+
+### method(param1, param2)
+
+Description of what the method does.
+
+**Parameters:**
+- `param1` (Type): Description
+- `param2` (Type): Description
+
+**Returns:** Type - Description
+
+**Example:**
+```typescript
+module.method('value', 123);
+```
 ```
 
 ---
 
-## Development Principles
+## Performance Guidelines
 
-### YANGI (You Aren't Gonna Need It)
-Don't add features that aren't required. Avoid:
-- Over-engineering solutions
-- Unnecessary abstraction layers
-- Premature optimization
-- Speculative functionality
+### React Optimization
 
-### KISS (Keep It Simple, Stupid)
-Prefer simplicity:
-- Clear, straightforward code over clever tricks
-- Explicit over implicit
-- Flat structures over deep nesting
-- Smaller functions over large ones
+1. **Use `useCallback`** for event handlers passed to children
+2. **Use `useMemo`** for expensive computations
+3. **Avoid inline objects/arrays** in JSX (they break memoization)
+4. **Use `React.memo`** for components that re-render unnecessarily
 
-### DRY (Don't Repeat Yourself)
-Eliminate duplication:
-- Extract common logic into utilities
-- Use base classes for shared functionality
-- Reuse type definitions
-- Compose rather than duplicate
+### General Optimization
+
+1. **Lazy load modules** (already implemented in SDK)
+2. **Cache expensive operations** (TanStack Query handles this)
+3. **Debounce/throttle** user inputs
+4. **Avoid unnecessary re-renders** in React components
+
+---
+
+## Security Standards
+
+### API Keys
+
+**Rule:** Never hardcode API keys
+
+```typescript
+// Good ✅
+const apiKey = process.env.ZUNO_API_KEY;
+
+// Bad ❌
+const apiKey = 'sk_live_1234567890abcdef';
+```
+
+### Input Validation
+
+**Rule:** Always validate user input
+
+```typescript
+// Good ✅
+function listNFT(params: ListNFTParams) {
+  if (!params.collectionAddress || !ethers.isAddress(params.collectionAddress)) {
+    throw new ZunoSDKError(
+      ErrorCodes.VALIDATION_ERROR,
+      'Invalid collection address'
+    );
+  }
+
+  if (params.price.startsWith('-')) {
+    throw new ZunoSDKError(
+      ErrorCodes.VALIDATION_ERROR,
+      'Price must be positive'
+    );
+  }
+
+  // ...
+}
+```
+
+### Private Keys
+
+**Rule:** Never handle private keys in the SDK
+
+- SDK should only receive signers from external sources (Wagmi, ethers)
+- Never log or expose private keys
+- Always use providers/signers from trusted sources
 
 ---
 
 ## Code Review Checklist
 
-Before submitting pull requests, verify:
+Before submitting a PR, verify:
 
-- [ ] Code compiles with zero TypeScript errors
-- [ ] All tests pass with >= 70% coverage
-- [ ] ESLint passes without warnings (with auto-fix applied)
-- [ ] No sensitive data (API keys, credentials, secrets)
-- [ ] Commit messages follow conventional format
-- [ ] Files stay under 200 lines (split if necessary)
-- [ ] Types are comprehensive (no `any` in public API)
-- [ ] Error handling with proper context
-- [ ] JSDoc for public methods/classes
-- [ ] Examples provided for complex features
-- [ ] Tests cover edge cases and error paths
+- [ ] All tests pass (`npm test`)
+- [ ] Type checking passes (`npm run type-check`)
+- [ ] Linting passes (`npm run lint`)
+- [ ] New code has tests (80% coverage target)
+- [ ] Public APIs have JSDoc comments
+- [ ] Commit messages follow conventional commits
+- [ ] No console.log statements (use logger instead)
+- [ ] No hardcoded values (use constants)
+- [ ] No `any` types in public APIs
+- [ ] Error handling for all async operations
+- [ ] Log important operations and errors
 
 ---
 
-## References
+## Resources
 
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [React Docs](https://react.dev/)
+- [Wagmi Docs](https://wagmi.sh/)
+- [TanStack Query Docs](https://tanstack.com/query/latest)
 - [Conventional Commits](https://www.conventionalcommits.org/)
-- [Jest Testing](https://jestjs.io/docs/getting-started)
-- [React Hooks Rules](https://react.dev/reference/rules/rules-of-hooks)
-- [Wagmi Documentation](https://wagmi.sh/docs/getting-started)
+- [JSDoc Documentation](https://jsdoc.app/)

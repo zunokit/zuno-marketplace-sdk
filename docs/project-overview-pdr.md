@@ -1,87 +1,174 @@
 # Zuno Marketplace SDK - Project Overview & PDR
 
-**Version:** 2.0.1-beta-claude.1
-**Last Updated:** 2025-12-07
-**Repository:** https://github.com/ZunoKit/zuno-marketplace-sdk
-
----
-
 ## Executive Summary
 
-Zuno Marketplace SDK is a comprehensive, type-safe TypeScript library for building NFT marketplace applications on Ethereum and EVM-compatible chains. Built with modern web3 technologies (Wagmi, ethers.js, React Query), it provides first-class React support with a modular architecture supporting exchange, auctions, collections, offers, and bundles.
+**Zuno Marketplace SDK** is a comprehensive, type-safe TypeScript SDK for building NFT marketplace applications on Ethereum and EVM-compatible chains. The SDK provides a complete suite of tools for NFT exchange, collection management, auction systems, and React integration with modern Web3 libraries.
+
+**Version:** 2.0.1-beta-claude.2
+**Repository:** [github.com/ZunoKit/zuno-marketplace-sdk](https://github.com/ZunoKit/zuno-marketplace-sdk)
+**License:** MIT
+**Node Version:** >=18.0.0
 
 ---
 
-## Project Vision & Goals
+## Product Overview
 
-### Vision
-Empower developers to build feature-rich NFT marketplaces with minimal boilerplate through a well-architected, fully-typed SDK that abstracts blockchain complexity while maintaining flexibility.
+### What is Zuno Marketplace SDK?
 
-### Primary Goals
-1. **Developer Experience:** Intuitive API with comprehensive documentation and examples
-2. **Type Safety:** Full TypeScript support eliminating runtime type errors
-3. **Modularity:** Tree-shakeable imports enabling minimal bundle sizes
-4. **Production Readiness:** Robust error handling, retry policies, and transaction management
-5. **Extensibility:** Clear interfaces enabling custom implementations
-6. **Performance:** Smart caching via React Query and efficient blockchain interactions
+Zuno Marketplace SDK is an all-in-one development kit that abstracts the complexity of building NFT marketplace functionality. It provides:
+
+- **Smart Contract Integration**: Pre-built interfaces for Zuno marketplace contracts
+- **React Hooks**: 21+ ready-to-use hooks for common marketplace operations
+- **State Management**: Built-in TanStack Query v5 integration for data caching
+- **Wallet Support**: Seamless integration with Wagmi v2 for wallet connections
+- **Type Safety**: Full TypeScript support with strict typing throughout
+- **Developer Tools**: In-app DevTools for debugging logs, transactions, and cache
+
+### Target Users
+
+**Primary Users:**
+- Frontend developers building NFT marketplace UIs
+- Web3 developers integrating marketplace functionality
+- Next.js/React application developers
+
+**Secondary Users:**
+- Backend developers using SDK for server-side operations
+- Smart contract developers testing marketplace interactions
+- Protocol teams building on top of Zuno infrastructure
+
+### Use Cases
+
+1. **NFT Marketplaces**: Build complete NFT trading platforms
+2. **Collection Launches**: Deploy and manage ERC721/ERC1155 collections
+3. **Auction Systems**: Implement English and Dutch auction mechanisms
+4. **Portfolio Management**: Display user-owned NFTs and marketplace activity
+5. **Analytics Dashboards**: Query listings, auctions, and collection data
 
 ---
 
-## Target Audience
+## Key Features
 
-- **Frontend Developers:** Building React/Next.js NFT marketplace applications
-- **Web3 Teams:** Creating branded NFT trading platforms
-- **SDK Consumers:** Integrating NFT marketplace functionality into existing apps
-- **Blockchain Developers:** Working with Ethereum and EVM chains
+### Core Capabilities
 
----
+#### Exchange Module
+- List NFTs for sale with fixed prices
+- Buy NFTs from listings
+- Cancel active listings
+- Batch operations (max 20 per transaction)
+- Query listings by seller, collection, or global market
 
-## Core Features & Capabilities
-
-### Exchange Module
-- List NFTs for fixed-price sale
-- Purchase NFTs from active listings
-- Cancel listings
-- Retrieve active listings with pagination
-- Filter listings by seller address
-- Batch operations support (v2.0.0+)
-
-### Collection Module
-- Create ERC721 collections with configurable supply
-- Mint NFTs with payment handling
+#### Collection Module
+- Create ERC721 and ERC1155 collections
+- Configure royalties, minting limits, and pricing
+- Mint NFTs with payment verification
 - Allowlist management (add/remove addresses)
-- Allowlist-only mode (permanant minting restrictions)
-- Royalty fee configuration (basis points)
-- Mint limit per wallet with dynamic defaults
+- Allowlist-only mode configuration
+- Query collection info and user-owned tokens
 
-### Auction Module
-- English auctions (ascending price with time extension)
-- Dutch auctions (descending price, automatic settlement)
-- Reserve price support
-- Bid placement and auction cancellation
-- Batch auction creation (max 20 per tx)
-- Batch auction cancellation
-- Automatic NFT transfer on settlement
+#### Auction Module
+- Create English auctions (ascending price bidding)
+- Create Dutch auctions (descending price buy-now)
+- Place bids on English auctions
+- Buy NFTs from Dutch auctions at current price
+- Settle completed auctions
+- Batch create/cancel auctions (max 20 per transaction)
+- Query auction details and calculate Dutch prices
 
-### React Integration
-- 21+ custom hooks for all operations
-- Wagmi integration for wallet connection
-- React Query for query management and caching
-- Server-side compatibility (API routes, utilities)
-- Built-in DevTools for debugging and monitoring
+#### React Integration
+- **21+ Production Hooks**: useExchange, useCollection, useAuction, useWallet, useBalance, useABI, etc.
+- **Provider Components**: ZunoProvider (all-in-one), ZunoContextProvider, WagmiSignerSync
+- **DevTools Component**: In-app debugging panel with Logs, Transactions, Cache, and Network tabs
+- **Wagmi v2 Integration**: Native support for WalletConnect, MetaMask, Coinbase Wallet
+- **TanStack Query v5**: Smart caching with configurable TTL and garbage collection
 
-### Logging & Monitoring
-- In-memory log store with subscription support
-- Zuno DevTools floating panel (visual debugging)
-- Transaction tracking and monitoring
-- Configurable log levels (debug, info, warn, error)
-- Custom logger integration (Sentry, Datadog, etc.)
+#### Logging & Debugging
+- **5 Log Levels**: none, error, warn, info, debug
+- **In-Memory Log Store**: Captures all SDK operations
+- **Custom Logger Support**: Integration with Sentry, custom loggers
+- **DevTools Integration**: Visual debugging without browser console
+- **Transaction Store**: Track all marketplace transactions
 
-### Error Handling
-- 50+ error codes with context information
-- Retry policies (linear/exponential backoff)
-- Transaction failure recovery
-- Detailed error suggestions for users
+### Advanced Features
+
+**Batch Operations**
+- Execute multiple operations in a single transaction
+- Progress tracking for batch operations
+- Max 20 items per batch (contract limitation)
+
+**Smart Caching**
+- TanStack Query integration for ABI and contract caching
+- Configurable cache TTL (default: 5 minutes)
+- Automatic garbage collection (default: 10 minutes)
+- Prefetching support for optimal performance
+
+**Error Handling**
+- Categorized error codes (NETWORK, CONTRACT, VALIDATION, etc.)
+- Automatic retry with exponential backoff
+- Gas estimation for all write operations
+- Detailed error messages for debugging
+
+**Modular Design**
+- Tree-shakeable exports for minimal bundle size
+- Use only the modules you need
+- Standalone logger module for non-SDK projects
+
+---
+
+## Platform & Network Support
+
+### Contract & ABI Support
+
+| Feature | Status | Description |
+|---------|:------:|-------------|
+| Zuno ABIs | ✅ Fully Supported | Built-in registry API with automatic caching |
+| Zuno Contracts | ✅ Fully Supported | Full integration with all Zuno marketplace contracts |
+| Custom ABIs | ❌ Not Supported | Cannot load external ABIs (planned for v3.0) |
+| Custom Contracts | ❌ Not Supported | Only Zuno-deployed contracts supported |
+
+### Network Support
+
+| Network | Status | Chain ID | Notes |
+|---------|:------:|---------|-------|
+| Local Development | ✅ Full Support | 31337 | Anvil/Hardhat local testing |
+| Sepolia Testnet | ⚠️ Coming Soon | 11155111 | Planned for Q1 2026 |
+| Ethereum Mainnet | ⚠️ Coming Soon | 1 | Planned for Q2 2026 |
+| Polygon | ❌ Not Supported | 137 | Under consideration |
+| Arbitrum | ❌ Not Supported | 42161 | Under consideration |
+| Base | ❌ Not Supported | 8453 | Under consideration |
+
+**Note:** Network can be configured as string (`'mainnet'`, `'sepolia'`) or number (chain ID).
+
+---
+
+## Technical Stack
+
+### Core Dependencies
+
+| Dependency | Version | Purpose |
+|-----------|---------|---------|
+| **ethers** | ^6.13.0 | Ethereum provider, signer, contract interactions |
+| **wagmi** | ^2.12.0 | React hooks for wallet connections |
+| **viem** | ^2.21.0 | TypeScript Ethereum library (wagmi dependency) |
+| **@tanstack/react-query** | ^5.59.0 | Data fetching and caching |
+| **@tanstack/query-core** | ^5.59.0 | Core query functionality (non-React) |
+| **axios** | ^1.7.0 | HTTP client for Registry API |
+
+### Peer Dependencies
+
+| Dependency | Version | Required For |
+|-----------|---------|-------------|
+| **react** | ^18.0.0 \|\| ^19.0.0 | React integration (hooks, providers) |
+| **react-dom** | ^18.0.0 \|\| ^19.0.0 | React DOM rendering |
+
+### Development Dependencies
+
+| Dependency | Purpose |
+|-----------|---------|
+| **TypeScript** ^5.6.0 | Type checking and compilation |
+| **tsup** ^8.3.0 | Bundling (CJS + ESM) |
+| **Jest** ^29.7.0 | Unit and integration testing |
+| **ESLint** ^9.0.0 | Linting and code quality |
+| **semantic-release** ^25.0.2 | Automated versioning and changelog |
 
 ---
 
@@ -89,296 +176,229 @@ Empower developers to build feature-rich NFT marketplaces with minimal boilerpla
 
 ### Functional Requirements
 
-#### FR-1: Exchange Operations
-- Users must be able to list NFTs at fixed prices
-- Users must be able to purchase listed NFTs
-- Users must be able to cancel own listings
-- System must retrieve paginated listing sets
-- System must filter listings by seller address
+#### FR-1: SDK Initialization
+- **Requirement**: SDK must support singleton pattern with lazy-loaded modules
+- **Priority**: P0 (Critical)
+- **Acceptance Criteria**:
+  - Single SDK instance per application
+  - Lazy initialization of Exchange, Collection, Auction modules
+  - Provider and signer injection support
+  - Configurable API key and network
 
-#### FR-2: Auction Operations
-- Users must create English auctions with customizable duration
-- Users must create Dutch auctions with price decay
-- Users must place bids on English auctions
-- Users must buy from Dutch auctions at any point
-- Users must cancel own auctions
-- System must support batch operations (20 items max per transaction)
+#### FR-2: Exchange Operations
+- **Requirement**: Users must be able to list, buy, and cancel NFT listings
+- **Priority**: P0 (Critical)
+- **Acceptance Criteria**:
+  - List NFT with price (ETH) and duration (seconds)
+  - Buy NFT from listing with payment verification
+  - Cancel listing by seller
+  - Query active listings with pagination
+  - Batch list max 20 NFTs in single transaction
+  - Listing IDs returned as bytes32 hex strings
 
 #### FR-3: Collection Management
-- Admins must create ERC721 collections with configurable parameters
-- Users must mint NFTs with ETH payment
-- Admins must manage allowlists (add/remove addresses)
-- System must enforce allowlist-only minting when enabled
-- System must track mint count per wallet
+- **Requirement**: Users must be able to create and manage NFT collections
+- **Priority**: P0 (Critical)
+- **Acceptance Criteria**:
+  - Create ERC721 collection with name, symbol, maxSupply
+  - Set mint price, royalty fee (basis points), mint limit per wallet
+  - Configure allowlist stage duration (seconds)
+  - Mint NFTs with payment verification
+  - Add/remove addresses from allowlist
+  - Enable/disable allowlist-only mode
+  - Query collection info and user-owned tokens
 
-#### FR-4: React Integration
-- All SDK operations must be accessible via custom hooks
-- Hooks must integrate with React Query for caching
-- System must provide direct SDK access via useZunoSDK hook
-- DevTools must display logs and transactions in real-time
+#### FR-4: Auction Operations
+- **Requirement**: Users must be able to create and participate in auctions
+- **Priority**: P0 (Critical)
+- **Acceptance Criteria**:
+  - Create English auction with starting bid, reserve price, duration
+  - Create Dutch auction with start price, end price, duration
+  - Place bid on English auction (must exceed current bid)
+  - Buy NFT from Dutch auction at current calculated price
+  - Cancel auction by seller (if no bids)
+  - Settle completed auction
+  - Batch create/cancel max 20 auctions in single transaction
+  - Calculate Dutch auction price at any timestamp
 
-#### FR-5: Error Handling
-- All errors must include descriptive codes and context
-- System must retry failed operations per configured policy
-- Errors must include user-facing suggestions
-- Transaction failures must be recoverable
+#### FR-5: React Integration
+- **Requirement**: SDK must provide React hooks for all marketplace operations
+- **Priority**: P0 (Critical)
+- **Acceptance Criteria**:
+  - useExchange hook for list, buy, cancel operations
+  - useCollection hook for create, mint, allowlist operations
+  - useAuction hook for create, bid, buy, settle operations
+  - useWallet hook for wallet connection
+  - useBalance hook for ETH/ERC20 balance queries
+  - All hooks return TanStack Query mutation/query objects
+  - ZunoProvider for app-level configuration
+  - ZunoDevTools component for debugging
+
+#### FR-6: Caching & Performance
+- **Requirement**: SDK must cache ABIs and contract data efficiently
+- **Priority**: P1 (High)
+- **Acceptance Criteria**:
+  - TanStack Query integration with default 5-min TTL
+  - Configurable cache time and garbage collection
+  - ABI prefetching support
+  - Contract instance caching per address
+  - Cache invalidation on network changes
+
+#### FR-7: Logging & Debugging
+- **Requirement**: SDK must provide comprehensive logging for debugging
+- **Priority**: P1 (High)
+- **Acceptance Criteria**:
+  - 5 log levels: none, error, warn, info, debug
+  - In-memory log store with subscription API
+  - Custom logger integration (Sentry, etc.)
+  - ZunoDevTools component for visual debugging
+  - Automatic transaction logging
+  - Module prefix and timestamp support
 
 ### Non-Functional Requirements
 
-#### NFR-1: Performance
-- Query cache TTL: 5 minutes (configurable)
-- Garbage collection: 10 minutes (configurable)
-- Extended cache for network data: 30 minutes
-- Bundle size < 100KB (gzipped main entry)
+#### NFR-1: Type Safety
+- **Requirement**: All public APIs must have full TypeScript type definitions
+- **Priority**: P0 (Critical)
+- **Acceptance Criteria**:
+  - No `any` types in public API
+  - All function parameters typed
+  - All return values typed
+  - Exported types for all entities
+  - Strict TypeScript configuration (noUncheckedIndexedAccess, etc.)
 
-#### NFR-2: Type Safety
-- 100% TypeScript strict mode compliance
-- No `any` types in public APIs
-- Comprehensive type definitions for all entities
-- Full JSDoc documentation
+#### NFR-2: Bundle Size
+- **Requirement**: SDK must support tree-shaking for minimal bundle size
+- **Priority**: P1 (High)
+- **Acceptance Criteria**:
+  - Modular exports for each feature
+  - Separate entry points for react, exchange, auction, collection, logger
+  - ESM format for tree-shaking
+  - CJS format for Node.js compatibility
 
-#### NFR-3: Reliability
-- Transaction confirmation with retry support
-- Exponential backoff: max 3 retries (configurable)
-- Network error recovery
-- Graceful degradation for cache misses
+#### NFR-3: Error Handling
+- **Requirement**: SDK must provide clear, actionable error messages
+- **Priority**: P0 (Critical)
+- **Acceptance Criteria**:
+  - Categorized error codes (NETWORK, CONTRACT, VALIDATION, etc.)
+  - Automatic retry with exponential backoff
+  - Gas estimation for all write operations
+  - Error context (module, function, parameters)
+  - User-friendly error messages
 
-#### NFR-4: Compatibility
-- Node.js >= 18.0.0
-- React >= 18.0.0 (peer dependency)
-- Ethereum and EVM-compatible chains
-- ESM and CommonJS module formats
+#### NFR-4: Performance
+- **Requirement**: SDK must optimize for fast data fetching and minimal re-renders
+- **Priority**: P1 (High)
+- **Acceptance Criteria**:
+  - TanStack Query caching reduces redundant fetches
+  - useCallback/useMemo in all React hooks
+  - Lazy module initialization
+  - Batch operations minimize transaction count
+  - ABI caching prevents redundant API calls
 
-#### NFR-5: Code Quality
-- 70% test coverage (branches, functions, lines, statements)
-- ESLint compliance
-- Zero TypeScript errors
-- < 200 lines per file guideline
+#### NFR-5: Browser Support
+- **Requirement**: SDK must support modern browsers
+- **Priority**: P1 (High)
+- **Acceptance Criteria**:
+  - Chrome/Edge (last 2 versions)
+  - Firefox (last 2 versions)
+  - Safari (last 2 versions)
+  - Mobile browsers (iOS Safari, Chrome Android)
 
-### Architecture Requirements
-
-#### AR-1: Singleton Pattern
-- SDK must be instantiable as singleton
-- getInstance() should return same instance per app
-- Support both React and non-React contexts
-
-#### AR-2: Lazy Module Loading
-- Feature modules loaded on first access
-- Exchange, Collection, Auction modules auto-loaded
-- Offers and Bundles as future extensibility points
-
-#### AR-3: Provider Abstraction
-- Decouple ethers.js provider/signer
-- Support custom provider instances
-- Handle provider switching and updates
-
-#### AR-4: Error Hierarchy
-- Custom ZunoSDKError with context information
-- 50+ specific error codes organized by category
-- Original error preservation for debugging
-
-#### AR-5: Logger Integration
-- In-memory log store for monitoring
-- Custom logger support (Sentry, Datadog integration)
-- DevTools visualization component
-
-### API & Integration Requirements
-
-#### APIR-1: Configuration
-- Required: apiKey, network
-- Optional: apiUrl, rpcUrl, cache config, retry policy
-- Logger configuration with level control
-- WalletConnect project ID for wallet connection
-
-#### APIR-2: Export Points
-- Main entry: `zuno-marketplace-sdk` (full SDK)
-- React hooks: `zuno-marketplace-sdk/react`
-- Module imports: `/exchange`, `/auction`, `/collection`, `/logger`
-- Testing utilities: `zuno-marketplace-sdk/testing`
-
-#### APIR-3: Contract Registry
-- ABI caching via React Query
-- Contract address lookup per network
-- Lazy loading with fallback support
-- Error handling for missing contracts/ABIs
-
-### Data Requirements
-
-#### DR-1: Entity Types
-- Listing, Transaction, AucitonInfo entities
-- Type-safe parameters for all operations
-- Consistent response formats across modules
-
-#### DR-2: Transaction Tracking
-- In-memory transaction store
-- Status tracking (pending, confirmed, failed)
-- Gas estimation and retry logic
+#### NFR-6: Testing Coverage
+- **Requirement**: SDK must have comprehensive test coverage
+- **Priority**: P1 (High)
+- **Acceptance Criteria**:
+  - Unit tests for all modules (target: 80% coverage)
+  - Integration tests for batch operations
+  - React hook tests with @testing-library/react
+  - Mock utilities for testing
+  - Edge case coverage (errors, retries, gas estimation)
 
 ---
 
-## Feature Modules & Dependencies
+## Development Requirements
 
-### Module Organization
-```
-Core Layer
-├── ZunoSDK (main orchestrator)
-├── ZunoAPIClient (API communication)
-└── ContractRegistry (contract/ABI management)
+### Build System
 
-Feature Modules
-├── ExchangeModule (listing/buying operations)
-├── CollectionModule (ERC721 operations)
-└── AuctionModule (English/Dutch auctions)
+**Build Tool:** tsup (esbuild wrapper)
+**Output Formats:** CommonJS (`.js`) + ESM (`.mjs`)
+**Declaration Files:** `.d.ts` with source maps
+**Entry Points:** 7 modules (main, react, exchange, auction, collection, logger, testing)
 
-React Integration
-├── ZunoProvider (all-in-one setup)
-├── ZunoContextProvider (context-based setup)
-└── Hooks (21+ custom hooks)
+### Code Quality Standards
 
-Utilities
-├── Logger (ZunoLogger, logStore)
-├── Errors (ZunoSDKError, ErrorCodes)
-├── Transactions (TransactionManager)
-└── Events (EventEmitter)
-```
+**TypeScript Configuration:**
+- Target: ES2020
+- Module: ESNext
+- Strict mode enabled
+- No unused locals/parameters
+- No implicit returns
+- No fallthrough cases in switch
 
-### Key Dependencies
-- **ethers.js 6.13+:** Blockchain interaction and signing
-- **Wagmi 2.12+:** Wallet connection and React integration
-- **React Query 5.59+:** Query management and caching
-- **Viem 2.21+:** Low-level RPC communication
-- **Axios 1.7+:** HTTP client for API communication
-- **ms 2.1.3:** Millisecond parsing for cache config
+**Linting:**
+- ESLint with TypeScript parser
+- @typescript-eslint recommended rules
+- Warn on unused variables (with `_` prefix ignore)
 
----
+**Testing:**
+- Jest with ts-jest transformer
+- @testing-library/react for hooks
+- jsdom environment for React tests
+- Coverage reporting with Jest
 
-## Success Metrics
+### Git Workflow
 
-### Development Metrics
-- Test coverage: >= 70% across all code paths
-- TypeScript strict mode: 0 errors
-- Bundle size: < 100KB gzipped (main entry)
-- Code duplication: < 5%
+**Branch Strategy:** GitFlow
+- `main`: Production releases
+- `develop`: Development branch
+- `feature/*`: Feature branches
+- `hotfix/*`: Emergency fixes
 
-### User Adoption Metrics
-- npm downloads tracking (secondary)
-- GitHub stars and community engagement
-- Issue resolution time: < 48 hours
-- Documentation completeness: 100% API coverage
+**Commit Convention:** Conventional Commits
+- `feat:` New features
+- `fix:` Bug fixes
+- `docs:` Documentation changes
+- `refactor:` Code refactoring
+- `test:` Test additions/changes
+- `chore:` Build/config changes
 
-### Quality Metrics
-- Zero critical security vulnerabilities
-- Transaction success rate: > 99% (network dependent)
-- API response time: < 500ms (p95)
-- Cache hit rate: > 80%
+**Release Strategy:** semantic-release
+- Automated versioning based on commits
+- Automated changelog generation
+- GitHub releases with notes
+- npm publish on version bump
 
 ---
 
-## Technical Constraints & Dependencies
+## Roadmap
 
-### Environment
-- **Node.js:** >= 18.0.0 (LTS)
-- **TypeScript:** >= 5.6.0 (strict mode)
-- **React:** >= 18.0.0 (peer dependency)
+### Version 2.1.0 (Planned: Q1 2026)
+- Sepolia testnet support
+- Enhanced error messages
+- Performance optimizations
+- Additional React hooks (useOffers, useBundles)
 
-### Network Support
-- **Mainnet:** Ethereum mainnet
-- **Testnet:** Sepolia (Ethereum testnet)
-- **L2/Sidechains:** Polygon, Arbitrum
-- **Custom:** Local development (Hardhat, Anvil)
+### Version 2.2.0 (Planned: Q2 2026)
+- Ethereum mainnet support
+- Advanced analytics hooks
+- Real-time subscription support
+- Mobile-first DevTools
 
-### External Services
-- Zuno API: For ABI and contract registry
-- RPC Providers: Infura, Alchemy, Ankr, custom endpoints
-- Wallet Services: WalletConnect, MetaMask, Coinbase Wallet
-
-### Browser Support
-- Modern browsers with Web3 support (Chrome, Firefox, Safari, Edge)
-- Requires crypto APIs and BigInt support
+### Version 3.0.0 (Planned: Q3 2026)
+- Custom ABI support
+- Custom contract integration
+- Multi-chain support (Polygon, Arbitrum, Base)
+- SDK plugin system
 
 ---
 
-## Implementation Status
+## Support & Resources
 
-| Component | Status | Version | Notes |
-|-----------|:------:|:-------:|-------|
-| Core SDK | ✅ Production | 2.0.1 | Singleton, lazy loading |
-| Exchange Module | ✅ Production | 2.0.1 | Full support, batch ops |
-| Auction Module | ✅ Production | 2.0.1 | English/Dutch auctions |
-| Collection Module | ✅ Production | 2.0.1 | ERC721, allowlist, minting |
-| React Hooks | ✅ Production | 2.0.1 | 21+ hooks, React Query |
-| DevTools | ✅ Production | 2.0.1 | Visual debugging |
-| Logger | ✅ Production | 2.0.1 | In-memory, custom integration |
-| Offers Module | 🔲 Planned | Future | Basic offer system |
-| Bundles Module | 🔲 Planned | Future | Multi-NFT bundles |
-| ERC1155 Support | 🔲 Planned | Future | Semi-fungible tokens |
-| Testnet (Sepolia) | 🔲 Planned | Future | Official testnet support |
+**Documentation:** [docs.zuno.com](https://docs.zuno.com)
+**GitHub Issues:** [github.com/ZunoKit/zuno-marketplace-sdk/issues](https://github.com/ZunoKit/zuno-marketplace-sdk/issues)
+**Examples:** `/examples` directory in repository
 
----
-
-## Release Strategy
-
-### Versioning
-- **Semantic Versioning:** MAJOR.MINOR.PATCH
-- **v2.x.x:** Current major version (React Query 5, Wagmi 2, ethers 6)
-- **Beta Tags:** `-beta-{number}` for pre-release versions
-
-### Release Channels
-- **Production:** Stable releases (npm latest)
-- **Beta:** Pre-release versions (npm dist-tags)
-- **Development:** Feature branches for CI/CD testing
-
-### CI/CD Pipelines
-1. **Production Release:** GitHub Actions on push to main
-2. **Beta Release:** GitHub Actions on push to feature branches
-3. **Testing:** Jest with 70% coverage requirement
-4. **Code Quality:** ESLint with dual configs (legacy + new)
-
----
-
-## Documentation & Support
-
-### Delivered Documentation
-- **README.md:** Quick start and feature overview
-- **docs/codebase-summary.md:** Directory structure and dependencies
-- **docs/code-standards.md:** Coding conventions and patterns
-- **docs/system-architecture.md:** Architecture details and data flow
-- **examples/:** Working code samples (Node.js, React)
-- **tests/:** Test suites demonstrating usage patterns
-
-### Code Examples
-- `examples/basic-usage.ts` - Node.js SDK usage
-- `examples/react-example.tsx` - React component patterns
-- `examples/edge-cases.md` - Production patterns and gotchas
-
-### External Resources
-- Official Docs: [docs.zuno.com](https://docs.zuno.com)
-- GitHub Issues: Bug reports and feature requests
-- Discussions: Community Q&A and feature proposals
-
----
-
-## Known Limitations & Future Work
-
-### Current Limitations
-- **Contract Support:** Zuno contracts only (custom ABIs not supported)
-- **Network Support:** Mainnet only (testnet/polygon coming)
-- **Offers/Bundles:** Not yet implemented
-- **ERC1155:** Semi-fungible tokens not supported
-- **Royalty Enforcement:** Off-chain (contract-level only)
-
-### Future Enhancements
-- Custom ABI support for non-Zuno contracts
-- Expanded network support (Sepolia, Polygon, Arbitrum)
-- Bundle and Offer modules
-- ERC1155 token support
-- Advanced filtering and analytics APIs
-- Subgraph integration for indexing
-
----
-
-## Review & Approval
-
-**Document Status:** Final
-**Last Review:** 2025-12-07
-**Next Review:** Quarterly or as needed
+**Community:**
+- Discord: [Coming Soon]
+- Twitter: [@ZunoKit](https://twitter.com/ZunoKit)

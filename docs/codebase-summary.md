@@ -1,598 +1,582 @@
-# Codebase Summary
-
-**Version:** 2.0.1-beta-claude.1
-**Last Updated:** 2025-12-07
-**Repository:** https://github.com/ZunoKit/zuno-marketplace-sdk
-
----
+# Zuno Marketplace SDK - Codebase Summary
 
 ## Overview
 
-Zuno Marketplace SDK is a comprehensive TypeScript SDK for building NFT marketplace applications. The codebase consists of:
+The Zuno Marketplace SDK is a modular TypeScript library built with ~9,185 lines of code across 50+ source files. The codebase follows a clean architecture pattern with clear separation of concerns between core SDK functionality, business logic modules, React integration, and utilities.
 
-- **52 TypeScript files** (12,331 lines of code)
-- **Modular architecture** with clear separation of concerns
-- **Full TypeScript strict mode** compliance
-- **70% test coverage** requirement
-- **Multiple export points** for tree-shakeable imports
-
----
-
-## Codebase Statistics
-
-| Metric | Value | Notes |
-|--------|-------|-------|
-| Total TypeScript Files | 52 | .ts and .tsx files |
-| Total Lines of Code | 12,331 | Source code only (excluding tests) |
-| Core Infrastructure | 1,188 LOC | ZunoSDK, APIClient, ContractRegistry |
-| Feature Modules | 2,408 LOC | Exchange, Collection, Auction modules |
-| React Integration | 1,200+ LOC | Hooks, Providers, Components |
-| Type Definitions | 851 LOC | Config, Entities, API types, Contracts |
-| Utilities | 1,533 LOC | Logger, Errors, Transactions, Events |
-| Tests | Parallel | Jest test files parallel to src |
-| Bundle Size | < 100KB | Gzipped (main entry point) |
+**Last Updated:** 2026-01-11
+**Total LOC:** ~9,185 lines (TypeScript)
+**Language:** TypeScript 5.6+
+**Build System:** tsup (esbuild)
 
 ---
 
-## Directory Structure & File Organization
-
-### `/src` Root Files
-
-**`index.ts`** (54 lines)
-- Main entry point exports
-- Core SDK classes (ZunoSDK, APIClient, ContractRegistry)
-- Module classes and types
-- Utility exports (Logger, Errors, EventEmitter)
-- Query factory functions
-
-### `/src/core` - Core Infrastructure (1,188 LOC)
-
-**`ZunoSDK.ts`** (524 lines)
-- Main SDK orchestrator class
-- Singleton pattern implementation
-- Module lazy loading (exchange, collection, auction)
-- Provider/signer management
-- Logger initialization
-- Query client setup
-- Event emitter for cross-module communication
-- Provider update for wallet switching
-
-**`ZunoAPIClient.ts`** (430 lines)
-- HTTP client using axios
-- ABI fetching and caching
-- Contract metadata API
-- Network information endpoint
-- Retry logic (linear/exponential backoff)
-- Error handling with timeout
-- Request/response typing
-
-**`ContractRegistry.ts`** (234 lines)
-- Contract instance caching and management
-- ABI lazy loading from API
-- Contract address lookup per chain
-- React Query integration for caching
-- Contract instance creation via ethers
-- Error handling for missing contracts/ABIs
-
-### `/src/modules` - Feature Modules (2,408 LOC)
-
-**`BaseModule.ts`** (90 lines)
-- Abstract base class for all feature modules
-- Shared dependencies injection
-- Provider/signer management
-- TransactionManager initialization
-- Helper methods: ensureProvider, ensureSigner, ensureTxManager
-- Network ID getter
-
-**`ExchangeModule.ts`** (459 lines)
-- Fixed-price NFT listing operations
-- Listing, buying, cancellation flows
-- Approval management (ERC721.setApprovalForAll)
-- Batch operations (up to 20 items)
-- Paginated listing queries
-- Seller filtering
-- Transaction management and logging
-
-Key Methods:
-- `listNFT()` - Create fixed-price listing
-- `buyNFT()` - Purchase listed NFT
-- `cancelListing()` - Cancel own listing
-- `getActiveListings()` - Paginated query
-- `getListingsBySeller()` - Filter by seller
-- `batchListNFT()` - Create multiple listings
-- `batchBuyNFT()` - Purchase multiple NFTs
-- `batchCancelListing()` - Cancel multiple listings
-
-**`CollectionModule.ts`** (827 lines)
-- ERC721 collection creation and management
-- Minting with ETH payment
-- Allowlist management (add/remove/check)
-- Allowlist enforcement toggle
-- Collection metadata retrieval
-- Mint limit per wallet enforcement
-- Default values: mintLimitPerWallet defaults to maxSupply
-
-Key Methods:
-- `createERC721Collection()` - Deploy new ERC721
-- `mintERC721()` - Mint with payment
-- `addToAllowlist()` - Allowlist addresses
-- `removeFromAllowlist()` - Remove from allowlist
-- `setAllowlistOnly()` - Toggle enforcement
-- `isInAllowlist()` - Check allowlist status
-- `getCollectionInfo()` - Fetch metadata
-
-**`AuctionModule.ts`** (948 lines)
-- English auction (ascending price, time extension)
-- Dutch auction (descending price, automatic settlement)
-- Bid placement and tracking
-- Auction cancellation
-- Reserve price support
-- Batch auction operations (max 20)
-- Batch cancellation
-- NFT automatic transfer on settlement
-
-Key Methods:
-- `createEnglishAuction()` - Create ascending auction
-- `createDutchAuction()` - Create descending auction
-- `placeBid()` - Bid on English auction
-- `buyNow()` - Purchase from Dutch auction
-- `cancelAuction()` - Cancel own auction
-- `getAuctionInfo()` - Fetch auction details
-- `batchCreateEnglishAuction()` - Create multiple English
-- `batchCancelAuction()` - Cancel multiple auctions
-
-### `/src/types` - Type Definitions (851 LOC)
-
-**`config.ts`** (152 lines)
-- `ZunoSDKConfig` - Main SDK configuration interface
-- `SDKOptions` - Optional initialization parameters
-- `CacheConfig` - React Query cache settings
-- `RetryPolicy` - Retry strategy configuration
-- `NetworkType` - Supported networks (mainnet, sepolia, polygon, arbitrum, custom)
-- `DEFAULT_CACHE_TIMES` - Cache TTL constants using `ms` library
-- LoggerConfig re-export
-
-**`entities.ts`** (110 lines)
-- `Listing` - NFT listing entity
-- `Auction` - Auction information entity
-- `AuctionBid` - Bid entity
-- `TransactionReceipt` - Transaction result entity
-- `CollectionInfo` - Collection metadata entity
-- `NFT` - NFT entity with metadata
-
-**`api.ts`** (72 lines)
-- `ABI` - Contract ABI definition
-- `ContractABI` - ABI with metadata
-- `ContractInfo` - Contract address and network info
-- `NetworkInfo` - Network configuration
-- API response type interfaces
-
-**`contracts.ts`** (181 lines)
-- `ListNFTParams` - List operation parameters
-- `BuyNFTParams` - Buy operation parameters
-- `CancelListingParams` - Cancellation parameters
-- `BatchListNFTParams` - Batch listing parameters
-- `CreateEnglishAuctionParams` - Auction parameters
-- `PlaceBidParams` - Bid parameters
-- `MintERC721Params` - Minting parameters
-- `AddToAllowlistParams` - Allowlist parameters
-- `TransactionOptions` - Gas and transaction settings
-- All parameters with JSDoc documentation
-
-**`index.ts`** (10 lines)
-- Re-exports all types for cleaner imports
-
-### `/src/react` - React Integration (1,200+ LOC)
-
-#### `/src/react/provider` - Context & Providers
-
-**`ZunoProvider.tsx`** (150+ lines)
-- All-in-one provider wrapping Wagmi + React Query + Zuno
-- Wagmi config creation with chain selection
-- Wallet connector setup (injected, WalletConnect, Coinbase)
-- QueryClient initialization with cache config
-- Auto-initialization of ZunoSDK
-- Dev tools support toggle
-- For simple apps without existing Wagmi setup
-
-**`ZunoContextProvider.tsx`** (100+ lines)
-- Context-based provider for existing Wagmi setups
-- Accepts pre-initialized SDK instance
-- Provides ZunoContext for hooks
-- Minimal dependencies approach
-- For advanced setups with custom Wagmi config
-
-#### `/src/react/hooks` - Custom Hooks (1,000+ LOC total)
-
-**`useZunoSDK.ts`** (35 lines)
-- Direct access to singleton SDK instance
-- Returns `ZunoSDK` for advanced usage
-- Throws if SDK not initialized
-- Used by all other hooks internally
-
-**`useWallet.ts`** (98 lines)
-- Wallet connection management
-- Returns: `{ address, isConnected, connect, disconnect, isConnecting }`
-- Uses Wagmi internally (useAccount, useConnect, useDisconnect)
-- Wallet switching support
-- MultiCoin wallet integration
-
-**`useExchange.ts`** (126 lines)
-- Returns mutation objects for exchange operations
-- `{ listNFT, buyNFT, cancelListing }`
-- Each returns React Query mutation with loading/error states
-- Automatic query invalidation on success
-- Error handling with user-friendly messages
-
-**`useAuction.ts`** (156 lines)
-- Auction operations mutations
-- `{ createEnglishAuction, createDutchAuction, placeBid, buyNow, cancelAuction }`
-- Batch mutation support
-- Gas estimation feedback
-- Auction info caching
-
-**`useCollection.ts`** (174 lines)
-- Collection operations mutations
-- `{ createERC721, mintERC721, addToAllowlist, removeFromAllowlist, setAllowlistOnly, isInAllowlist, getCollectionInfo }`
-- Mint payment handling
-- Allowlist management mutations
-- Collection metadata caching
-
-**`useApprove.ts`** (92 lines)
-- ERC20/ERC721 approval management
-- Check approval status
-- Request user approval
-- Approval revocation
-- Gas estimation for approval tx
-
-**`useABIs.ts`** (90 lines)
-- Fetch ABIs from Zuno API
-- React Query integration with caching
-- ABI by ID or name lookup
-- Error handling for missing ABIs
-- Automatic retry on failure
-
-**`useBalance.ts`** (15 lines)
-- Native token balance query
-- Returns `{ balance, isLoading }`
-- Ethereum balance fetching
-- Refreshable on demand
-
-**`useZunoLogger.ts`** (28 lines)
-- Access to logger instance
-- Manual logging capability
-- Log level configuration access
-- Context-aware logging
-
-#### `/src/react/components` - React Components
-
-**`ZunoDevTools.tsx`** (200+ lines)
-- Visual debugging panel component
-- Displays logs in real-time
-- Shows transaction tracking
-- React Query cache visualization
-- Network status indicator
-- Floating panel (position configurable)
-- Dev-only component
-- Max log entries configurable
-
-### `/src/utils` - Utility Modules (1,533 LOC)
-
-**`logger.ts`** (180 lines)
-- `ZunoLogger` class with log levels
-- `createNoOpLogger()` for disabled logging
-- Log level support: none, error, warn, info, debug
-- Timestamp and module prefix options
-- Custom logger integration (Sentry, Datadog, LogRocket)
-- Context setting for error correlation
-- LoggerConfig interface and types
-
-**`logStore.ts`** (85 lines)
-- In-memory log storage with subscription
-- `getAll()` - Get all logged entries
-- `subscribe(callback)` - Subscribe to new logs
-- `clear()` - Clear log buffer
-- Max 200 entries with rotation
-- Used by DevTools for log display
-- Singleton pattern
-
-**`errors.ts`** (120 lines)
-- `ZunoSDKError` custom error class
-- 50+ error codes organized by category
-  - 1xxx: Configuration errors
-  - 2xxx: API errors
-  - 3xxx: Contract errors
-  - 4xxx: Transaction errors
-  - 5xxx: Validation errors
-  - 6xxx: Module errors
-- Error context object with debugging info
-- Validation helpers (validateAddress, validateTokenId, etc.)
-- ErrorCode type definition
-
-**`transactions.ts`** (150 lines)
-- `TransactionManager` class
-- Gas estimation before submission
-- Transaction submission and receipt polling
-- Retry logic with backoff strategy
-- Nonce management
-- Transaction status tracking
-- Timeout handling
-- Network error recovery
-
-**`events.ts`** (60 lines)
-- `EventEmitter` class for pub/sub
-- `on(event, handler)` - Subscribe to event
-- `off(event, handler)` - Unsubscribe
-- `emit(event, data)` - Publish event
-- Used for cross-module communication
-- No external dependencies
-
-**`transactionStore.ts`** (90 lines)
-- In-memory transaction tracking store
-- `addTransaction()` - Track new transaction
-- `updateStatus()` - Update transaction status
-- `getAll()` - Retrieve all transactions
-- `subscribe()` - Subscribe to changes
-- Status: pending, confirmed, failed
-- Used by DevTools and analytics
-
-### `/src/__tests__` - Test Files
-
-**Test Coverage Areas (70% threshold):**
-
-**Core Tests:**
-- `core/ZunoSDK.test.ts` - SDK instantiation, singleton pattern
-- `core/ZunoAPIClient.test.ts` - API communication
-- `core/ContractRegistry.test.ts` - Contract caching
-
-**Module Tests:**
-- `modules/BaseModule.test.ts` - Base functionality
-- `modules/ExchangeModule.test.ts` - Listing/buying operations
-- `modules/CollectionModule.test.ts` - Collection/minting operations
-- `modules/AuctionModule.test.ts` - Auction operations
-
-**React Tests:**
-- `react/useZunoSDK.test.tsx` - SDK hook
-- `react/useExchange.test.tsx` - Exchange mutations
-- `react/useAuction.test.tsx` - Auction mutations
-- `react/useCollection.test.tsx` - Collection mutations
-- `react/useWallet.test.tsx` - Wallet connection
-
-**Utility Tests:**
-- `utils/errors.test.ts` - Error handling
-- `utils/logStore.test.ts` - Log storage
-- `utils/logger-utils.test.ts` - Logger functionality
-
-**Integration Tests:**
-- `edge-cases.test.ts` - Production patterns
-- `testing-utils.test.ts` - Test helpers
-
-**Test Setup:**
-- `setup/jest.config.js` - Jest configuration
-- `setup/mocks/` - Global mocks for axios, ethers
-- `setup/factories/` - Mock entity factories
-
-### `/src/testing` - Testing Utilities
-
-**`index.ts`** (100+ lines)
-- Mock factory functions for testing
-- `createMockProvider()` - ethers provider mock
-- `createMockSigner()` - ethers signer mock
-- `createMockNFT()` - NFT entity factory
-- `createMockListing()` - Listing entity factory
-- `createMockApiClient()` - API client mock
-- Re-exports Jest matchers and utilities
-
----
-
-## Key Dependencies
-
-### Production Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `ethers` | ^6.13.0 | Blockchain interaction and signing |
-| `wagmi` | ^2.12.0 | Wallet connection and React hooks |
-| `@wagmi/core` | ^2.13.0 | Core wagmi utilities |
-| `@wagmi/connectors` | ^5.1.0 | Wallet connectors (MetaMask, WalletConnect, etc.) |
-| `viem` | ^2.21.0 | Low-level Ethereum client |
-| `@tanstack/react-query` | ^5.59.0 | Query management and caching |
-| `axios` | ^1.7.0 | HTTP client for API calls |
-| `ms` | ^2.1.3 | Millisecond string parsing (cache config) |
-
-### Dev Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| `typescript` | ^5.6.0 | TypeScript compiler |
-| `jest` | ^29.7.0 | Test framework |
-| `ts-jest` | ^29.2.0 | TypeScript support for Jest |
-| `@testing-library/react` | ^16.0.0 | React component testing |
-| `eslint` | ^9.0.0 | Code linting |
-| `@typescript-eslint/parser` | ^8.0.0 | TypeScript ESLint parser |
-| `tsup` | ^8.3.0 | Build tool (ES modules + CommonJS) |
-| `semantic-release` | ^25.0.2 | Automated versioning and publishing |
-
-### Peer Dependencies
-
-| Package | Required | Purpose |
-|---------|----------|---------|
-| `react` | ^18.0.0 \| ^19.0.0 | React framework |
-| `react-dom` | ^18.0.0 \| ^19.0.0 | React DOM rendering |
-
----
-
-## Build Configuration
-
-### tsup.config.js
-- Builds to multiple formats: ESM (.mjs), CommonJS (.js), Types (.d.ts)
-- Tree-shakeable exports
-- 7 entry points:
-  - `./` (main)
-  - `./react`
-  - `./exchange`
-  - `./auction`
-  - `./collection`
-  - `./logger`
-  - `./testing`
-
-### Package.json Exports
-```json
-{
-  ".": "Main entry (full SDK)",
-  "./react": "React hooks and providers",
-  "./exchange": "Exchange module only",
-  "./auction": "Auction module only",
-  "./collection": "Collection module only",
-  "./logger": "Logger utilities",
-  "./testing": "Test helpers"
-}
+## Directory Structure
+
+```
+zuno-marketplace-sdk/
+├── src/
+│   ├── core/              # Core SDK infrastructure (3 files)
+│   ├── modules/           # Business logic modules (4 files)
+│   ├── react/             # React integration (15+ files)
+│   ├── types/             # TypeScript type definitions (6 files)
+│   ├── utils/             # Utility functions (9 files)
+│   ├── auction/           # Auction module exports
+│   ├── collection/        # Collection module exports
+│   ├── exchange/          # Exchange module exports
+│   ├── logger/            # Logger module exports
+│   ├── testing/           # Testing utilities exports
+│   ├── index.ts           # Main SDK entry point
+│   └── __tests__/         # Unit and integration tests (20+ files)
+├── docs/                  # Documentation
+├── examples/              # Usage examples
+├── tests/                 # Additional test setup
+├── dist/                  # Build output (CJS + ESM)
+└── configuration files    # tsconfig, eslint, jest, etc.
 ```
 
-### TypeScript Configuration
-- Target: ES2020
-- Module: ESNext
-- Strict mode enabled
-- JSX: React (for .tsx files)
-- Declaration files generated
-- Source maps for debugging
+---
+
+## Module Organization
+
+### 1. Core Infrastructure (`src/core/`)
+
+**Purpose:** Foundation for SDK operations
+
+| File | LOC | Purpose |
+|------|-----|---------|
+| `ZunoSDK.ts` | ~400 | Main SDK class (singleton pattern, module lazy-loading) |
+| `ZunoAPIClient.ts` | ~200 | HTTP client for Registry API (ABI/contract fetching) |
+| `ContractRegistry.ts` | ~300 | Contract instance caching with TanStack Query |
+
+**Key Responsibilities:**
+- Singleton SDK instance management
+- Provider/signer initialization
+- API key authentication
+- Contract deployment address fetching
+- ABI caching and retrieval
+- Contract instance creation and caching
 
 ---
 
-## Module Export Map
+### 2. Business Logic Modules (`src/modules/`)
 
-### Main Entry (`zuno-marketplace-sdk`)
-Exports everything: core, modules, types, utilities, React integration
+**Purpose:** Feature-specific marketplace operations
 
-### React Entry (`zuno-marketplace-sdk/react`)
-Exports:
-- `ZunoProvider`
-- `ZunoContextProvider`
-- `useZunoSDK`, `useWallet`, `useExchange`, `useAuction`, `useCollection`
-- `useApprove`, `useBalance`, `useABIs`, `useZunoLogger`
-- `ZunoDevTools`
+| File | LOC | Purpose |
+|------|-----|---------|
+| `BaseModule.ts` | ~150 | Abstract base class (template method pattern) |
+| `ExchangeModule.ts` | ~400 | NFT listing, buying, canceling |
+| `CollectionModule.ts` | ~450 | Collection creation, minting, allowlist |
+| `AuctionModule.ts` | ~500 | English/Dutch auctions, bidding, settlement |
 
-### Feature Entries
-- `/exchange` - ExchangeModule + types
-- `/auction` - AuctionModule + types
-- `/collection` - CollectionModule + types
-- `/logger` - ZunoLogger, logStore
-- `/testing` - Mock factories, test utilities
+**BaseModule Dependencies (7 injected):**
+1. `ZunoAPIClient` - API communication
+2. `ContractRegistry` - Contract access
+3. `QueryClient` - Caching
+4. `NetworkType` - Network configuration
+5. `Logger` - Logging
+6. `EventEmitter` - Event emission
+7. `Provider/Signer` - Web3 interaction
 
----
+**Module Features:**
 
-## Code Metrics & Standards
+**ExchangeModule:**
+- List NFTs (single + batch up to 20)
+- Buy NFTs from listings
+- Cancel listings
+- Query active listings
+- Query listings by seller
 
-### File Size Distribution
-- Most files: < 200 lines (guideline)
-- Core files (ZunoSDK, modules): 400-950 lines (justified complexity)
-- Utility files: 30-180 lines (focused)
-- React hooks: 15-175 lines (single purpose)
+**CollectionModule:**
+- Create ERC721/ERC1155 collections
+- Mint NFTs (with payment)
+- Allowlist management (add/remove addresses)
+- Set allowlist-only mode
+- Query collection info
+- Query user-owned tokens
+- Check allowlist status
 
-### TypeScript Compliance
-- Strict mode: 100% enabled
-- No `any` types in public APIs
-- Full type coverage for contracts
-- Generic type constraints documented
-- JSDoc on all public exports
-
-### Error Handling
-- 50+ specific error codes
-- Try-catch in all async operations
-- ZunoSDKError with context
-- Original error preservation
-- User-facing suggestions
-
-### Testing
-- 70% coverage threshold
-- Jest with ts-jest
-- React Testing Library for components
-- Mock factories for entities
-- Global axios mock setup
-- Integration tests for edge cases
+**AuctionModule:**
+- Create English auctions (single + batch)
+- Create Dutch auctions (single + batch)
+- Place bids (English)
+- Buy now (Dutch)
+- Cancel auctions (single + batch)
+- Settle auctions
+- Calculate Dutch auction price
+- Query auction details
+- Query pending refunds
 
 ---
 
-## Important Files to Know
+### 3. React Integration (`src/react/`)
 
-| File | Purpose | Impact |
-|------|---------|--------|
-| `src/core/ZunoSDK.ts` | Main SDK orchestrator | Central to all operations |
-| `src/types/config.ts` | Configuration types | Defines SDK config contract |
-| `src/modules/BaseModule.ts` | Module base class | All modules extend this |
-| `src/react/hooks/useZunoSDK.ts` | SDK access | Used by all other hooks |
-| `src/utils/errors.ts` | Error definitions | Referenced throughout |
-| `src/utils/logger.ts` | Logging system | Debugging and monitoring |
-| `package.json` | Entry points and build | Controls module access |
+**Purpose:** React hooks and providers for UI development
 
----
+#### Hooks (`src/react/hooks/` - 11 files)
 
-## Performance Characteristics
+| Hook | Purpose | Returns |
+|------|---------|---------|
+| `useZunoSDK` | Access SDK instance | `ZunoSDK` |
+| `useZunoLogger` | Access logger | `Logger` |
+| `useWallet` | Wallet connection | `{ address, connect, isConnected, connector }` |
+| `useBalance` | ETH/ERC20 balance | `{ balance, refetch }` |
+| `useExchange` | Exchange operations | `{ listNFT, buyNFT, cancelListing }` (mutations) |
+| `useCollection` | Collection operations | `{ createERC721, mintERC721, addToAllowlist, ... }` |
+| `useAuction` | Auction operations | `{ createEnglishAuction, placeBid, buyNow, ... }` |
+| `useABIs` | ABI caching | `{ prefetch, initialize, getCached }` |
+| `useApprove` | ERC721 approval | `{ approve, isApproved }` |
+| `useSignerSync` | Wagmi signer sync | Syncs wagmi signer to SDK |
+| `useListing` | Single listing query | `{ listing, isLoading, error }` |
+| `useListings` | Paginated listings | `{ items, total, isLoading, error }` |
+| `useListingsBySeller` | Seller's listings | `{ items, isLoading, error }` |
+| `useCollectionInfo` | Collection metadata | `{ collection, isLoading, error }` |
+| `useCreatedCollections` | User's collections | `{ collections, isLoading, error }` |
+| `useUserOwnedTokens` | User's NFTs | `{ tokens, isLoading, error }` |
+| `useIsInAllowlist` | Allowlist status | `{ isAllowed, isLoading, error }` |
+| `useIsAllowlistOnly` | Allowlist mode | `{ isAllowlistOnly, isLoading, error }` |
+| `useAuctionDetails` | Auction metadata | `{ auction, isLoading, error }` |
+| `useDutchAuctionPrice` | Current Dutch price | `{ price, calculatePrice }` |
+| `usePendingRefund` | Bid refund status | `{ refund, isLoading, error }` |
 
-### Initial Load
-- ZunoSDK initialization: ~10ms
-- Module lazy loading: ~5ms on first access
-- Provider creation: varies (RPC dependent)
+**Total Hooks:** 21+
 
-### Runtime
-- API call caching via React Query
-- Contract registry lazy loading
-- Batch operations for efficiency
-- Exponential backoff retry strategy
-- Gas estimation on-demand
+#### Providers (`src/react/provider/`)
 
-### Memory
-- Singleton SDK instance
-- QueryClient with configurable GC
-- Log buffer: 200 entries max
-- Transaction store: unbounded but in-memory
+| Provider | Purpose |
+|----------|---------|
+| `ZunoProvider` | All-in-one provider (Wagmi config + SDK + QueryClient) |
+| `ZunoContextProvider` | SDK instance context for manual SDK initialization |
+| `WagmiSignerSync` | Syncs Wagmi signer to SDK (auto-updates on wallet change) |
 
----
+#### Components (`src/react/components/`)
 
-## Notable Implementation Details
+| Component | Purpose |
+|-----------|---------|
+| `ZunoDevTools` | In-app debugging panel with 4 tabs: Logs, Transactions, Cache, Network |
 
-### Singleton Pattern
-- Module-level `_singletonInstance` variable
-- `getInstance()` factory method
-- Supports both React and non-React contexts
-- Provider/signer can be updated at runtime
+**DevTools Features:**
+- Real-time log viewing (filtered by level)
+- Transaction history with status
+- React Query cache inspection
+- Network status display
+- Configurable position (bottom-right, bottom-left, etc.)
+- Max log entries limit (default: 200)
 
-### Lazy Module Loading
-- Modules created on first property access
-- Getter pattern with cached instance
-- New modules easily added (offers, bundles)
+#### Utilities (`src/react/utils/`)
 
-### React Query Integration
-- Default cache: 5 min (stale), 10 min (GC)
-- Extended cache: 30 min (stale), 1 hour (GC)
-- Query key factories for consistency
-- Mutation invalidation on write success
-
-### Custom Logger Integration
-- No hard dependency on logging library
-- Pluggable custom logger interface
-- Sentry, DataDog, LogRocket compatible
-- In-memory store for DevTools
-
----
-
-## Future Extension Points
-
-1. **New Modules:** Offers, Bundles (structure ready)
-2. **Network Support:** Testnet, Polygon, Arbitrum integration
-3. **ABI Management:** Custom ABI support
-4. **Event Indexing:** Subgraph integration
-5. **Analytics:** Market metrics and user analytics
-6. **WebSocket:** Real-time event subscriptions
-7. **Offline Mode:** Transaction queue with sync
+| File | Purpose |
+|------|---------|
+| `chains.ts` | Convert network names to Wagmi Chain objects |
+| `connectors.ts` | Create WalletConnect, MetaMask, Coinbase Wallet connectors |
+| `index.ts` | Utility exports |
 
 ---
 
-## Version & Release Info
+### 4. Type Definitions (`src/types/`)
 
-- **Current Version:** 2.0.1-beta-claude.1
-- **Major Version:** 2 (React Query 5, Wagmi 2, ethers 6)
-- **Release Strategy:** Semantic versioning with beta tags
-- **CI/CD:** GitHub Actions with semantic-release
-- **Package Manager:** npm (npmjs.org)
-- **Node Requirement:** >= 18.0.0 (LTS)
+**Purpose:** TypeScript types for SDK entities and configurations
+
+| File | LOC | Purpose |
+|------|-----|---------|
+| `config.ts` | ~150 | SDK configuration, network types, cache settings |
+| `entities.ts` | ~200 | Listing, Collection, Auction, Offer entities |
+| `contracts.ts` | ~100 | Contract parameter types |
+| `api.ts` | ~100 | API request/response types |
+| `index.ts` | ~50 | Type exports barrel file |
+
+**Key Types:**
+- `ZunoSDKConfig`: SDK initialization options
+- `Listing`: NFT listing entity
+- `Collection`: NFT collection entity
+- `Auction`: Auction entity (English/Dutch)
+- `NetworkType`: Supported networks (string or number)
+- `LoggerConfig`: Logging configuration
+
+---
+
+### 5. Utilities (`src/utils/`)
+
+**Purpose:** Shared utility functions and helpers
+
+| File | LOC | Purpose |
+|------|-----|---------|
+| `logger.ts` | ~250 | ZunoLogger class (5 levels, custom logger support) |
+| `errors.ts` | ~150 | ZunoSDKError class, error codes categorization |
+| `transactions.ts` | ~200 | TransactionManager (retry, gas estimation, submission) |
+| `events.ts` | ~50 | EventEmitter class (pub/sub pattern) |
+| `batch.ts` | ~100 | Batch operation helpers (chunk arrays, max 20) |
+| `batchProgress.ts` | ~100 | BatchProgressTracker (progress tracking) |
+| `logStore.ts` | ~100 | In-memory log store with subscriptions |
+| `transactionStore.ts` | ~100 | In-memory transaction store |
+| `helpers.ts` | ~50 | Utility functions (formatting, validation) |
+
+**Error Categories:**
+- `NETWORK`: RPC/network failures
+- `CONTRACT`: Contract call failures
+- `VALIDATION`: Input validation failures
+- `AUTHENTICATION`: API key failures
+- `NOT_FOUND`: Resource not found
+- `UNKNOWN`: Unexpected errors
+
+---
+
+### 6. Module Exports
+
+**Purpose:** Public API entry points for tree-shaking
+
+#### Main SDK (`src/index.ts`)
+```typescript
+export { ZunoSDK, getSdk, getLogger } from './core/ZunoSDK';
+export { ZunoLogger } from './utils/logger';
+export type * from './types';
+export { logStore, transactionStore } from './utils';
+```
+
+#### React (`src/react/index.ts`)
+Exports all hooks, providers, components, and utilities
+
+#### Exchange (`src/exchange/index.ts`)
+Exports `ExchangeModule` for standalone use
+
+#### Auction (`src/auction/index.ts`)
+Exports `AuctionModule` for standalone use
+
+#### Collection (`src/collection/index.ts`)
+Exports `CollectionModule` for standalone use
+
+#### Logger (`src/logger/index.ts`)
+Exports `ZunoLogger` for standalone logging
+
+#### Testing (`src/testing/index.ts`)
+Exports mock factories and testing utilities
+
+---
+
+## Entry Points & Exports
+
+### Package Exports (7 entry points)
+
+| Export Path | Types | Import | Require | Purpose |
+|-------------|-------|--------|---------|---------|
+| `.` | `./dist/index.d.ts` | `./dist/index.mjs` | `./dist/index.js` | Main SDK |
+| `./react` | `./dist/react/index.d.ts` | `./dist/react/index.mjs` | `./dist/react/index.js` | React integration |
+| `./exchange` | `./dist/exchange/index.d.ts` | `./dist/exchange/index.mjs` | `./dist/exchange/index.js` | Exchange module |
+| `./auction` | `./dist/auction/index.d.ts` | `./dist/auction/index.mjs` | `./dist/auction/index.js` | Auction module |
+| `./collection` | `./dist/collection/index.d.ts` | `./dist/collection/index.mjs` | `./dist/collection/index.js` | Collection module |
+| `./logger` | `./dist/logger/index.d.ts` | `./dist/logger/index.mjs` | `./dist/logger/index.js` | Logger utility |
+| `./testing` | `./dist/testing/index.d.ts` | `./dist/testing/index.mjs` | `./dist/testing/index.js` | Testing utilities |
+
+### Build Output Format
+
+**tsup Configuration:**
+- **Formats:** CommonJS (`.js`) + ESM (`.mjs`)
+- **Declarations:** `.d.ts` with inline source maps
+- **Source Maps:** `.js.map` and `.mjs.map`
+- **Banner:** `"use client";` for all outputs (Next.js app directory support)
+- **External Dependencies:** react, ethers, wagmi, viem, axios, @tanstack/*
+- **Tree Shaking:** Enabled (treeshake: true)
+- **Code Splitting:** Disabled (splitting: false) - single file per entry point
+
+---
+
+## Key Components & Their Purposes
+
+### 1. ZunoSDK (Core)
+
+**Purpose:** Singleton SDK instance with lazy-loaded modules
+
+**Key Methods:**
+- `getInstance(config)`: Get/create singleton instance
+- `get exchange()`: Lazy-load ExchangeModule
+- `get collection()`: Lazy-load CollectionModule
+- `get auction()`: Lazy-load AuctionModule
+- `setProvider(provider)`: Update Ethereum provider
+- `setSigner(signer)`: Update signer
+- `getConfig()`: Get current configuration
+- `getNetwork()`: Get current network
+
+**Design Pattern:** Singleton + Lazy Loading
+
+---
+
+### 2. ZunoAPIClient
+
+**Purpose:** HTTP client for Registry API
+
+**Key Methods:**
+- `getABI(contractName)`: Fetch contract ABI
+- `getContractAddress(contractName, network)`: Fetch deployment address
+- `getNetworks()`: List supported networks
+
+**Features:**
+- Axios-based HTTP client
+- API key authentication (Bearer token)
+- TanStack Query integration for caching
+- Error handling with retry logic
+
+---
+
+### 3. ContractRegistry
+
+**Purpose:** Cache and manage contract instances
+
+**Key Methods:**
+- `getContract(address, abi)`: Get cached contract instance
+- `getContractByName(name, network)`: Get contract by name
+- `invalidateCache()`: Clear all cached contracts
+
+**Features:**
+- TanStack Query for caching (5-min TTL)
+- ERC165 interface verification
+- Automatic ABI fetching
+- Contract instance pooling
+
+---
+
+### 4. ExchangeModule
+
+**Purpose:** NFT marketplace operations
+
+**Key Methods:**
+- `listNFT(params)`: Create listing
+- `buyNFT(listingId)`: Buy from listing
+- `cancelListing(listingId)`: Cancel listing
+- `getActiveListings(page, limit)`: Query active listings
+- `getListingsBySeller(address, page, limit)`: Query seller's listings
+- `batchListNFTs(params)`: Batch list (max 20)
+
+**Contract:** ERC721NFTExchange (Zuno-deployed)
+
+---
+
+### 5. CollectionModule
+
+**Purpose:** NFT collection management
+
+**Key Methods:**
+- `createERC721Collection(params)`: Deploy ERC721 collection
+- `createERC1155Collection(params)`: Deploy ERC1155 collection
+- `mintERC721(params)`: Mint ERC721 with payment
+- `mintERC1155(params)`: Mint ERC1155 with payment
+- `addToAllowlist(params)`: Add addresses to allowlist
+- `removeFromAllowlist(params)`: Remove addresses
+- `setAllowlistOnly(params)`: Enable/disable allowlist-only mode
+- `isInAllowlist(params)`: Check allowlist status
+- `getCollectionInfo(address)`: Query collection metadata
+- `getUserOwnedTokens(address)`: Query user's NFTs
+- `batchMintERC721(params)`: Batch mint (max 20)
+
+**Contracts:** ERC721CollectionFactory, ERC1155CollectionFactory (Zuno-deployed)
+
+---
+
+### 6. AuctionModule
+
+**Purpose:** Auction system operations
+
+**Key Methods:**
+- `createEnglishAuction(params)`: Create English auction
+- `createDutchAuction(params)`: Create Dutch auction
+- `placeBid(params)`: Bid on English auction
+- `buyNow(auctionId)`: Buy from Dutch auction
+- `cancelAuction(auctionId)`: Cancel auction
+- `settleAuction(auctionId)`: Settle completed auction
+- `getAuctionDetails(auctionId)`: Query auction metadata
+- `calculateDutchPrice(auctionId)`: Calculate current Dutch price
+- `batchCreateEnglishAuction(params)`: Batch create (max 20)
+- `batchCancelAuction(auctionIds)`: Batch cancel (max 20)
+- `getPendingRefund(auctionId, bidder)`: Query pending refund
+
+**Contracts:** EnglishAuction, DutchAuction (Zuno-deployed)
+
+---
+
+### 7. React Hooks
+
+**Purpose:** React integration for marketplace operations
+
+**Design Patterns:**
+- **Mutation Hooks:** Return `UseMutationResult` from TanStack Query
+- **Query Hooks:** Return `UseQueryResult` from TanStack Query
+- **Optimization:** useCallback for stable function references
+- **Error Handling:** Automatic error propagation to UI
+
+**Example:**
+```typescript
+const { listNFT } = useExchange();
+// listNFT.mutateAsync(...) returns { listingId, tx }
+```
+
+---
+
+## Testing Structure
+
+### Test Files (`src/__tests__/` - 20+ files)
+
+**Unit Tests:**
+- `core/`: ZunoSDK, ZunoAPIClient, ContractRegistry
+- `modules/`: ExchangeModule, CollectionModule, AuctionModule, BaseModule
+- `utils/`: All utility functions (errors, logger, transactions, etc.)
+- `react/`: All React hooks (useExchange, useCollection, useAuction, etc.)
+
+**Integration Tests:**
+- `integration/batch-operations.test.ts`: Batch operation workflows
+
+**Edge Cases:**
+- `edge-cases.test.ts`: Error handling, retries, gas estimation
+
+**Test Setup:**
+- Jest configuration in `tests/setup/jest.config.js`
+- ts-jest transformer
+- @testing-library/react for hooks
+- jsdom environment for React tests
+
+**Coverage Target:** 80%
+
+---
+
+## File Count & LOC Statistics
+
+### By Directory
+
+| Directory | Files | LOC | Purpose |
+|-----------|-------|-----|---------|
+| `src/core/` | 3 | ~900 | Core SDK infrastructure |
+| `src/modules/` | 4 | ~1,500 | Business logic |
+| `src/react/` | 15+ | ~2,500 | React integration |
+| `src/types/` | 6 | ~600 | Type definitions |
+| `src/utils/` | 9 | ~1,200 | Utilities |
+| `src/__tests__/` | 20+ | ~2,500 | Tests |
+| **Total** | **57+** | **~9,185** | |
+
+### By Module
+
+| Module | LOC | Percentage |
+|--------|-----|------------|
+| React Integration | ~2,500 | 27% |
+| Tests | ~2,500 | 27% |
+| Core + Modules | ~2,400 | 26% |
+| Types + Utils | ~1,800 | 20% |
+
+---
+
+## Dependencies Analysis
+
+### Runtime Dependencies (6 packages)
+
+| Package | Version | Purpose | Import Usage |
+|---------|---------|---------|--------------|
+| ethers | ^6.13.0 | Web3 library | Core + Modules |
+| @tanstack/react-query | ^5.59.0 | React data fetching | React hooks |
+| @tanstack/query-core | ^5.59.0 | Core query logic | Core SDK |
+| wagmi | ^2.12.0 | React Web3 hooks | React integration |
+| viem | ^2.21.0 | TypeScript Ethereum | Wagmi dependency |
+| axios | ^1.7.0 | HTTP client | API client |
+
+### Peer Dependencies (2 packages)
+
+| Package | Version | Required For |
+|---------|---------|--------------|
+| react | ^18.0.0 \|\| ^19.0.0 | React integration |
+| react-dom | ^18.0.0 \|\| ^19.0.0 | React DOM |
+
+### Dev Dependencies (15+ packages)
+
+Key dev dependencies:
+- **TypeScript** ^5.6.0: Type checking
+- **tsup** ^8.3.0: Bundling
+- **Jest** ^29.7.0: Testing
+- **ESLint** ^9.0.0: Linting
+- **@testing-library/react** ^16.0.0: React testing
+
+---
+
+## Key Design Patterns
+
+### 1. Singleton Pattern
+- **Used By:** ZunoSDK
+- **Purpose:** Single SDK instance per application
+- **Implementation:** Module-level private variable with `getInstance()` method
+
+### 2. Lazy Loading
+- **Used By:** ExchangeModule, CollectionModule, AuctionModule
+- **Purpose:** Initialize modules only when accessed
+- **Implementation:** Getters that check `if (!this._module) this._module = new Module()`
+
+### 3. Template Method Pattern
+- **Used By:** BaseModule
+- **Purpose:** Common module structure with specific implementations
+- **Implementation:** Abstract base class with 7 injected dependencies
+
+### 4. Dependency Injection
+- **Used By:** All modules
+- **Purpose:** Testability and loose coupling
+- **Implementation:** Constructor injection of dependencies
+
+### 5. Observer Pattern
+- **Used By:** EventEmitter, logStore, transactionStore
+- **Purpose:** Event-driven communication
+- **Implementation:** Pub/sub with subscription/unsubscription
+
+### 6. Factory Pattern
+- **Used By:** ContractRegistry
+- **Purpose:** Create and cache contract instances
+- **Implementation:** `getContract(address, abi)` factory method
+
+---
+
+## Import/Export Patterns
+
+### Barrel Exports
+All modules use barrel exports (`index.ts`) for clean public APIs:
+
+```typescript
+// src/exchange/index.ts
+export { ExchangeModule } from './ExchangeModule';
+export type * from './types';
+```
+
+### Tree-Shaking Support
+- Separate entry points for each module
+- ESM format enables tree-shaking
+- Use named exports, not default exports
+
+### Re-export Patterns
+```typescript
+// Main SDK re-exports modules
+export { ExchangeModule } from './exchange';
+export { CollectionModule } from './collection';
+export { AuctionModule } from './auction';
+```
+
+---
+
+## Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `tsconfig.json` | TypeScript compiler configuration |
+| `tsconfig.build.json` | Build-specific TypeScript config |
+| `tsconfig.test.json` | Test-specific TypeScript config |
+| `tsup.config.ts` | Bundle configuration (7 entry points) |
+| `eslint.config.js` | ESLint rules |
+| `jest.config.js` | Jest test configuration |
+| `.env.example` | Environment variable template |
+| `.releaserc.cjs` | semantic-release configuration |
+
+---
+
+## Summary
+
+The Zuno Marketplace SDK is a well-structured, modular TypeScript library with clear separation of concerns. The codebase follows best practices including:
+
+- **Clean Architecture:** Core → Modules → React → Utils
+- **Design Patterns:** Singleton, Lazy Loading, Template Method, Dependency Injection
+- **Type Safety:** Full TypeScript coverage with strict mode
+- **Testing:** Comprehensive unit and integration tests
+- **Build System:** Modern bundling with tree-shaking support
+- **Developer Experience:** React hooks, DevTools, logging
+
+The ~9,185 lines of code are distributed across core functionality (26%), React integration (27%), tests (27%), and utilities/types (20%), resulting in a balanced, maintainable codebase.
