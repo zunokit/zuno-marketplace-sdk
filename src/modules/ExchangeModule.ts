@@ -445,7 +445,7 @@ export class ExchangeModule extends BaseModule {
    * Get listings by collection
    */
   async getListings(collectionAddress: string): Promise<Listing[]> {
-    validateAddress(collectionAddress);
+    const normalizedCollection = validateAddress(collectionAddress);
 
     const provider = this.ensureProvider();
     const exchangeContract = await this.contractRegistry.getContract(
@@ -458,7 +458,7 @@ export class ExchangeModule extends BaseModule {
     const listingIds = await txManager.callContract<string[]>(
       exchangeContract,
       'getListingsByCollection',
-      [collectionAddress]
+      [normalizedCollection]
     );
 
     return Promise.all(listingIds.map((id) => this.getListing(id)));
@@ -468,7 +468,7 @@ export class ExchangeModule extends BaseModule {
    * Get listings by seller
    */
   async getListingsBySeller(seller: string): Promise<Listing[]> {
-    validateAddress(seller, 'seller');
+    const normalizedSeller = validateAddress(seller, 'seller');
 
     const provider = this.ensureProvider();
     const exchangeContract = await this.contractRegistry.getContract(
@@ -481,7 +481,7 @@ export class ExchangeModule extends BaseModule {
     const listingIds = await txManager.callContract<string[]>(
       exchangeContract,
       'getListingsBySeller',
-      [seller]
+      [normalizedSeller]
     );
 
     return Promise.all(listingIds.map((id) => this.getListing(id)));
@@ -539,13 +539,13 @@ export class ExchangeModule extends BaseModule {
       throw this.error(ErrorCodes.INVALID_PARAMETER, 'Token IDs and prices arrays must have same length');
     }
 
-    validateAddress(collectionAddress);
+    const normalizedCollection = validateAddress(collectionAddress);
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
     const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
 
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
     const exchangeContract = await this.contractRegistry.getContract(
       'ERC721NFTExchange',
@@ -560,7 +560,7 @@ export class ExchangeModule extends BaseModule {
     const tx = await txManager.sendTransaction(
       exchangeContract,
       'batchListNFT',
-      [collectionAddress, tokenIds, pricesInWei, duration],
+      [normalizedCollection, tokenIds, pricesInWei, duration],
       { ...options, module: 'Exchange' }
     );
 

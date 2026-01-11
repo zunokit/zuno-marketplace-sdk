@@ -180,7 +180,7 @@ export class AuctionModule extends BaseModule {
       options,
     } = params;
 
-    validateAddress(collectionAddress, "collectionAddress");
+    const normalizedCollection = validateAddress(collectionAddress, "collectionAddress");
     validateTokenId(tokenId);
     validateAmount(startingBid, "startingBid");
     validateDuration(duration);
@@ -194,7 +194,7 @@ export class AuctionModule extends BaseModule {
       (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
 
     // Ensure NFT is approved for AuctionFactory
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
     // Get AuctionFactory contract (handles NFT transfers and creates auctions)
     const auctionFactory = await this.contractRegistry.getContract(
@@ -213,7 +213,7 @@ export class AuctionModule extends BaseModule {
       auctionFactory,
       "createEnglishAuction",
       [
-        collectionAddress,
+        normalizedCollection,
         tokenId,
         amount,
         startingBidWei,
@@ -279,7 +279,7 @@ export class AuctionModule extends BaseModule {
       options,
     } = params;
 
-    validateAddress(collectionAddress, "collectionAddress");
+    const normalizedCollection = validateAddress(collectionAddress, "collectionAddress");
     validateTokenId(tokenId);
     validateAmount(startPrice, "startPrice");
     validateAmount(endPrice, "endPrice");
@@ -294,7 +294,7 @@ export class AuctionModule extends BaseModule {
       (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
 
     // Ensure NFT is approved for AuctionFactory
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
     // Get AuctionFactory contract (handles NFT transfers and creates auctions)
     const auctionFactory = await this.contractRegistry.getContract(
@@ -400,7 +400,7 @@ export class AuctionModule extends BaseModule {
       options,
     } = params;
 
-    validateAddress(collectionAddress, "collectionAddress");
+    const normalizedCollection = validateAddress(collectionAddress, "collectionAddress");
     validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, "tokenIds");
     validateAmount(startingBid, "startingBid");
     validateDuration(duration);
@@ -412,7 +412,7 @@ export class AuctionModule extends BaseModule {
       : ethers.ZeroAddress;
 
     // Ensure NFT is approved for AuctionFactory
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
     const auctionFactory = await this.contractRegistry.getContract(
       "AuctionFactory",
@@ -431,7 +431,7 @@ export class AuctionModule extends BaseModule {
       auctionFactory,
       "batchCreateEnglishAuction",
       [
-        collectionAddress,
+        normalizedCollection,
         tokenIdsBigInt,
         amountsArray,
         startingBidWei,
@@ -485,7 +485,7 @@ export class AuctionModule extends BaseModule {
       options,
     } = params;
 
-    validateAddress(collectionAddress, "collectionAddress");
+    const normalizedCollection = validateAddress(collectionAddress, "collectionAddress");
     validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, "tokenIds");
     validateAmount(startPrice, "startPrice");
     validateAmount(endPrice, "endPrice");
@@ -498,7 +498,7 @@ export class AuctionModule extends BaseModule {
       : ethers.ZeroAddress;
 
     // Ensure NFT is approved for AuctionFactory
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
     const auctionFactory = await this.contractRegistry.getContract(
       "AuctionFactory",
@@ -921,7 +921,7 @@ export class AuctionModule extends BaseModule {
    */
   async getPendingRefund(auctionId: string, bidder: string): Promise<string> {
     validateTokenId(auctionId, "auctionId");
-    validateAddress(bidder, "bidder");
+    const normalizedBidder = validateAddress(bidder, "bidder");
 
     const provider = this.ensureProvider();
     const txManager = this.ensureTxManager();
@@ -935,7 +935,7 @@ export class AuctionModule extends BaseModule {
     const refund = await txManager.callContract<bigint>(
       auctionFactory,
       "getPendingRefund",
-      [auctionId, bidder]
+      [auctionId, normalizedBidder]
     );
 
     return ethers.formatEther(refund);

@@ -200,16 +200,29 @@ export function assert(
 }
 
 /**
- * Validate Ethereum address
+ * Validate Ethereum address and return normalized form
+ * @param address - The address to validate
+ * @param paramName - Parameter name for error messages
+ * @returns The normalized address (lowercase)
+ * @throws {ZunoSDKError} If address is invalid format
+ *
+ * Note: This validates address format and normalizes to lowercase.
+ * Full EIP-55 checksum validation requires Keccak-256 and is not implemented here.
  */
-export function validateAddress(address: string, paramName = 'address'): void {
+export function validateAddress(address: string, paramName = 'address'): string {
+  // Basic format check first
   const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 
-  assert(
-    typeof address === 'string' && ADDRESS_REGEX.test(address),
-    ErrorCodes.INVALID_ADDRESS,
-    `Invalid ${paramName}: ${address}`
-  );
+  if (typeof address !== 'string' || !ADDRESS_REGEX.test(address)) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_ADDRESS,
+      `Invalid ${paramName}: ${address}. Address must be a 42-character hex string starting with 0x.`
+    );
+  }
+
+  // Normalize to lowercase for consistency
+  const addressLower = address.toLowerCase();
+  return addressLower;
 }
 
 /**
