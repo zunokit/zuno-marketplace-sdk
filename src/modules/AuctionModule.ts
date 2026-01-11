@@ -24,6 +24,7 @@ import {
   validateAmount,
   validateDuration,
 } from '../utils/errors';
+import { validateBatchSize, BATCH_LIMITS } from '../utils/batch';
 
 
 /**
@@ -49,22 +50,46 @@ import {
  * ```
  */
 export class AuctionModule extends BaseModule {
+  private approvalCache = new Map<string, boolean>();
+
   private log(message: string, data?: unknown) {
     this.logger.debug(message, { module: 'Auction', data });
   }
 
   /**
+   * Clear the approval status cache
+   * 
+   * Use this when you need to force re-checking approval status,
+   * for example after revoking approvals or switching accounts.
+   * 
+   * @example
+   * ```typescript
+   * sdk.auction.clearApprovalCache();
+   * ```
+   */
+  clearApprovalCache(): void {
+    this.approvalCache.clear();
+    this.log('Approval cache cleared');
+  }
+
+  /**
    * Ensure NFT collection is approved for AuctionFactory
-   * Checks approval status and approves if needed
+   * Checks cache first, then RPC if needed, and grants approval if required
    */
   private async ensureApproval(
     collectionAddress: string,
     ownerAddress: string
   ): Promise<void> {
+    const cacheKey = `${collectionAddress.toLowerCase()}-${ownerAddress.toLowerCase()}`;
+
+    if (this.approvalCache.get(cacheKey)) {
+      this.log('Approval cache hit', { collectionAddress, ownerAddress });
+      return;
+    }
+
     const provider = this.ensureProvider();
     const signer = this.ensureSigner();
 
-    // Get AuctionFactory address from API
     const auctionFactory = await this.contractRegistry.getContract(
       'AuctionFactory',
       this.getNetworkId(),
@@ -72,7 +97,6 @@ export class AuctionModule extends BaseModule {
     );
     const operatorAddress = await auctionFactory.getAddress();
 
-    // Check if already approved
     const erc721Abi = [
       'function isApprovedForAll(address owner, address operator) view returns (bool)',
       'function setApprovalForAll(address operator, bool approved)',
@@ -81,12 +105,17 @@ export class AuctionModule extends BaseModule {
     
     const isApproved = await nftContract.isApprovedForAll(ownerAddress, operatorAddress);
     
-    if (!isApproved) {
-      this.log('Approving AuctionFactory for collection', { collectionAddress, operatorAddress });
-      const tx = await nftContract.setApprovalForAll(operatorAddress, true);
-      await tx.wait();
-      this.log('Approval confirmed');
+    if (isApproved) {
+      this.approvalCache.set(cacheKey, true);
+      this.log('Approval already granted, cached', { collectionAddress, ownerAddress });
+      return;
     }
+
+    this.log('Approving AuctionFactory for collection', { collectionAddress, operatorAddress });
+    const tx = await nftContract.setApprovalForAll(operatorAddress, true);
+    await tx.wait();
+    this.approvalCache.set(cacheKey, true);
+    this.log('Approval confirmed and cached');
   }
 
   /**
@@ -272,11 +301,31 @@ export class AuctionModule extends BaseModule {
     // Drop per hour = totalDropBps / durationInHours
     const durationInHours = BigInt(Math.max(1, Math.ceil(duration / 3600)));
     const totalDropBps = ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
-    let priceDropPerHourBps = totalDropBps / durationInHours;
+    const originalPriceDropPerHourBps = totalDropBps / durationInHours;
+    let priceDropPerHourBps = originalPriceDropPerHourBps;
     
-    // Clamp to valid range: 100-5000 basis points
-    if (priceDropPerHourBps < 100n) priceDropPerHourBps = 100n;
-    if (priceDropPerHourBps > 5000n) priceDropPerHourBps = 5000n;
+    // Clamp to valid range: 100-5000 basis points with warning
+    if (priceDropPerHourBps < 100n || priceDropPerHourBps > 5000n) {
+      const clampedValue = priceDropPerHourBps < 100n ? 100n : 5000n;
+      this.logger.warn('Dutch auction price drop rate adjusted', {
+        module: 'Auction',
+        data: {
+          originalBpsPerHour: Number(originalPriceDropPerHourBps),
+          clampedBpsPerHour: Number(clampedValue),
+          allowedRange: '100-5000 bps/hour',
+          reason: priceDropPerHourBps < 100n
+            ? 'Price drop too slow for contract constraints'
+            : 'Price drop too fast for contract constraints',
+          recommendation: priceDropPerHourBps < 100n
+            ? 'Increase price difference or reduce duration'
+            : 'Decrease price difference or increase duration',
+          startPrice,
+          endPrice,
+          durationHours: Number(durationInHours),
+        },
+      });
+      priceDropPerHourBps = clampedValue;
+    }
 
     const receipt = await txManager.sendTransaction(
       auctionFactory,
@@ -337,8 +386,7 @@ export class AuctionModule extends BaseModule {
     } = params;
 
     validateAddress(collectionAddress, 'collectionAddress');
-    if (tokenIds.length === 0) throw this.error('INVALID_AMOUNT', 'tokenIds array cannot be empty');
-    if (tokenIds.length > 20) throw this.error('INVALID_AMOUNT', 'Maximum 20 auctions per batch');
+    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, 'tokenIds');
     validateAmount(startingBid, 'startingBid');
     validateDuration(duration);
 
@@ -421,8 +469,7 @@ export class AuctionModule extends BaseModule {
     } = params;
 
     validateAddress(collectionAddress, 'collectionAddress');
-    if (tokenIds.length === 0) throw this.error('INVALID_AMOUNT', 'tokenIds array cannot be empty');
-    if (tokenIds.length > 20) throw this.error('INVALID_AMOUNT', 'Maximum 20 auctions per batch');
+    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, 'tokenIds');
     validateAmount(startPrice, 'startPrice');
     validateAmount(endPrice, 'endPrice');
     validateDuration(duration);
@@ -450,9 +497,32 @@ export class AuctionModule extends BaseModule {
     // Calculate priceDropPerHour in basis points
     const durationInHours = BigInt(Math.max(1, Math.ceil(duration / 3600)));
     const totalDropBps = ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
-    let priceDropPerHourBps = totalDropBps / durationInHours;
-    if (priceDropPerHourBps < 100n) priceDropPerHourBps = 100n;
-    if (priceDropPerHourBps > 5000n) priceDropPerHourBps = 5000n;
+    const originalPriceDropPerHourBps = totalDropBps / durationInHours;
+    let priceDropPerHourBps = originalPriceDropPerHourBps;
+    
+    // Clamp to valid range: 100-5000 basis points with warning
+    if (priceDropPerHourBps < 100n || priceDropPerHourBps > 5000n) {
+      const clampedValue = priceDropPerHourBps < 100n ? 100n : 5000n;
+      this.logger.warn('Dutch auction price drop rate adjusted', {
+        module: 'Auction',
+        data: {
+          originalBpsPerHour: Number(originalPriceDropPerHourBps),
+          clampedBpsPerHour: Number(clampedValue),
+          allowedRange: '100-5000 bps/hour',
+          reason: priceDropPerHourBps < 100n
+            ? 'Price drop too slow for contract constraints'
+            : 'Price drop too fast for contract constraints',
+          recommendation: priceDropPerHourBps < 100n
+            ? 'Increase price difference or reduce duration'
+            : 'Decrease price difference or increase duration',
+          startPrice,
+          endPrice,
+          durationHours: Number(durationInHours),
+          batchSize: tokenIds.length,
+        },
+      });
+      priceDropPerHourBps = clampedValue;
+    }
 
     const receipt = await txManager.sendTransaction(
       auctionFactory,
@@ -656,27 +726,34 @@ export class AuctionModule extends BaseModule {
   /**
    * Cancel multiple auctions in a single transaction
    *
-   * @param auctionIds - Array of auction IDs to cancel
-   * @param options - Optional transaction options
+   * This method allows sellers to batch cancel their active auctions.
+   * Only the auction seller can cancel their auctions.
+   * Cancelling returns NFTs to sellers and refunds any pending bids.
+   *
+   * @param auctionIds - Array of auction IDs to cancel (max 20)
+   * @param options - Optional transaction options (gas limit, gas price, etc.)
    *
    * @returns Promise resolving to cancelled count and transaction receipt
    *
+   * @throws {ZunoSDKError} INVALID_PARAMETER - If auctionIds array is empty
+   * @throws {ZunoSDKError} BATCH_SIZE_EXCEEDED - If auctionIds exceeds max batch size (20)
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller doesn't own any of the auctions
+   *
    * @example
    * ```typescript
-   * const { cancelledCount, tx } = await sdk.auction.batchCancelAuction(["1", "2", "3"]);
-   * console.log(`Cancelled ${cancelledCount} auctions`);
+   * // Cancel multiple auctions at once
+   * const { cancelledCount, tx } = await sdk.auction.batchCancelAuction([
+   *   "1", "2", "3"
+   * ]);
+   * console.log(`Cancelled ${cancelledCount} auctions in tx: ${tx.transactionHash}`);
    * ```
    */
   async batchCancelAuction(
     auctionIds: string[],
     options?: TransactionOptions
   ): Promise<{ cancelledCount: number; tx: TransactionReceipt }> {
-    if (auctionIds.length === 0) {
-      throw this.error('INVALID_AMOUNT', 'auctionIds array cannot be empty');
-    }
-    if (auctionIds.length > 20) {
-      throw this.error('INVALID_AMOUNT', 'Maximum 20 cancellations per batch');
-    }
+    validateBatchSize(auctionIds, BATCH_LIMITS.AUCTIONS, 'auctionIds');
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -792,12 +869,33 @@ export class AuctionModule extends BaseModule {
   }
 
   /**
-   * Get pending refund amount for a bidder
+   * Get pending refund amount for a bidder on an auction
+   *
+   * In English auctions, when a higher bid is placed, the previous bidder's
+   * funds become available for refund. This method returns the amount a
+   * bidder can claim.
    *
    * @param auctionId - ID of the auction
-   * @param bidder - Address of the bidder
+   * @param bidder - Address of the bidder to check
    *
-   * @returns Promise resolving to pending refund amount in ETH
+   * @returns Promise resolving to pending refund amount in ETH (e.g., "1.5")
+   *
+   * @throws {ZunoSDKError} INVALID_TOKEN_ID - If auctionId is invalid
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If bidder address is invalid
+   * @throws {ZunoSDKError} CONTRACT_CALL_FAILED - If auction not found
+   *
+   * @example
+   * ```typescript
+   * const refund = await sdk.auction.getPendingRefund(
+   *   "1",
+   *   "0x1234567890abcdef1234567890abcdef12345678"
+   * );
+   * console.log(`Pending refund: ${refund} ETH`);
+   *
+   * if (parseFloat(refund) > 0) {
+   *   await sdk.auction.claimRefund("1");
+   * }
+   * ```
    */
   async getPendingRefund(auctionId: string, bidder: string): Promise<string> {
     validateTokenId(auctionId, 'auctionId');

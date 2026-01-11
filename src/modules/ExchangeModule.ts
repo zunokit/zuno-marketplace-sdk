@@ -18,27 +18,55 @@ import type {
 } from '../types/entities';
 import {
   validateAddress,
-  validateTokenId,
   validateListNFTParams,
+  ErrorCodes,
 } from '../utils/errors';
-import { ErrorCodes } from '../utils/errors';
+import { validateBytes32 } from '../utils/helpers';
 
 /**
  * ExchangeModule handles marketplace trading operations
  */
 export class ExchangeModule extends BaseModule {
+  private approvalCache = new Map<string, boolean>();
+
+  private log(message: string, data?: unknown) {
+    this.logger.debug(message, { module: 'Exchange', data });
+  }
+
+  /**
+   * Clear the approval status cache
+   * 
+   * Use this when you need to force re-checking approval status,
+   * for example after revoking approvals or switching accounts.
+   * 
+   * @example
+   * ```typescript
+   * sdk.exchange.clearApprovalCache();
+   * ```
+   */
+  clearApprovalCache(): void {
+    this.approvalCache.clear();
+    this.log('Approval cache cleared');
+  }
+
   /**
    * Ensure NFT collection is approved for Exchange contract
-   * Checks approval status and approves if needed
+   * Checks cache first, then RPC if needed, and grants approval if required
    */
   private async ensureApproval(
     collectionAddress: string,
     ownerAddress: string
   ): Promise<void> {
+    const cacheKey = `${collectionAddress.toLowerCase()}-${ownerAddress.toLowerCase()}`;
+
+    if (this.approvalCache.get(cacheKey)) {
+      this.log('Approval cache hit', { collectionAddress, ownerAddress });
+      return;
+    }
+
     const provider = this.ensureProvider();
     const signer = this.ensureSigner();
 
-    // Get Exchange contract address
     const exchangeContract = await this.contractRegistry.getContract(
       'ERC721NFTExchange',
       this.getNetworkId(),
@@ -46,7 +74,6 @@ export class ExchangeModule extends BaseModule {
     );
     const operatorAddress = await exchangeContract.getAddress();
 
-    // Check if already approved
     const erc721Abi = [
       'function isApprovedForAll(address owner, address operator) view returns (bool)',
       'function setApprovalForAll(address operator, bool approved)',
@@ -55,10 +82,17 @@ export class ExchangeModule extends BaseModule {
 
     const isApproved = await nftContract.isApprovedForAll(ownerAddress, operatorAddress);
 
-    if (!isApproved) {
-      const tx = await nftContract.setApprovalForAll(operatorAddress, true);
-      await tx.wait();
+    if (isApproved) {
+      this.approvalCache.set(cacheKey, true);
+      this.log('Approval already granted, cached', { collectionAddress, ownerAddress });
+      return;
     }
+
+    this.log('Approving Exchange for collection', { collectionAddress, operatorAddress });
+    const tx = await nftContract.setApprovalForAll(operatorAddress, true);
+    await tx.wait();
+    this.approvalCache.set(cacheKey, true);
+    this.log('Approval confirmed and cached');
   }
 
   /**
@@ -108,12 +142,13 @@ export class ExchangeModule extends BaseModule {
   
   /**
    * Buy an NFT from a listing
+   * @param params.listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
    * @param params.value - Price in ETH (e.g., "1.5")
    */
   async buyNFT(params: BuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingId, value, options } = params;
 
-    validateTokenId(listingId, 'listingId');
+    validateBytes32(listingId, 'listingId');
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -148,15 +183,43 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Batch buy multiple NFTs from listings
-   * @param params.value - Total price in ETH (e.g., "3.0" for 3 NFTs at 1 ETH each)
+   * Batch buy multiple NFTs from active listings in a single transaction
+   *
+   * @param params - Batch purchase parameters
+   * @param params.listingIds - Array of listing IDs to purchase (bytes32 format)
+   * @param params.value - Total price in ETH covering all listings (e.g., "3.0")
+   * @param params.options - Transaction options (gas limit, gas price, etc.)
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {Error} If listingIds array is empty
+   * @throws {ZunoSDKError} INVALID_LISTING_ID - If any listingId is not bytes32 format
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} INSUFFICIENT_FUNDS - If value doesn't cover total price
+   *
+   * @example
+   * ```typescript
+   * // Buy 3 NFTs at once
+   * const { tx } = await sdk.exchange.batchBuyNFT({
+   *   listingIds: [
+   *     '0x1234...', // Listing 1: 1.0 ETH
+   *     '0x5678...', // Listing 2: 1.5 ETH
+   *     '0x9abc...', // Listing 3: 0.5 ETH
+   *   ],
+   *   value: '3.0', // Total: 3.0 ETH
+   * });
+   * ```
    */
   async batchBuyNFT(params: BatchBuyNFTParams): Promise<{ tx: TransactionReceipt }> {
     const { listingIds, value, options } = params;
 
     if (listingIds.length === 0) {
-      throw new Error('Listing IDs array cannot be empty');
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'listingIds cannot be empty');
     }
+
+    listingIds.forEach((id, index) => {
+      validateBytes32(id, `listingIds[${index}]`);
+    });
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -191,13 +254,31 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Cancel an NFT listing
+   * Cancel an active NFT listing and return the NFT to the seller
+   *
+   * @param listingId - The listing ID to cancel (bytes32 format)
+   * @param options - Transaction options (gas limit, gas price, etc.)
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {ZunoSDKError} INVALID_LISTING_ID - If listingId is not valid bytes32 format
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller is not the listing owner
+   *
+   * @example
+   * ```typescript
+   * // Cancel a listing
+   * const { tx } = await sdk.exchange.cancelListing(
+   *   '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+   * );
+   * console.log('Listing cancelled:', tx.transactionHash);
+   * ```
    */
   async cancelListing(
     listingId: string,
     options?: TransactionOptions
   ): Promise<{ tx: TransactionReceipt }> {
-    validateTokenId(listingId, 'listingId');
+    validateBytes32(listingId, 'listingId');
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -223,7 +304,31 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Batch cancel multiple NFT listings
+   * Batch cancel multiple NFT listings in a single transaction
+   *
+   * @param params - Batch cancel parameters
+   * @param params.listingIds - Array of listing IDs to cancel (bytes32 format)
+   * @param params.options - Transaction options (gas limit, gas price, etc.)
+   *
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {Error} If listingIds array is empty
+   * @throws {ZunoSDKError} INVALID_LISTING_ID - If any listingId is not bytes32 format
+   * @throws {ZunoSDKError} TRANSACTION_FAILED - If transaction fails
+   * @throws {ZunoSDKError} NOT_OWNER - If caller doesn't own any of the listings
+   *
+   * @example
+   * ```typescript
+   * // Cancel multiple listings at once
+   * const { tx } = await sdk.exchange.batchCancelListing({
+   *   listingIds: [
+   *     '0x1234...', // Listing 1
+   *     '0x5678...', // Listing 2
+   *     '0x9abc...', // Listing 3
+   *   ],
+   * });
+   * console.log('Cancelled all listings:', tx.transactionHash);
+   * ```
    */
   async batchCancelListing(
     params: BatchCancelListingParams
@@ -231,8 +336,12 @@ export class ExchangeModule extends BaseModule {
     const { listingIds, options } = params;
 
     if (listingIds.length === 0) {
-      throw new Error('Listing IDs array cannot be empty');
+      throw this.error(ErrorCodes.INVALID_PARAMETER, 'listingIds cannot be empty');
     }
+
+    listingIds.forEach((id, index) => {
+      validateBytes32(id, `listingIds[${index}]`);
+    });
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -258,12 +367,38 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Get the total price buyer needs to pay (including royalty and taker fee)
-   * @param listingId - The listing ID
-   * @returns Total price in ETH (e.g., "1.05" for 1 ETH + 5% fees)
+   * Get the total price buyer needs to pay for a listing (including royalty and taker fee)
+   *
+   * This method calculates the final price including:
+   * - Base listing price
+   * - Creator royalty (if applicable)
+   * - Marketplace taker fee
+   *
+   * @param listingId - The listing ID to query (bytes32 format)
+   *
+   * @returns Total price in ETH as string (e.g., "1.05" for 1 ETH + 5% fees)
+   *
+   * @throws {ZunoSDKError} INVALID_LISTING_ID - If listingId is not valid bytes32 format
+   * @throws {ZunoSDKError} LISTING_NOT_FOUND - If listing doesn't exist
+   *
+   * @example
+   * ```typescript
+   * // Get total price for a listing
+   * const totalPrice = await sdk.exchange.getBuyerPrice(
+   *   '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+   * );
+   * console.log('Total price:', totalPrice, 'ETH');
+   * // Output: "Total price: 1.05 ETH" (1.0 base + 5% fees)
+   *
+   * // Use for buying
+   * await sdk.exchange.buyNFT({
+   *   listingId: '0x1234...',
+   *   value: totalPrice,
+   * });
+   * ```
    */
   async getBuyerPrice(listingId: string): Promise<string> {
-    validateTokenId(listingId, 'listingId');
+    validateBytes32(listingId, 'listingId');
 
     const provider = this.ensureProvider();
     const exchangeContract = await this.contractRegistry.getContract(
@@ -284,9 +419,10 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Get listing details
+   * @param listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
    */
   async getListing(listingId: string): Promise<Listing> {
-    validateTokenId(listingId, 'listingId');
+    validateBytes32(listingId, 'listingId');
 
     const provider = this.ensureProvider();
     const exchangeContract = await this.contractRegistry.getContract(
