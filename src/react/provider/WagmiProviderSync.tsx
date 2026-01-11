@@ -1,17 +1,17 @@
 /**
- * WagmiSignerSync - Syncs wagmi wallet connection with SDK signer
+ * WagmiProviderSync - Syncs wagmi wallet connection with SDK provider/signer
  * 
  * Features:
- * - Automatically syncs wallet signer with SDK when connected
+ * - Automatically syncs wallet provider/signer with SDK when connected
  * - Handles reconnection on page reload with delay
- * - Clears signer on disconnect
+ * - Clears provider/signer on disconnect
  * 
  * @example
  * ```tsx
- * import { ZunoContextProvider, WagmiSignerSync } from "zuno-marketplace-sdk/react";
+ * import { ZunoContextProvider, WagmiProviderSync } from "zuno-marketplace-sdk/react";
  * 
  * <ZunoContextProvider config={config}>
- *   <WagmiSignerSync />
+ *   <WagmiProviderSync />
  *   {children}
  * </ZunoContextProvider>
  * ```
@@ -24,7 +24,7 @@ import { useAccount, useWalletClient } from 'wagmi';
 import { BrowserProvider } from 'ethers';
 import { useZuno } from './ZunoContextProvider';
 
-export interface WagmiSignerSyncProps {
+export interface WagmiProviderSyncProps {
   /**
    * Delay in ms before attempting to sync on mount (for reconnection)
    * @default 500
@@ -32,32 +32,32 @@ export interface WagmiSignerSyncProps {
   reconnectDelay?: number;
   
   /**
-   * Whether to clear signer on disconnect
+   * Whether to clear provider/signer on disconnect
    * @default true
    */
   clearOnDisconnect?: boolean;
   
   /**
-   * Callback when signer is synced
+   * Callback when provider/signer is synced
    */
   onSync?: () => void;
   
   /**
-   * Callback when signer sync fails
+   * Callback when provider/signer sync fails
    */
   onError?: (error: Error) => void;
 }
 
 /**
- * Component that syncs wagmi wallet connection with SDK signer.
+ * Component that syncs wagmi wallet connection with SDK provider/signer.
  * Required when using ZunoContextProvider with custom wagmi setup.
  */
-export function WagmiSignerSync({
+export function WagmiProviderSync({
   reconnectDelay = 500,
   clearOnDisconnect = true,
   onSync,
   onError,
-}: WagmiSignerSyncProps = {}) {
+}: WagmiProviderSyncProps = {}) {
   const sdk = useZuno();
   const { isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -90,7 +90,7 @@ export function WagmiSignerSync({
           onError?.(error as Error);
         }
       } else if (!isConnected && clearOnDisconnect) {
-        // Clear signer on disconnect
+        // Clear provider and signer on disconnect
         sdk.updateProvider(undefined, undefined);
       }
     };
@@ -101,4 +101,4 @@ export function WagmiSignerSync({
   return null;
 }
 
-export default WagmiSignerSync;
+export default WagmiProviderSync;
