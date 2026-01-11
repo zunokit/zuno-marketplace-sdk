@@ -1,3 +1,13 @@
+## [2.2.0-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.1...v2.2.0-beta-claude.2) (2026-01-11)
+
+### ✨ Features
+
+* **exchange:** add ERC1155 exchange support with auto-detection ([b3cc46b](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b3cc46bb97076884558e29d27c8f948b113b486a)), closes [#58](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/58) [#60](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/60)
+
+### 🐛 Bug Fixes
+
+* **sdk:** implement address normalization for all modules ([a389795](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a3897953609b2b9515227a767bcf263fb2c41276)), closes [#65](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/65) [#67](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/67)
+
 ## [2.2.0-beta-claude.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.2.0-beta-claude.1) (2026-01-11)
 
 ### ✨ Features
