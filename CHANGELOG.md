@@ -1,3 +1,9 @@
+## [2.2.0-beta-claude.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.3...v2.2.0-beta-claude.4) (2026-01-12)
+
+### ✨ Features
+
+* implement query options pattern for type-safe query keys ([#79](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/79)) ([3fd17bb](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/3fd17bb7d85d408c19822b1c14c992b5b4f016c5))
+
 ## [2.2.0-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.2...v2.2.0-beta-claude.3) (2026-01-12)
 
 ### ✨ Features
