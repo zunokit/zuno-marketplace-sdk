@@ -314,6 +314,7 @@ export function validateListNFTParams(params: unknown): asserts params is {
   tokenId: string;
   price: string;
   duration: number;
+  amount?: number;
   options?: Record<string, unknown>;
 } {
   if (!params || typeof params !== 'object') {

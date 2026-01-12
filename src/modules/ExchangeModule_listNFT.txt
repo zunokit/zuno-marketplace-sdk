@@ -1,0 +1,62 @@
+  /**
+   * List an NFT for sale
+   */
+  async listNFT(params: ListNFTParams): Promise<{ listingId: string; tx: TransactionReceipt }> {
+    // Runtime validation
+    validateListNFTParams(params);
+
+    const { collectionAddress, tokenId, price, amount = 1, duration, options } = params;
+
+    const txManager = this.ensureTxManager();
+    const provider = this.ensureProvider();
+
+    // Get seller address
+    const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
+
+    // Ensure NFT is approved for Exchange
+    await this.ensureApproval(collectionAddress, sellerAddress);
+
+    // Detect token standard
+    const tokenType = await this.contractRegistry.verifyTokenStandard(
+      collectionAddress,
+      provider
+    );
+
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      collectionAddress,
+      provider,
+      this.signer
+    );
+
+    // Prepare parameters - contract expects: (address, uint256, uint256, uint256)
+    const priceInWei = ethers.parseEther(price);
+
+    // ERC1155 needs amount parameter
+    if (tokenType === 'ERC1155') {
+      const tx = await txManager.sendTransaction(
+        exchangeContract,
+        'listNFT',
+        [collectionAddress, tokenId, priceInWei, amount, duration],
+        { ...options, module: 'Exchange' }
+      );
+
+      // Extract listing ID from transaction logs
+      const listingId = await this.extractListingId(tx);
+
+      return { listingId, tx };
+    } else {
+      // ERC721 - 4 params (original behavior)
+      const tx = await txManager.sendTransaction(
+        exchangeContract,
+        'listNFT',
+        [collectionAddress, tokenId, priceInWei, duration],
+        { ...options, module: 'Exchange' }
+      );
+
+      // Extract listing ID from transaction logs
+      const listingId = await this.extractListingId(tx);
+
+      return { listingId, tx };
+    }
+  }

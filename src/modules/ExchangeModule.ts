@@ -133,7 +133,7 @@ export class ExchangeModule extends BaseModule {
     // Runtime validation
     validateListNFTParams(params);
 
-    const { collectionAddress, tokenId, price, duration, options } = params;
+    const { collectionAddress, tokenId, price, amount = 1, duration, options } = params;
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -143,6 +143,12 @@ export class ExchangeModule extends BaseModule {
 
     // Ensure NFT is approved for Exchange
     await this.ensureApproval(collectionAddress, sellerAddress);
+
+    // Detect token standard
+    const tokenType = await this.contractRegistry.verifyTokenStandard(
+      collectionAddress,
+      provider
+    );
 
     // Get appropriate exchange contract based on token standard
     const exchangeContract = await this.getExchangeContract(
@@ -154,19 +160,35 @@ export class ExchangeModule extends BaseModule {
     // Prepare parameters - contract expects: (address, uint256, uint256, uint256)
     const priceInWei = ethers.parseEther(price);
 
-    // Call contract method
-    const tx = await txManager.sendTransaction(
-      exchangeContract,
-      'listNFT',
-      [collectionAddress, tokenId, priceInWei, duration],
-      { ...options, module: 'Exchange' }
-    );
+    // ERC1155 needs amount parameter
+    if (tokenType === 'ERC1155') {
+      const tx = await txManager.sendTransaction(
+        exchangeContract,
+        'listNFT',
+        [collectionAddress, tokenId, priceInWei, amount, duration],
+        { ...options, module: 'Exchange' }
+      );
 
-    // Extract listing ID from transaction logs
-    const listingId = await this.extractListingId(tx);
+      // Extract listing ID from transaction logs
+      const listingId = await this.extractListingId(tx);
 
-    return { listingId, tx };
+      return { listingId, tx };
+    } else {
+      // ERC721 - 4 params (original behavior)
+      const tx = await txManager.sendTransaction(
+        exchangeContract,
+        'listNFT',
+        [collectionAddress, tokenId, priceInWei, duration],
+        { ...options, module: 'Exchange' }
+      );
+
+      // Extract listing ID from transaction logs
+      const listingId = await this.extractListingId(tx);
+
+      return { listingId, tx };
+    }
   }
+
 
   
   /**
@@ -559,7 +581,7 @@ export class ExchangeModule extends BaseModule {
    * Batch list multiple NFTs from the SAME collection in 1 transaction
    */
   async batchListNFT(params: BatchListNFTParams): Promise<{ listingIds: string[]; tx: TransactionReceipt }> {
-    const { collectionAddress, tokenIds, prices, duration, options } = params;
+    const { collectionAddress, tokenIds, prices, amounts, duration, options } = params;
 
     if (tokenIds.length === 0) {
       throw this.error(ErrorCodes.INVALID_PARAMETER, 'Token IDs array cannot be empty');
@@ -576,6 +598,21 @@ export class ExchangeModule extends BaseModule {
 
     await this.ensureApproval(normalizedCollection, sellerAddress);
 
+    // Default amounts to 1 for each token if not provided (ERC721 compatible)
+    const normalizedAmounts = amounts || tokenIds.map(() => 1);
+
+    // Validation
+    if (tokenIds.length !== normalizedAmounts.length) {
+      throw this.error(ErrorCodes.INVALID_PARAMETER,
+        'Token IDs and amounts arrays must have same length');
+    }
+
+    // Detect token standard
+    const tokenType = await this.contractRegistry.verifyTokenStandard(
+      normalizedCollection,
+      provider
+    );
+
     // Get appropriate exchange contract based on token standard
     const exchangeContract = await this.getExchangeContract(
       normalizedCollection,
@@ -585,16 +622,31 @@ export class ExchangeModule extends BaseModule {
 
     const pricesInWei = prices.map(p => ethers.parseEther(p));
 
-    const tx = await txManager.sendTransaction(
-      exchangeContract,
-      'batchListNFT',
-      [normalizedCollection, tokenIds, pricesInWei, duration],
-      { ...options, module: 'Exchange' }
-    );
+    // ERC1155 needs amounts parameter
+    if (tokenType === 'ERC1155') {
+      const tx = await txManager.sendTransaction(
+        exchangeContract,
+        'batchListNFT',
+        [normalizedCollection, tokenIds, normalizedAmounts, pricesInWei, duration],
+        { ...options, module: 'Exchange' }
+      );
 
-    const listingIds = this.extractListingIdsFromLogs(tx);
-    return { listingIds, tx };
+      const listingIds = this.extractListingIdsFromLogs(tx);
+      return { listingIds, tx };
+    } else {
+      // ERC721 - 4 params (original behavior)
+      const tx = await txManager.sendTransaction(
+        exchangeContract,
+        'batchListNFT',
+        [normalizedCollection, tokenIds, pricesInWei, duration],
+        { ...options, module: 'Exchange' }
+      );
+
+      const listingIds = this.extractListingIdsFromLogs(tx);
+      return { listingIds, tx };
+    }
   }
+
 
   /**
    * Extract listing IDs from transaction logs

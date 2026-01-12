@@ -85,6 +85,7 @@ export interface TransactionOptions {
  * List NFT parameters
  */
 export interface ListNFTParams {
+  amount?: number;
   collectionAddress: string;
   tokenId: string;
   price: string;
@@ -99,6 +100,7 @@ export interface BatchListNFTParams {
   collectionAddress: string;
   tokenIds: string[];
   prices: string[];
+  amounts?: number[];
   duration: number;
   options?: TransactionOptions;
 }

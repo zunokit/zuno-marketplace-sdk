@@ -13,6 +13,14 @@ import type {
   MintERC1155Params,
 } from '../../types/contracts';
 import { useZuno } from '../provider/ZunoContextProvider';
+import {
+  collectionQueryKeys,
+  collectionInfoQueryOptions,
+  createdCollectionsQueryOptions,
+  userOwnedTokensQueryOptions,
+  isInAllowlistQueryOptions,
+  isAllowlistOnlyQueryOptions,
+} from '../query-keys';
 
 /**
  * Hook for collection operations
@@ -25,7 +33,9 @@ export function useCollection() {
     mutationFn: (params: CreateERC721CollectionParams) =>
       sdk.collection.createERC721Collection(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      queryClient.invalidateQueries({
+        queryKey: collectionQueryKeys.collections(),
+      });
     },
   });
 
@@ -33,7 +43,9 @@ export function useCollection() {
     mutationFn: (params: CreateERC1155CollectionParams) =>
       sdk.collection.createERC1155Collection(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      queryClient.invalidateQueries({
+        queryKey: collectionQueryKeys.collections(),
+      });
     },
   });
 
@@ -77,7 +89,9 @@ export function useCollection() {
     mutationFn: ({ collectionAddress, addresses }: { collectionAddress: string; addresses: string[] }) =>
       sdk.collection.addToAllowlist(collectionAddress, addresses),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+      queryClient.invalidateQueries({
+        queryKey: collectionQueryKeys.allowlist(variables.collectionAddress, ''),
+      });
     },
   });
 
@@ -85,7 +99,9 @@ export function useCollection() {
     mutationFn: ({ collectionAddress, addresses }: { collectionAddress: string; addresses: string[] }) =>
       sdk.collection.removeFromAllowlist(collectionAddress, addresses),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+      queryClient.invalidateQueries({
+        queryKey: collectionQueryKeys.allowlist(variables.collectionAddress, ''),
+      });
     },
   });
 
@@ -93,7 +109,9 @@ export function useCollection() {
     mutationFn: ({ collectionAddress, enabled }: { collectionAddress: string; enabled: boolean }) =>
       sdk.collection.setAllowlistOnly(collectionAddress, enabled),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+      queryClient.invalidateQueries({
+        queryKey: collectionQueryKeys.allowlistOnly(variables.collectionAddress),
+      });
     },
   });
 
@@ -118,8 +136,7 @@ export function useCollectionInfo(address?: string) {
   const sdk = useZuno();
 
   return useQuery({
-    queryKey: ['collection', address],
-    queryFn: () => sdk.collection.getCollectionInfo(address!),
+    ...collectionInfoQueryOptions(sdk, address!),
     enabled: !!address,
   });
 }
@@ -136,12 +153,7 @@ export function useCreatedCollections(options?: {
   const sdk = useZuno();
 
   return useQuery({
-    queryKey: ['createdCollections', options?.creator, options?.fromBlock, options?.toBlock],
-    queryFn: () => sdk.collection.getCreatedCollections({
-      creator: options?.creator,
-      fromBlock: options?.fromBlock,
-      toBlock: options?.toBlock,
-    }),
+    ...createdCollectionsQueryOptions(sdk, options),
     enabled: options?.enabled !== false,
   });
 }
@@ -154,8 +166,7 @@ export function useUserOwnedTokens(collectionAddress?: string, userAddress?: str
   const sdk = useZuno();
 
   return useQuery({
-    queryKey: ['userOwnedTokens', collectionAddress, userAddress],
-    queryFn: () => sdk.collection.getUserOwnedTokens(collectionAddress!, userAddress!),
+    ...userOwnedTokensQueryOptions(sdk, collectionAddress!, userAddress!),
     enabled: !!collectionAddress && !!userAddress,
   });
 }
@@ -167,8 +178,7 @@ export function useIsInAllowlist(collectionAddress?: string, userAddress?: strin
   const sdk = useZuno();
 
   return useQuery({
-    queryKey: ['allowlist', collectionAddress, userAddress],
-    queryFn: () => sdk.collection.isInAllowlist(collectionAddress!, userAddress!),
+    ...isInAllowlistQueryOptions(sdk, collectionAddress!, userAddress!),
     enabled: !!collectionAddress && !!userAddress,
   });
 }
@@ -180,8 +190,7 @@ export function useIsAllowlistOnly(collectionAddress?: string) {
   const sdk = useZuno();
 
   return useQuery({
-    queryKey: ['allowlistOnly', collectionAddress],
-    queryFn: () => sdk.collection.isAllowlistOnly(collectionAddress!),
+    ...isAllowlistOnlyQueryOptions(sdk, collectionAddress!),
     enabled: !!collectionAddress,
   });
 }
@@ -219,7 +228,9 @@ export function useSetupAllowlist() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allowlist', 'collections'] });
-      queryClient.invalidateQueries({ queryKey: ['allowlistOnly'] });
+      queryClient.invalidateQueries({
+        queryKey: collectionQueryKeys.allowlistOnly(''),
+      });
     },
   });
 
@@ -277,4 +288,3 @@ export function useOwnerMint() {
     error: mutation.error,
   };
 }
-
