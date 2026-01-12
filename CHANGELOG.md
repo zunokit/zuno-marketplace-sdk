@@ -1,3 +1,9 @@
+## [2.2.0-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.2...v2.2.0-beta-claude.3) (2026-01-12)
+
+### ✨ Features
+
+* **collection:** add setupAllowlist and ownerMint support ([de47f0f](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/de47f0ffcc1e797e019265be159b572b1fedef75)), closes [zunokit/zuno-marketplace-contracts#51](https://github.com/zunokit/zuno-marketplace-contracts/issues/51) [#47](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/47) [#48](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/48)
+
 ## [2.2.0-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.1...v2.2.0-beta-claude.2) (2026-01-11)
 
 ### ✨ Features
