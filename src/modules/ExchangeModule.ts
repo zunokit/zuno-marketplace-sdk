@@ -35,10 +35,10 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Clear the approval status cache
-   * 
+   *
    * Use this when you need to force re-checking approval status,
    * for example after revoking approvals or switching accounts.
-   * 
+   *
    * @example
    * ```typescript
    * sdk.exchange.clearApprovalCache();
@@ -47,6 +47,37 @@ export class ExchangeModule extends BaseModule {
   clearApprovalCache(): void {
     this.approvalCache.clear();
     this.log('Approval cache cleared');
+  }
+
+  /**
+   * Get appropriate exchange contract based on token standard
+   * Auto-detects ERC721 vs ERC1155 and returns correct exchange contract
+   */
+  private async getExchangeContract(
+    collectionAddress: string,
+    provider: ethers.Provider,
+    signer?: ethers.Signer
+  ): Promise<ethers.Contract> {
+    // Detect token standard
+    const tokenType = await this.contractRegistry.verifyTokenStandard(
+      collectionAddress,
+      provider
+    );
+
+    // Select appropriate contract
+    const contractType = tokenType === 'ERC1155'
+      ? 'ERC1155NFTExchange'
+      : 'ERC721NFTExchange';
+
+    this.log('Using exchange contract', { collectionAddress, tokenType, contractType });
+
+    return this.contractRegistry.getContract(
+      contractType,
+      this.getNetworkId(),
+      provider,
+      undefined,
+      signer
+    );
   }
 
   /**
@@ -67,18 +98,18 @@ export class ExchangeModule extends BaseModule {
     const provider = this.ensureProvider();
     const signer = this.ensureSigner();
 
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get correct exchange contract address for operator
+    const exchangeContract = await this.getExchangeContract(
+      collectionAddress,
       provider
     );
     const operatorAddress = await exchangeContract.getAddress();
 
-    const erc721Abi = [
+    const approvalAbi = [
       'function isApprovedForAll(address owner, address operator) view returns (bool)',
       'function setApprovalForAll(address operator, bool approved)',
     ];
-    const nftContract = new ethers.Contract(collectionAddress, erc721Abi, signer);
+    const nftContract = new ethers.Contract(collectionAddress, approvalAbi, signer);
 
     const isApproved = await nftContract.isApprovedForAll(ownerAddress, operatorAddress);
 
@@ -113,12 +144,10 @@ export class ExchangeModule extends BaseModule {
     // Ensure NFT is approved for Exchange
     await this.ensureApproval(collectionAddress, sellerAddress);
 
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      collectionAddress,
       provider,
-      undefined,
       this.signer
     );
 
@@ -445,12 +474,12 @@ export class ExchangeModule extends BaseModule {
    * Get listings by collection
    */
   async getListings(collectionAddress: string): Promise<Listing[]> {
-    validateAddress(collectionAddress);
+    const normalizedCollection = validateAddress(collectionAddress);
 
     const provider = this.ensureProvider();
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      normalizedCollection,
       provider
     );
 
@@ -458,7 +487,7 @@ export class ExchangeModule extends BaseModule {
     const listingIds = await txManager.callContract<string[]>(
       exchangeContract,
       'getListingsByCollection',
-      [collectionAddress]
+      [normalizedCollection]
     );
 
     return Promise.all(listingIds.map((id) => this.getListing(id)));
@@ -468,7 +497,7 @@ export class ExchangeModule extends BaseModule {
    * Get listings by seller
    */
   async getListingsBySeller(seller: string): Promise<Listing[]> {
-    validateAddress(seller, 'seller');
+    const normalizedSeller = validateAddress(seller, 'seller');
 
     const provider = this.ensureProvider();
     const exchangeContract = await this.contractRegistry.getContract(
@@ -481,7 +510,7 @@ export class ExchangeModule extends BaseModule {
     const listingIds = await txManager.callContract<string[]>(
       exchangeContract,
       'getListingsBySeller',
-      [seller]
+      [normalizedSeller]
     );
 
     return Promise.all(listingIds.map((id) => this.getListing(id)));
@@ -539,19 +568,18 @@ export class ExchangeModule extends BaseModule {
       throw this.error(ErrorCodes.INVALID_PARAMETER, 'Token IDs and prices arrays must have same length');
     }
 
-    validateAddress(collectionAddress);
+    const normalizedCollection = validateAddress(collectionAddress);
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
     const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
 
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      normalizedCollection,
       provider,
-      undefined,
       this.signer
     );
 
@@ -560,7 +588,7 @@ export class ExchangeModule extends BaseModule {
     const tx = await txManager.sendTransaction(
       exchangeContract,
       'batchListNFT',
-      [collectionAddress, tokenIds, pricesInWei, duration],
+      [normalizedCollection, tokenIds, pricesInWei, duration],
       { ...options, module: 'Exchange' }
     );
 

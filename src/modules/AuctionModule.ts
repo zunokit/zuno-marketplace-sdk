@@ -7,8 +7,8 @@
  * @module AuctionModule
  */
 
-import { ethers } from 'ethers';
-import { BaseModule } from './BaseModule';
+import { ethers } from "ethers";
+import { BaseModule } from "./BaseModule";
 import type {
   CreateEnglishAuctionParams,
   CreateDutchAuctionParams,
@@ -16,16 +16,15 @@ import type {
   BatchCreateDutchAuctionParams,
   PlaceBidParams,
   TransactionOptions,
-} from '../types/contracts';
-import type { Auction, TransactionReceipt } from '../types/entities';
+} from "../types/contracts";
+import type { Auction, TransactionReceipt } from "../types/entities";
 import {
   validateAddress,
   validateTokenId,
   validateAmount,
   validateDuration,
-} from '../utils/errors';
-import { validateBatchSize, BATCH_LIMITS } from '../utils/batch';
-
+} from "../utils/errors";
+import { validateBatchSize, BATCH_LIMITS } from "../utils/batch";
 
 /**
  * AuctionModule handles auction creation and bidding operations
@@ -53,15 +52,15 @@ export class AuctionModule extends BaseModule {
   private approvalCache = new Map<string, boolean>();
 
   private log(message: string, data?: unknown) {
-    this.logger.debug(message, { module: 'Auction', data });
+    this.logger.debug(message, { module: "Auction", data });
   }
 
   /**
    * Clear the approval status cache
-   * 
+   *
    * Use this when you need to force re-checking approval status,
    * for example after revoking approvals or switching accounts.
-   * 
+   *
    * @example
    * ```typescript
    * sdk.auction.clearApprovalCache();
@@ -69,7 +68,7 @@ export class AuctionModule extends BaseModule {
    */
   clearApprovalCache(): void {
     this.approvalCache.clear();
-    this.log('Approval cache cleared');
+    this.log("Approval cache cleared");
   }
 
   /**
@@ -83,7 +82,7 @@ export class AuctionModule extends BaseModule {
     const cacheKey = `${collectionAddress.toLowerCase()}-${ownerAddress.toLowerCase()}`;
 
     if (this.approvalCache.get(cacheKey)) {
-      this.log('Approval cache hit', { collectionAddress, ownerAddress });
+      this.log("Approval cache hit", { collectionAddress, ownerAddress });
       return;
     }
 
@@ -91,31 +90,44 @@ export class AuctionModule extends BaseModule {
     const signer = this.ensureSigner();
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider
     );
     const operatorAddress = await auctionFactory.getAddress();
 
     const erc721Abi = [
-      'function isApprovedForAll(address owner, address operator) view returns (bool)',
-      'function setApprovalForAll(address operator, bool approved)',
+      "function isApprovedForAll(address owner, address operator) view returns (bool)",
+      "function setApprovalForAll(address operator, bool approved)",
     ];
-    const nftContract = new ethers.Contract(collectionAddress, erc721Abi, signer);
-    
-    const isApproved = await nftContract.isApprovedForAll(ownerAddress, operatorAddress);
-    
+    const nftContract = new ethers.Contract(
+      collectionAddress,
+      erc721Abi,
+      signer
+    );
+
+    const isApproved = await nftContract.isApprovedForAll(
+      ownerAddress,
+      operatorAddress
+    );
+
     if (isApproved) {
       this.approvalCache.set(cacheKey, true);
-      this.log('Approval already granted, cached', { collectionAddress, ownerAddress });
+      this.log("Approval already granted, cached", {
+        collectionAddress,
+        ownerAddress,
+      });
       return;
     }
 
-    this.log('Approving AuctionFactory for collection', { collectionAddress, operatorAddress });
+    this.log("Approving AuctionFactory for collection", {
+      collectionAddress,
+      operatorAddress,
+    });
     const tx = await nftContract.setApprovalForAll(operatorAddress, true);
     await tx.wait();
     this.approvalCache.set(cacheKey, true);
-    this.log('Approval confirmed and cached');
+    this.log("Approval confirmed and cached");
   }
 
   /**
@@ -168,9 +180,9 @@ export class AuctionModule extends BaseModule {
       options,
     } = params;
 
-    validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedCollection = validateAddress(collectionAddress, "collectionAddress");
     validateTokenId(tokenId);
-    validateAmount(startingBid, 'startingBid');
+    validateAmount(startingBid, "startingBid");
     validateDuration(duration);
 
     const txManager = this.ensureTxManager();
@@ -178,14 +190,15 @@ export class AuctionModule extends BaseModule {
 
     // Get seller address (default to signer address if not provided)
     const sellerAddress =
-      seller || (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
+      seller ||
+      (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
 
     // Ensure NFT is approved for AuctionFactory
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
     // Get AuctionFactory contract (handles NFT transfers and creates auctions)
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
@@ -193,23 +206,21 @@ export class AuctionModule extends BaseModule {
     );
 
     const startingBidWei = ethers.parseEther(startingBid);
-    const reservePriceWei = reservePrice
-      ? ethers.parseEther(reservePrice)
-      : 0n;
+    const reservePriceWei = reservePrice ? ethers.parseEther(reservePrice) : 0n;
 
     // AuctionFactory.createEnglishAuction(nftContract, tokenId, amount, startPrice, reservePrice, duration)
     const receipt = await txManager.sendTransaction(
       auctionFactory,
-      'createEnglishAuction',
+      "createEnglishAuction",
       [
-        collectionAddress,
+        normalizedCollection,
         tokenId,
         amount,
         startingBidWei,
         reservePriceWei,
         duration,
       ],
-      { ...options, module: 'Auction' }
+      { ...options, module: "Auction" }
     );
 
     // Extract auction ID from logs
@@ -268,10 +279,10 @@ export class AuctionModule extends BaseModule {
       options,
     } = params;
 
-    validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedCollection = validateAddress(collectionAddress, "collectionAddress");
     validateTokenId(tokenId);
-    validateAmount(startPrice, 'startPrice');
-    validateAmount(endPrice, 'endPrice');
+    validateAmount(startPrice, "startPrice");
+    validateAmount(endPrice, "endPrice");
     validateDuration(duration);
 
     const txManager = this.ensureTxManager();
@@ -279,14 +290,15 @@ export class AuctionModule extends BaseModule {
 
     // Get seller address (default to signer address if not provided)
     const sellerAddress =
-      seller || (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
+      seller ||
+      (this.signer ? await this.signer.getAddress() : ethers.ZeroAddress);
 
     // Ensure NFT is approved for AuctionFactory
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
     // Get AuctionFactory contract (handles NFT transfers and creates auctions)
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
@@ -300,25 +312,28 @@ export class AuctionModule extends BaseModule {
     // Total drop % = (startPrice - endPrice) / startPrice * 10000
     // Drop per hour = totalDropBps / durationInHours
     const durationInHours = BigInt(Math.max(1, Math.ceil(duration / 3600)));
-    const totalDropBps = ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
-    const originalPriceDropPerHourBps = totalDropBps / durationInHours;
-    let priceDropPerHourBps = originalPriceDropPerHourBps;
-    
+    const totalDropBps =
+      ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
+    const originalDropBps = totalDropBps / durationInHours;
+    let priceDropPerHourBps = originalDropBps;
+
     // Clamp to valid range: 100-5000 basis points with warning
     if (priceDropPerHourBps < 100n || priceDropPerHourBps > 5000n) {
       const clampedValue = priceDropPerHourBps < 100n ? 100n : 5000n;
-      this.logger.warn('Dutch auction price drop rate adjusted', {
-        module: 'Auction',
+      this.logger.warn("Dutch auction price drop rate adjusted", {
+        module: "Auction",
         data: {
-          originalBpsPerHour: Number(originalPriceDropPerHourBps),
+          originalBpsPerHour: Number(originalDropBps),
           clampedBpsPerHour: Number(clampedValue),
-          allowedRange: '100-5000 bps/hour',
-          reason: priceDropPerHourBps < 100n
-            ? 'Price drop too slow for contract constraints'
-            : 'Price drop too fast for contract constraints',
-          recommendation: priceDropPerHourBps < 100n
-            ? 'Increase price difference or reduce duration'
-            : 'Decrease price difference or increase duration',
+          allowedRange: "100-5000 bps/hour",
+          reason:
+            priceDropPerHourBps < 100n
+              ? "Price drop too slow for contract constraints"
+              : "Price drop too fast for contract constraints",
+          recommendation:
+            priceDropPerHourBps < 100n
+              ? "Increase price difference or reduce duration"
+              : "Decrease price difference or increase duration",
           startPrice,
           endPrice,
           durationHours: Number(durationInHours),
@@ -329,7 +344,7 @@ export class AuctionModule extends BaseModule {
 
     const receipt = await txManager.sendTransaction(
       auctionFactory,
-      'createDutchAuction',
+      "createDutchAuction",
       [
         collectionAddress,
         tokenId,
@@ -339,7 +354,7 @@ export class AuctionModule extends BaseModule {
         duration,
         priceDropPerHourBps,
       ],
-      { ...options, module: 'Auction' }
+      { ...options, module: "Auction" }
     );
 
     // Extract auction ID from logs
@@ -385,43 +400,45 @@ export class AuctionModule extends BaseModule {
       options,
     } = params;
 
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, 'tokenIds');
-    validateAmount(startingBid, 'startingBid');
+    const normalizedCollection = validateAddress(collectionAddress, "collectionAddress");
+    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, "tokenIds");
+    validateAmount(startingBid, "startingBid");
     validateDuration(duration);
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
-    const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
+    const sellerAddress = this.signer
+      ? await this.signer.getAddress()
+      : ethers.ZeroAddress;
 
     // Ensure NFT is approved for AuctionFactory
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
       this.signer
     );
 
-    const tokenIdsBigInt = tokenIds.map(id => BigInt(id));
+    const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
     const amountsArray = amounts || tokenIds.map(() => 1);
     const startingBidWei = ethers.parseEther(startingBid);
     const reservePriceWei = reservePrice ? ethers.parseEther(reservePrice) : 0n;
 
     const receipt = await txManager.sendTransaction(
       auctionFactory,
-      'batchCreateEnglishAuction',
+      "batchCreateEnglishAuction",
       [
-        collectionAddress,
+        normalizedCollection,
         tokenIdsBigInt,
         amountsArray,
         startingBidWei,
         reservePriceWei,
         duration,
       ],
-      { ...options, module: 'Auction' }
+      { ...options, module: "Auction" }
     );
 
     // Extract auction IDs from logs
@@ -468,53 +485,58 @@ export class AuctionModule extends BaseModule {
       options,
     } = params;
 
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, 'tokenIds');
-    validateAmount(startPrice, 'startPrice');
-    validateAmount(endPrice, 'endPrice');
+    const normalizedCollection = validateAddress(collectionAddress, "collectionAddress");
+    validateBatchSize(tokenIds, BATCH_LIMITS.AUCTIONS, "tokenIds");
+    validateAmount(startPrice, "startPrice");
+    validateAmount(endPrice, "endPrice");
     validateDuration(duration);
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
-    const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
+    const sellerAddress = this.signer
+      ? await this.signer.getAddress()
+      : ethers.ZeroAddress;
 
     // Ensure NFT is approved for AuctionFactory
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    await this.ensureApproval(normalizedCollection, sellerAddress);
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
       this.signer
     );
 
-    const tokenIdsBigInt = tokenIds.map(id => BigInt(id));
+    const tokenIdsBigInt = tokenIds.map((id) => BigInt(id));
     const amountsArray = amounts || tokenIds.map(() => 1);
     const startPriceWei = ethers.parseEther(startPrice);
     const endPriceWei = ethers.parseEther(endPrice);
 
     // Calculate priceDropPerHour in basis points
     const durationInHours = BigInt(Math.max(1, Math.ceil(duration / 3600)));
-    const totalDropBps = ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
-    const originalPriceDropPerHourBps = totalDropBps / durationInHours;
-    let priceDropPerHourBps = originalPriceDropPerHourBps;
-    
+    const totalDropBps =
+      ((startPriceWei - endPriceWei) * 10000n) / startPriceWei;
+    const originalDropBps = totalDropBps / durationInHours;
+    let priceDropPerHourBps = originalDropBps;
+
     // Clamp to valid range: 100-5000 basis points with warning
     if (priceDropPerHourBps < 100n || priceDropPerHourBps > 5000n) {
       const clampedValue = priceDropPerHourBps < 100n ? 100n : 5000n;
-      this.logger.warn('Dutch auction price drop rate adjusted', {
-        module: 'Auction',
+      this.logger.warn("Dutch auction price drop rate adjusted", {
+        module: "Auction",
         data: {
-          originalBpsPerHour: Number(originalPriceDropPerHourBps),
+          originalBpsPerHour: Number(originalDropBps),
           clampedBpsPerHour: Number(clampedValue),
-          allowedRange: '100-5000 bps/hour',
-          reason: priceDropPerHourBps < 100n
-            ? 'Price drop too slow for contract constraints'
-            : 'Price drop too fast for contract constraints',
-          recommendation: priceDropPerHourBps < 100n
-            ? 'Increase price difference or reduce duration'
-            : 'Decrease price difference or increase duration',
+          allowedRange: "100-5000 bps/hour",
+          reason:
+            priceDropPerHourBps < 100n
+              ? "Price drop too slow for contract constraints"
+              : "Price drop too fast for contract constraints",
+          recommendation:
+            priceDropPerHourBps < 100n
+              ? "Increase price difference or reduce duration"
+              : "Decrease price difference or increase duration",
           startPrice,
           endPrice,
           durationHours: Number(durationInHours),
@@ -526,7 +548,7 @@ export class AuctionModule extends BaseModule {
 
     const receipt = await txManager.sendTransaction(
       auctionFactory,
-      'batchCreateDutchAuction',
+      "batchCreateDutchAuction",
       [
         collectionAddress,
         tokenIdsBigInt,
@@ -536,7 +558,7 @@ export class AuctionModule extends BaseModule {
         duration,
         priceDropPerHourBps,
       ],
-      { ...options, module: 'Auction' }
+      { ...options, module: "Auction" }
     );
 
     // Extract auction IDs from logs
@@ -574,15 +596,15 @@ export class AuctionModule extends BaseModule {
   async placeBid(params: PlaceBidParams): Promise<{ tx: TransactionReceipt }> {
     const { auctionId, amount, options } = params;
 
-    validateTokenId(auctionId, 'auctionId');
-    validateAmount(amount, 'amount');
+    validateTokenId(auctionId, "auctionId");
+    validateAmount(amount, "amount");
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
     // Call AuctionFactory.placeBid (routes to correct auction contract)
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
@@ -593,12 +615,12 @@ export class AuctionModule extends BaseModule {
 
     const tx = await txManager.sendTransaction(
       auctionFactory,
-      'placeBid',
+      "placeBid",
       [auctionId],
       {
         ...options,
         value: amountWei.toString(),
-        module: 'Auction',
+        module: "Auction",
       }
     );
 
@@ -612,14 +634,14 @@ export class AuctionModule extends BaseModule {
     auctionId: string,
     options?: TransactionOptions
   ): Promise<{ tx: TransactionReceipt }> {
-    this.log('buyNow started', { auctionId });
-    validateTokenId(auctionId, 'auctionId');
+    this.log("buyNow started", { auctionId });
+    validateTokenId(auctionId, "auctionId");
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
@@ -629,18 +651,18 @@ export class AuctionModule extends BaseModule {
     // Get current price from factory
     const currentPrice = await txManager.callContract<bigint>(
       auctionFactory,
-      'getCurrentPrice',
+      "getCurrentPrice",
       [auctionId]
     );
 
     const tx = await txManager.sendTransaction(
       auctionFactory,
-      'buyNow',
+      "buyNow",
       [auctionId],
-      { ...options, value: currentPrice.toString(), module: 'Auction' }
+      { ...options, value: currentPrice.toString(), module: "Auction" }
     );
 
-    this.log('buyNow completed', { auctionId, txHash: tx.hash });
+    this.log("buyNow completed", { auctionId, txHash: tx.hash });
     return { tx };
   }
 
@@ -651,14 +673,14 @@ export class AuctionModule extends BaseModule {
     auctionId: string,
     options?: TransactionOptions
   ): Promise<{ tx: TransactionReceipt }> {
-    this.log('withdrawBid started', { auctionId });
-    validateTokenId(auctionId, 'auctionId');
+    this.log("withdrawBid started", { auctionId });
+    validateTokenId(auctionId, "auctionId");
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
@@ -667,12 +689,12 @@ export class AuctionModule extends BaseModule {
 
     const tx = await txManager.sendTransaction(
       auctionFactory,
-      'withdrawBid',
+      "withdrawBid",
       [auctionId],
-      { ...options, module: 'Auction' }
+      { ...options, module: "Auction" }
     );
 
-    this.log('withdrawBid completed', { auctionId, txHash: tx.hash });
+    this.log("withdrawBid completed", { auctionId, txHash: tx.hash });
     return { tx };
   }
 
@@ -700,13 +722,13 @@ export class AuctionModule extends BaseModule {
     auctionId: string,
     options?: TransactionOptions
   ): Promise<{ tx: TransactionReceipt }> {
-    validateTokenId(auctionId, 'auctionId');
+    validateTokenId(auctionId, "auctionId");
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
@@ -715,9 +737,9 @@ export class AuctionModule extends BaseModule {
 
     const tx = await txManager.sendTransaction(
       auctionFactory,
-      'cancelAuction',
+      "cancelAuction",
       [auctionId],
-      { ...options, module: 'Auction' }
+      { ...options, module: "Auction" }
     );
 
     return { tx };
@@ -753,13 +775,13 @@ export class AuctionModule extends BaseModule {
     auctionIds: string[],
     options?: TransactionOptions
   ): Promise<{ cancelledCount: number; tx: TransactionReceipt }> {
-    validateBatchSize(auctionIds, BATCH_LIMITS.AUCTIONS, 'auctionIds');
+    validateBatchSize(auctionIds, BATCH_LIMITS.AUCTIONS, "auctionIds");
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
@@ -768,9 +790,9 @@ export class AuctionModule extends BaseModule {
 
     const tx = await txManager.sendTransaction(
       auctionFactory,
-      'batchCancelAuction',
+      "batchCancelAuction",
       [auctionIds],
-      { ...options, module: 'Auction' }
+      { ...options, module: "Auction" }
     );
 
     // Extract cancelledCount from transaction logs or return auctionIds.length as estimate
@@ -804,13 +826,13 @@ export class AuctionModule extends BaseModule {
     auctionId: string,
     options?: TransactionOptions
   ): Promise<{ tx: TransactionReceipt }> {
-    validateTokenId(auctionId, 'auctionId');
+    validateTokenId(auctionId, "auctionId");
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider,
       undefined,
@@ -819,9 +841,9 @@ export class AuctionModule extends BaseModule {
 
     const tx = await txManager.sendTransaction(
       auctionFactory,
-      'settleAuction',
+      "settleAuction",
       [auctionId],
-      { ...options, module: 'Auction' }
+      { ...options, module: "Auction" }
     );
 
     return { tx };
@@ -848,20 +870,20 @@ export class AuctionModule extends BaseModule {
    * ```
    */
   async getCurrentPrice(auctionId: string): Promise<string> {
-    validateTokenId(auctionId, 'auctionId');
+    validateTokenId(auctionId, "auctionId");
 
     const provider = this.ensureProvider();
     const txManager = this.ensureTxManager();
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider
     );
 
     const price = await txManager.callContract<bigint>(
       auctionFactory,
-      'getCurrentPrice',
+      "getCurrentPrice",
       [auctionId]
     );
 
@@ -898,22 +920,22 @@ export class AuctionModule extends BaseModule {
    * ```
    */
   async getPendingRefund(auctionId: string, bidder: string): Promise<string> {
-    validateTokenId(auctionId, 'auctionId');
-    validateAddress(bidder, 'bidder');
+    validateTokenId(auctionId, "auctionId");
+    const normalizedBidder = validateAddress(bidder, "bidder");
 
     const provider = this.ensureProvider();
     const txManager = this.ensureTxManager();
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider
     );
 
     const refund = await txManager.callContract<bigint>(
       auctionFactory,
-      'getPendingRefund',
-      [auctionId, bidder]
+      "getPendingRefund",
+      [auctionId, normalizedBidder]
     );
 
     return ethers.formatEther(refund);
@@ -927,7 +949,7 @@ export class AuctionModule extends BaseModule {
     const txManager = this.ensureTxManager();
 
     const auctionFactory = await this.contractRegistry.getContract(
-      'AuctionFactory',
+      "AuctionFactory",
       this.getNetworkId(),
       provider
     );
@@ -947,20 +969,20 @@ export class AuctionModule extends BaseModule {
       highestBidder: string;
       highestBid: bigint;
       bidCount: bigint;
-    }>(auctionFactory, 'getAuction', [auctionId]);
+    }>(auctionFactory, "getAuction", [auctionId]);
 
     // Contract enum: CREATED=0, ACTIVE=1, ENDED=2, CANCELLED=3, SETTLED=4
-    const statusMap: Record<number, Auction['status']> = {
-      0: 'active',     // CREATED - treat as active
-      1: 'active',     // ACTIVE
-      2: 'ended',      // ENDED
-      3: 'cancelled',  // CANCELLED
-      4: 'ended',      // SETTLED - treat as ended
+    const statusMap: Record<number, Auction["status"]> = {
+      0: "active", // CREATED - treat as active
+      1: "active", // ACTIVE
+      2: "ended", // ENDED
+      3: "cancelled", // CANCELLED
+      4: "ended", // SETTLED - treat as ended
     };
 
     // Convert BigInt to number for status lookup
     const statusNum = Number(auctionData.status);
-    const type = Number(auctionData.auctionType) === 0 ? 'english' : 'dutch';
+    const type = Number(auctionData.auctionType) === 0 ? "english" : "dutch";
 
     const auction: Auction = {
       id: auctionId,
@@ -970,16 +992,17 @@ export class AuctionModule extends BaseModule {
       tokenId: auctionData.tokenId.toString(),
       startTime: Number(auctionData.startTime),
       endTime: Number(auctionData.endTime),
-      status: statusMap[statusNum] || 'active',
+      status: statusMap[statusNum] || "active",
       createdAt: new Date(Number(auctionData.startTime) * 1000).toISOString(),
     };
 
-    if (type === 'english') {
+    if (type === "english") {
       auction.startingBid = ethers.formatEther(auctionData.startPrice);
       // If no bids yet, show starting bid as current bid
-      auction.currentBid = auctionData.highestBid > 0n 
-        ? ethers.formatEther(auctionData.highestBid)
-        : ethers.formatEther(auctionData.startPrice);
+      auction.currentBid =
+        auctionData.highestBid > 0n
+          ? ethers.formatEther(auctionData.highestBid)
+          : ethers.formatEther(auctionData.startPrice);
       auction.highestBidder = auctionData.highestBidder;
     } else {
       auction.startPrice = ethers.formatEther(auctionData.startPrice);
@@ -1007,17 +1030,20 @@ export class AuctionModule extends BaseModule {
     }
 
     throw this.error(
-      'CONTRACT_CALL_FAILED',
-      'Could not extract auction ID from transaction'
+      "CONTRACT_CALL_FAILED",
+      "Could not extract auction ID from transaction"
     );
   }
 
   /**
    * Extract multiple auction IDs from batch transaction receipt
    */
-  private extractBatchAuctionIds(receipt: TransactionReceipt, _expectedCount: number): string[] {
+  private extractBatchAuctionIds(
+    receipt: TransactionReceipt,
+    _expectedCount: number
+  ): string[] {
     const auctionIds: string[] = [];
-    
+
     for (const logEntry of receipt.logs) {
       try {
         const log = logEntry as { topics?: string[] };
@@ -1035,12 +1061,11 @@ export class AuctionModule extends BaseModule {
 
     if (auctionIds.length === 0) {
       throw this.error(
-        'CONTRACT_CALL_FAILED',
-        'Could not extract auction IDs from transaction'
+        "CONTRACT_CALL_FAILED",
+        "Could not extract auction IDs from transaction"
       );
     }
 
     return auctionIds;
   }
-
 }

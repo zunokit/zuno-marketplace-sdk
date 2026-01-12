@@ -26,9 +26,7 @@ export type * from './types/contracts';
 // Utils
 export { ZunoSDKError, ErrorCodes } from './utils/errors';
 export type { ErrorContext, ErrorCode } from './utils/errors';
-export { EventEmitter } from './utils/events';
 export { TransactionManager } from './utils/transactions';
-export { BATCH_EVENTS, createBatchProgressTracker, BatchProgressTracker } from './utils/batchProgress';
 export { ZunoLogger, createNoOpLogger } from './utils/logger';
 export type { Logger, LoggerConfig, LogLevel, LogMetadata } from './utils/logger';
 export { logStore } from './utils/logStore';
