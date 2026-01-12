@@ -12,6 +12,7 @@ import type {
   MintERC1155Params,
   TokenStandard,
   ContractType,
+  TransactionOptions,
 } from '../types/contracts';
 import type { TransactionReceipt } from '../types/entities';
 import { validateAddress, ErrorCodes } from '../utils/errors';
@@ -922,5 +923,123 @@ export class CollectionModule extends BaseModule {
     const contract = new ethers.Contract(normalizedCollection, abi, provider);
 
     return await contract.isAllowlistOnly();
+  }
+
+  /**
+   * Setup allowlist in a single transaction
+   *
+   * Combines addToAllowlist + setAllowlistOnly in one atomic transaction
+   * reducing Metamask confirmations from 2-3 to 1.
+   *
+   * @param collectionAddress - The collection contract address
+   * @param addresses - Array of addresses to add to allowlist (max 100)
+   * @param enableAllowlistOnly - If true, only allowlisted addresses can mint
+   * @param options - Transaction options
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If collection address is invalid
+   * @throws {ZunoSDKError} INVALID_PARAMETER - If addresses array is empty or exceeds batch limit
+   *
+   * @example
+   * ```typescript
+   * // Setup allowlist with 50 addresses and enable allowlist-only mode
+   * const { tx } = await sdk.collection.setupAllowlist(
+   *   "0x1234...",
+   *   ["0xabc...", "0xdef...", ...], // up to 100 addresses
+   *   true
+   * );
+   * console.log('Allowlist setup complete:', tx.transactionHash);
+   * ```
+   */
+  async setupAllowlist(
+    collectionAddress: string,
+    addresses: string[],
+    enableAllowlistOnly: boolean,
+    options?: TransactionOptions
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('setupAllowlist started', { collectionAddress, addressCount: addresses.length, enableAllowlistOnly });
+
+    // Validate and normalize collection address
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
+
+    const txManager = this.ensureTxManager();
+    const signer = this.ensureSigner();
+
+    const abi = ['function setupAllowlist(address[] calldata addresses, bool enableAllowlistOnly) external'];
+    const { ethers } = await import('ethers');
+    const contract = new ethers.Contract(normalizedCollection, abi, signer);
+
+    const tx = await txManager.sendTransaction(contract, 'setupAllowlist', [addresses, enableAllowlistOnly], { ...options, module: 'Collection' });
+    this.log('setupAllowlist completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
+   * Mint NFTs as collection owner (bypasses all restrictions except maxSupply)
+   *
+   * This function allows collection owners to mint NFTs without the standard
+   * restrictions like payment requirements, timing restrictions, allowlist checks,
+   * or per-wallet mint limits. Only the maxSupply limit is enforced.
+   *
+   * @param collectionAddress - The collection contract address
+   * @param recipient - Address to receive the minted NFT(s)
+   * @param amount - Number of NFTs to mint (default: 1)
+   * @param options - Transaction options
+   * @returns Promise resolving to transaction receipt with tokenId(s)
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If collection address is invalid
+   * @throws {ZunoMarketplaceError} INSUFFICIENT_SUPPLY - If minting would exceed maxSupply
+   *
+   * @example
+   * ```typescript
+   * // Mint 5 NFTs as owner
+   * const { tx, tokenId } = await sdk.collection.ownerMint(
+   *   "0x1234...",
+   *   "0xabc...",
+   *   5
+   * );
+   * console.log('Minted NFT:', tokenId, 'to:', recipient);
+   * ```
+   */
+  async ownerMint(
+    collectionAddress: string,
+    recipient: string,
+    amount: number = 1,
+    options?: TransactionOptions
+  ): Promise<{ tx: TransactionReceipt; tokenId?: string }> {
+    this.log('ownerMint started', { collectionAddress, recipient, amount });
+
+    // Validate and normalize addresses
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedRecipient = validateAddress(recipient, 'recipient');
+
+    if (amount <= 0) {
+      throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
+    }
+
+    const txManager = this.ensureTxManager();
+    const signer = this.ensureSigner();
+
+    // Create contract directly with ownerMint ABI
+    const ownerMintABI = ['function ownerMint(address to, uint256 amount) external'];
+    const { ethers } = await import('ethers');
+    const contract = new ethers.Contract(normalizedCollection, ownerMintABI, signer);
+
+    // Convert amount to BigInt
+    const amountBigInt = BigInt(amount);
+
+    const tx = await txManager.sendTransaction(
+      contract,
+      'ownerMint',
+      [normalizedRecipient, amountBigInt],
+      { ...options, module: 'Collection' }
+    );
+
+    this.log('ownerMint completed', { txHash: tx.hash });
+
+    // Return transaction receipt - tokenId would need to be extracted from logs if needed
+    return { tx };
   }
 }

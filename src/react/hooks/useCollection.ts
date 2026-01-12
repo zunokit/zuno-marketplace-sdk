@@ -186,3 +186,95 @@ export function useIsAllowlistOnly(collectionAddress?: string) {
   });
 }
 
+/**
+ * Hook to setup allowlist in a single transaction
+ *
+ * Combines addToAllowlist + setAllowlistOnly in one atomic transaction,
+ * reducing Metamask confirmations from 2-3 to 1.
+ *
+ * @param collectionAddress - The collection contract address
+ * @param addresses - Array of addresses to add to allowlist
+ * @param enableAllowlistOnly - If true, only allowlisted addresses can mint
+ */
+export function useSetupAllowlist() {
+  const sdk = useZuno();
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async ({
+      collectionAddress,
+      addresses,
+      enableAllowlistOnly,
+    }: {
+      collectionAddress: string;
+      addresses: string[];
+      enableAllowlistOnly: boolean;
+    }) => {
+      const result = await sdk.collection.setupAllowlist(
+        collectionAddress,
+        addresses,
+        enableAllowlistOnly
+      );
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allowlist', 'collections'] });
+      queryClient.invalidateQueries({ queryKey: ['allowlistOnly'] });
+    },
+  });
+
+  return {
+    setupAllowlist: mutation.mutate,
+    isLoading: mutation.isPending,
+    error: mutation.error,
+  };
+}
+
+/**
+ * Hook to mint NFTs as collection owner
+ *
+ * Allows collection owners to mint NFTs without restrictions:
+ * - No payment required
+ * - No timing restrictions (mintStartTime ignored)
+ * - No allowlist checks
+ * - No per-wallet mint limits
+ *
+ * Only maxSupply limit is enforced.
+ *
+ * @param collectionAddress - The collection contract address
+ * @param recipient - Address to receive the minted NFT(s)
+ * @param amount - Number of NFTs to mint (default: 1)
+ */
+export function useOwnerMint() {
+  const sdk = useZuno();
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async ({
+      collectionAddress,
+      recipient,
+      amount,
+    }: {
+      collectionAddress: string;
+      recipient: string;
+      amount?: number;
+    }) => {
+      const result = await sdk.collection.ownerMint(
+        collectionAddress,
+        recipient,
+        amount || 1
+      );
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nfts', 'collections'] });
+    },
+  });
+
+  return {
+    ownerMint: mutation.mutate,
+    isLoading: mutation.isPending,
+    error: mutation.error,
+  };
+}
+
