@@ -22,13 +22,15 @@ export { useZunoLogger } from './hooks/useZunoLogger';
 export { useExchange, useListings, useListingsBySeller, useListing } from './hooks/useExchange';
 
 // Hooks - Collection
-export { 
-  useCollection, 
-  useCollectionInfo, 
-  useCreatedCollections, 
+export {
+  useCollection,
+  useCollectionInfo,
+  useCreatedCollections,
   useUserOwnedTokens,
   useIsInAllowlist,
   useIsAllowlistOnly,
+  useSetupAllowlist,
+  useOwnerMint,
 } from './hooks/useCollection';
 
 // Hooks - Auction
@@ -56,13 +58,13 @@ export { useProviderSync } from './hooks/useProviderSync';
 export type { UseProviderSyncOptions, UseProviderSyncReturn } from './hooks/useProviderSync';
 
 // Utilities - Chains & Connectors
-export { 
-  getChainFromNetwork, 
+export {
+  getChainFromNetwork,
   getChainsFromNetworks,
 } from './utils/chains';
 export type { CustomChainConfig } from './utils/chains';
 
-export { 
+export {
   createDefaultConnectors,
   createSSRSafeConnectors,
   isBrowser,
@@ -72,3 +74,22 @@ export type { CreateDefaultConnectorsOptions } from './utils/connectors';
 // DevTools
 export { ZunoDevTools } from './components/ZunoDevTools';
 export type { ZunoDevToolsProps, DevToolsConfig } from './components/ZunoDevTools';
+
+// Query Keys & Options (TanStack Query v5)
+export {
+  exchangeQueryKeys,
+  listingsQueryOptions,
+  listingsBySellerQueryOptions,
+  listingQueryOptions,
+  auctionQueryKeys,
+  auctionDetailsQueryOptions,
+  dutchAuctionPriceQueryOptions,
+  pendingRefundQueryOptions,
+  collectionQueryKeys,
+  collectionInfoQueryOptions,
+  createdCollectionsQueryOptions,
+  userOwnedTokensQueryOptions,
+  isInAllowlistQueryOptions,
+  isAllowlistOnlyQueryOptions,
+  type CreatedCollectionsOptions,
+} from './query-keys';

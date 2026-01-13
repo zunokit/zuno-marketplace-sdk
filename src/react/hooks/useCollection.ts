@@ -53,7 +53,7 @@ export function useCollection() {
     mutationFn: (params: MintERC721Params) =>
       sdk.collection.mintERC721(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['nfts'] });
+      queryClient.invalidateQueries({ queryKey: collectionQueryKeys.nfts() });
     },
   });
 
@@ -61,7 +61,7 @@ export function useCollection() {
     mutationFn: (params: BatchMintERC721Params) =>
       sdk.collection.batchMintERC721(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['nfts'] });
+      queryClient.invalidateQueries({ queryKey: collectionQueryKeys.nfts() });
     },
   });
 
@@ -69,7 +69,7 @@ export function useCollection() {
     mutationFn: (params: MintERC1155Params) =>
       sdk.collection.mintERC1155(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['nfts'] });
+      queryClient.invalidateQueries({ queryKey: collectionQueryKeys.nfts() });
     },
   });
 
@@ -77,7 +77,7 @@ export function useCollection() {
     mutationFn: (params: MintERC1155Params) =>
       sdk.collection.batchMintERC1155(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['nfts'] });
+      queryClient.invalidateQueries({ queryKey: collectionQueryKeys.nfts() });
     },
   });
 
@@ -278,7 +278,7 @@ export function useOwnerMint() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['nfts', 'collections'] });
+      queryClient.invalidateQueries({ queryKey: collectionQueryKeys.nfts() });
     },
   });
 

@@ -53,6 +53,7 @@ export const collectionQueryKeys = {
   all: ['collection'] as const,
   collections: () => [...collectionQueryKeys.all, 'collections'] as const,
   collection: (address: string) => [...collectionQueryKeys.all, address] as const,
+  nfts: () => [...collectionQueryKeys.all, 'nfts'] as const,
   createdCollections: (options?: CreatedCollectionsOptions) =>
     [...collectionQueryKeys.collections(), 'created', options?.creator, options?.fromBlock, options?.toBlock] as const,
   userOwnedTokens: (collectionAddress: string, userAddress: string) =>
