@@ -1,3 +1,9 @@
+## [2.2.0-beta-claude.7](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.6...v2.2.0-beta-claude.7) (2026-01-13)
+
+### 🐛 Bug Fixes
+
+* correct query invalidation in useSetupAllowlist ([35fa684](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/35fa6842fface63f00124788d7f5577ce817b8b4)), closes [#86](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/86)
+
 ## [2.1.0-beta.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.0.0...v2.1.0-beta.1) (2026-01-11)
 
 ### ✨ Features
