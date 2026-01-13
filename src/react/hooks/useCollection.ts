@@ -217,9 +217,14 @@ export function useSetupAllowlist() {
       );
       return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allowlist', 'collections'] });
-      queryClient.invalidateQueries({ queryKey: ['allowlistOnly'] });
+    onSuccess: (_, variables) => {
+      // Invalidate all allowlist queries for this collection (any user)
+      queryClient.invalidateQueries({
+        queryKey: ['allowlist', variables.collectionAddress],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['allowlistOnly', variables.collectionAddress],
+      });
     },
   });
 
