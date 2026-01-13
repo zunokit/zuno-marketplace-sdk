@@ -1,3 +1,9 @@
+## [2.2.0-beta-claude.6](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.5...v2.2.0-beta-claude.6) (2026-01-13)
+
+### 🐛 Bug Fixes
+
+* address PR [#87](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/87) review comments ([9d27209](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/9d2720960dbde7c24e48231f51d15dad50045f54))
+
 ## [2.2.0-beta-claude.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.4...v2.2.0-beta-claude.5) (2026-01-13)
 
 ### 🐛 Bug Fixes
