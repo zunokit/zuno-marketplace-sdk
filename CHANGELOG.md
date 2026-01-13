@@ -1,3 +1,22 @@
+## [2.1.1-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.2...v2.1.1-beta-claude.3) (2026-01-13)
+
+### 🐛 Bug Fixes
+
+* resolve issues [#85](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/85), [#84](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/84), [#83](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/83), [#80](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/80), [#81](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/81) - allowlist cache, ERC1155 listing ([d4c142e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d4c142e8fce9dbcdb19223a5472a948d45a08eb2)), closes [#86](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/86)
+
+## [2.1.1-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.1...v2.1.1-beta-claude.2) (2026-01-13)
+
+### 🐛 Bug Fixes
+
+* add missing allowlist query invalidation to mutations ([c48fb38](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/c48fb3844e57edc81bdd728cf66a388a8f1de60e)), closes [#88](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/88)
+
+## [2.1.1-beta-claude.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1-beta-claude.1) (2026-01-13)
+
+### 🐛 Bug Fixes
+
+* correct query invalidation in useSetupAllowlist ([3a3e1d2](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/3a3e1d20b66fc55139f51116ec6c0a7c7b8115f1))
+* **sdk:** resolve all 11 open SDK issues ([#75](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/75)) ([4c89079](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4c89079b60d0503baa2c26ad8f9756ffde548dd7)), closes [#69](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/69) [#74](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/74) [#55-68](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/55-68) [#65](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/65) [#67](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/67) [#58](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/58) [#60](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/60) [zunokit/zuno-marketplace-contracts#51](https://github.com/zunokit/zuno-marketplace-contracts/issues/51) [#47](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/47) [#48](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/48)
+
 ## [2.2.0-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.2...v2.2.0-beta-claude.3) (2026-01-12)
 
 ### ✨ Features
