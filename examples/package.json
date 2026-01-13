@@ -1,20 +1,36 @@
 {
   "name": "zuno-marketplace-sdk-examples",
-  "version": "0.1.0",
+  "version": "2.1.0",
   "private": true,
   "description": "Examples for Zuno Marketplace SDK",
   "type": "module",
   "scripts": {
-    "basic": "node basic-usage.js",
-    "dev": "npm run basic"
+    "basics:init": "node dist/examples/basics/initialization.js",
+    "basics:wallet": "node dist/examples/basics/wallet-connection.js",
+    "basics:error": "node dist/examples/basics/error-handling.js",
+    "basics:ts": "node dist/examples/basics/typescript-examples.js",
+    "collection:create": "node dist/examples/collection/create-collection.js",
+    "collection:mint": "node dist/examples/collection/minting-flow.js",
+    "collection:allowlist": "node dist/examples/collection/allowlist-management.js",
+    "collection:owner": "node dist/examples/collection/owner-operations.js",
+    "collection:info": "node dist/examples/collection/collection-info.js",
+    "exchange:list": "node dist/examples/exchange/listing-workflow.js",
+    "exchange:buy": "node dist/examples/exchange/buying-flow.js",
+    "exchange:batch": "node dist/examples/exchange/batch-operations.js",
+    "exchange:market": "node dist/examples/exchange/market-data.js",
+    "auction:english": "node dist/examples/auction/english-auction.js",
+    "auction:dutch": "node dist/examples/auction/dutch-auction.js",
+    "auction:bid": "node dist/examples/auction/bidding-flow.js",
+    "auction:monitor": "node dist/examples/auction/auction-monitoring.js",
+    "basic": "node dist/examples/basics/initialization.js",
+    "dev": "npm run basics:init"
   },
   "dependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "ethers": "^6.13.0",
+    "zuno-marketplace-sdk": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
   }
 }
