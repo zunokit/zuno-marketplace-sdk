@@ -78,6 +78,7 @@ export function useCollection() {
       sdk.collection.addToAllowlist(collectionAddress, addresses),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+      queryClient.invalidateQueries({ queryKey: ['allowlist', variables.collectionAddress] });
     },
   });
 
@@ -86,6 +87,7 @@ export function useCollection() {
       sdk.collection.removeFromAllowlist(collectionAddress, addresses),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+      queryClient.invalidateQueries({ queryKey: ['allowlist', variables.collectionAddress] });
     },
   });
 
@@ -94,6 +96,7 @@ export function useCollection() {
       sdk.collection.setAllowlistOnly(collectionAddress, enabled),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['collection', variables.collectionAddress] });
+      queryClient.invalidateQueries({ queryKey: ['allowlistOnly', variables.collectionAddress] });
     },
   });
 
