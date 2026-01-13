@@ -4,7 +4,7 @@
 
 The Zuno Marketplace SDK follows a **layered architecture** with clear separation of concerns across four main layers: Core, Modules, React Integration, and Utilities. The architecture emphasizes modularity, testability, and developer experience through dependency injection, lazy loading, and event-driven communication.
 
-**Last Updated:** 2026-01-11
+**Last Updated:** 2026-01-14
 **Architecture Pattern:** Layered Architecture + Singleton + Dependency Injection
 **Data Flow:** Unidirectional (Top → Bottom) with Event Emission (Bottom → Top)
 
@@ -23,9 +23,9 @@ The Zuno Marketplace SDK follows a **layered architecture** with clear separatio
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
 │  │   Hooks      │  │  Providers   │  │     Components       │  │
 │  │ (useExchange,│  │ (ZunoProvider,│  │  (ZunoDevTools)     │  │
-│  │  useCollection│ │ WagmiSignerSync)│                      │  │
-│  │  useAuction, │  └──────────────┘  └──────────────────────┘  │
-│  │  etc.)       │                                                 │
+│  │  useCollection│ │ WagmiProviderSync,│                     │  │
+│  │  useAuction, │  │ WagmiSignerSync)│                      │  │
+│  │  etc.)       │  └──────────────┘  └──────────────────────┘  │
 │  └───────┬──────┘                                                 │
 └──────────┼───────────────────────────────────────────────────────┘
            │
@@ -217,7 +217,8 @@ export class ContractRegistry {
 **Caching Strategy:**
 - **ABI Cache:** TanStack Query with 5-min TTL
 - **Contract Cache:** In-memory Map (process-level)
-- **Invalidation:** Manual via `invalidateCache()`
+- **Approval Cache:** Approval status caching (v2.1.0+) to reduce RPC calls
+- **Invalidation:** Manual via `invalidateCache()` or automatic on network changes
 
 ---
 
@@ -396,6 +397,17 @@ export class CollectionModule extends BaseModule {
     await contract.addToAllowlist(params.addresses);
   }
 
+  async setupAllowlist(params: SetupAllowlistParams): Promise<void> {
+    const contract = await this.getContract(params.collectionAddress, this.signer);
+    await contract.setupAllowlist(params.enabled, params.duration);
+  }
+
+  async ownerMint(params: OwnerMintParams): Promise<OwnerMintResult> {
+    const contract = await this.getContract(params.collectionAddress, this.signer);
+    const tx = await contract.ownerMint(params.recipient, params.amount);
+    return { tokenId: tx.hash, tx };
+  }
+
   async setAllowlistOnly(params: SetAllowlistOnlyParams): Promise<void> {
     const contract = await this.getContract(params.collectionAddress, this.signer);
     await contract.setAllowlistOnly(params.enabled);
@@ -406,7 +418,9 @@ export class CollectionModule extends BaseModule {
 **Key Features:**
 - Factory pattern for collection deployment
 - Event parsing to extract deployed addresses
-- Allowlist management (add/remove addresses)
+- ERC721/ERC1155 auto-detection (v2.2.0)
+- Allowlist management (add/remove addresses, setupAllowlist)
+- Owner-only minting (ownerMint)
 - Allowlist-only mode configuration
 
 ---
@@ -522,6 +536,7 @@ export class AuctionModule extends BaseModule {
 |----------|---------|
 | `ZunoProvider` | All-in-one provider (Wagmi + QueryClient + SDK) |
 | `ZunoContextProvider` | SDK instance context (for manual SDK init) |
+| `WagmiProviderSync` | SSR-safe provider sync (v2.1.0+) |
 | `WagmiSignerSync` | Syncs Wagmi signer to SDK (auto-updates on wallet change) |
 
 ---
@@ -794,7 +809,8 @@ ExchangeModule
     │
     ├─→ Execute transaction (via TransactionManager)
     │       │
-    │       ├─→ Retry logic (if fails)
+    │       ├─→ Retry logic (v2.1.0+ with exponential backoff)
+    │       ├─→ TransactionStore history tracking
     │       └─→ contract.list(...)
     │               │
     │               └─→ Ethereum Network
@@ -802,12 +818,17 @@ ExchangeModule
     ├─→ Log result (via Logger)
     │       │
     │       ├─→ Console output
-    │       ├─→ Log store (for DevTools)
+    │       ├─→ Log store (v2.1.0+ optimized for high-frequency)
     │       └─→ Custom logger (Sentry)
     │
     ├─→ Emit event (via EventEmitter)
     │       │
-    │       └─→ listing:created event
+    │       ├─→ listing:created event
+    │       └─→ Batch progress events (v2.1.0+)
+    │
+    ├─→ Invalidate queries (v2.1.1+ automatic)
+    │       │
+    │       └─→ TanStack Query cache invalidation
     │
     └─→ Return result { listingId, tx }
             │
@@ -969,8 +990,14 @@ const queryClient = new QueryClient({
 - ABIs cached for 5 minutes
 - Contract addresses cached for 5 minutes
 - Garbage collection after 10 minutes
+- Automatic invalidation on mutations (v2.1.1+)
 
-**Layer 3: Browser/Node (HTTP)**
+**Layer 3: Approval Cache (v2.1.0+)**
+- Approval status cached to reduce RPC calls
+- Token approval state tracked per collection
+- Lifetime: 5 minutes with manual invalidation
+
+**Layer 4: Browser/Node (HTTP)**
 - HTTP caching (Cache-Control headers)
 - CDN caching (if applicable)
 
@@ -1058,6 +1085,24 @@ const queryClient = new QueryClient({
 - Custom contract integration
 - Multi-chain support (Polygon, Arbitrum, Base)
 - SDK plugins/modules (extensible architecture)
+
+### V2.2.0 Features (Current)
+- ERC1155 support with auto-detection
+- setupAllowlist() method for programmatic allowlist configuration
+- ownerMint() method for owner-only minting
+- Enhanced batch operations with progress tracking
+- Sepolia testnet support (planned)
+
+### V2.1.0+ Features (Released)
+- WagmiProviderSync for SSR-safe provider initialization
+- Transaction retry logic with exponential backoff
+- TransactionStore history tracking
+- Batch progress events for real-time updates
+- ListingId validation (strict bytes32 format)
+- Dutch auction warnings for price clamp adjustments
+- Approval caching to reduce RPC calls
+- LogStore optimization for high-frequency logging
+- Query invalidation on mutations (v2.1.1+)
 
 ### Scalability
 - Event-based architecture (for real-time updates)

@@ -4,7 +4,7 @@
 
 This document defines the code standards, conventions, and best practices for the Zuno Marketplace SDK project. All contributors and maintainers must follow these guidelines to ensure code quality, consistency, and maintainability.
 
-**Last Updated:** 2026-01-11
+**Last Updated:** 2026-01-14
 **TypeScript Version:** 5.6+
 **Node Version:** >=18.0.0
 
@@ -48,7 +48,6 @@ This document defines the code standards, conventions, and best practices for th
 | `noUnusedParameters` | ✅ Enabled | Error on unused parameters |
 | `noImplicitReturns` | ✅ Enabled | Error on functions without return |
 | `noFallthroughCasesInSwitch` | ✅ Enabled | Error on switch fallthrough |
-| `noUncheckedIndexedAccess` | ✅ Enabled | Undefined check for indexed access |
 
 ---
 
@@ -474,27 +473,23 @@ export function getExchange() { } // Wrong naming
 
 ### Hook Optimization
 
-**Rule:** Use useCallback/useMemo for stable references
+**Rule:** Use useMemo for stable object references
 
 ```typescript
 // Good ✅
 export function useExchange() {
   const sdk = useZunoSDK();
 
+  // TanStack Query v5 handles mutationFn stability internally
   const listNFT = useMutation({
-    mutationFn: useCallback(
-      (params: ListNFTParams) => sdk.exchange.listNFT(params),
-      [sdk]
-    ),
+    mutationFn: (params: ListNFTParams) => sdk.exchange.listNFT(params),
   });
 
   const buyNFT = useMutation({
-    mutationFn: useCallback(
-      (params: BuyNFTParams) => sdk.exchange.buyNFT(params),
-      [sdk]
-    ),
+    mutationFn: (params: BuyNFTParams) => sdk.exchange.buyNFT(params),
   });
 
+  // Return stable object reference to prevent unnecessary re-renders
   return useMemo(
     () => ({ listNFT, buyNFT }),
     [listNFT, buyNFT]
@@ -507,12 +502,13 @@ export function useExchange() {
 
   const listNFT = useMutation({
     mutationFn: (params) => sdk.exchange.listNFT(params),
-    // No useCallback - creates new function on every render
   });
 
   return { listNFT }; // No useMemo - unstable object reference
 }
 ```
+
+**Note:** TanStack Query v5 handles `mutationFn` stability internally. useCallback is unnecessary for mutationFn but can be used for other callbacks.
 
 ### Component Structure
 
@@ -607,11 +603,25 @@ describe('ExchangeModule', () => {
 
 ### ESLint Rules
 
-**File:** `eslint.config.js`
+**File:** `eslint.config.js` (Flat Config)
 
 ```javascript
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsparser from '@typescript-eslint/parser';
+
 export default [
   {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+    },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off', // Allow for stubs
       '@typescript-eslint/no-unused-vars': [
@@ -625,6 +635,11 @@ export default [
   },
 ];
 ```
+
+**Key Rules:**
+- `no-explicit-any`: Off for internal stub code (marked with `TODO`)
+- `no-unused-vars`: Warn with `_` prefix pattern ignore
+- Flat config format (ESLint 9+)
 
 ### Running Linters
 
