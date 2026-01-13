@@ -1,3 +1,9 @@
+## [2.1.1-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.1...v2.1.1-beta-claude.2) (2026-01-13)
+
+### 🐛 Bug Fixes
+
+* add missing allowlist query invalidation to mutations ([c48fb38](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/c48fb3844e57edc81bdd728cf66a388a8f1de60e)), closes [#88](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/88)
+
 ## [2.1.1-beta-claude.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1-beta-claude.1) (2026-01-13)
 
 ### 🐛 Bug Fixes
