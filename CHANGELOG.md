@@ -1,3 +1,9 @@
+## [2.2.0-beta-claude.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.4...v2.2.0-beta-claude.5) (2026-01-13)
+
+### 🐛 Bug Fixes
+
+* remove trash files ([2c2d1b4](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/2c2d1b43329dfe96f50af00ab9ead73119ba823a))
+
 ## [2.2.0-beta-claude.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta-claude.3...v2.2.0-beta-claude.4) (2026-01-12)
 
 ### ✨ Features
