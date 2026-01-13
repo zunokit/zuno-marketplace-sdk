@@ -1,3 +1,9 @@
+## [2.1.1-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.2...v2.1.1-beta-claude.3) (2026-01-13)
+
+### 🐛 Bug Fixes
+
+* resolve issues [#85](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/85), [#84](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/84), [#83](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/83), [#80](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/80), [#81](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/81) - allowlist cache, ERC1155 listing ([d4c142e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d4c142e8fce9dbcdb19223a5472a948d45a08eb2)), closes [#86](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/86)
+
 ## [2.1.1-beta-claude.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.1...v2.1.1-beta-claude.2) (2026-01-13)
 
 ### 🐛 Bug Fixes
