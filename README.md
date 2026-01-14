@@ -36,12 +36,6 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 
 ## 🆕 What's New in v2.1.1-beta-claude.3
 
-### ✨ v2.2.0 Features (Upcoming)
-
-- **ERC1155 Support** - Auto-detection and support for ERC1155 collections
-- **setupAllowlist()** - Configure allowlist settings programmatically
-- **ownerMint()** - Owner-only minting functionality
-
 ### ✨ v2.1.1 Features
 
 - **Query Invalidation** - Automatic cache invalidation on mutations

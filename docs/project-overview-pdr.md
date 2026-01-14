@@ -376,7 +376,7 @@ Zuno Marketplace SDK is an all-in-one development kit that abstracts the complex
 
 ## Roadmap
 
-### Version 2.1.0 (Released: 2026-01-14)
+### Version 2.1.0 (Released: 2026-01-11)
 - ✅ WagmiProviderSync for SSR support
 - ✅ Transaction retry logic with history tracking
 - ✅ Batch progress events
@@ -385,7 +385,7 @@ Zuno Marketplace SDK is an all-in-one development kit that abstracts the complex
 - ✅ Approval caching
 - ✅ LogStore optimization
 
-### Version 2.1.1 (Released: 2026-01-14)
+### Version 2.1.1 (Released: 2026-01-13)
 - ✅ Query invalidation on mutations
 - ✅ Enhanced error messages
 - ✅ Performance optimizations
@@ -393,8 +393,6 @@ Zuno Marketplace SDK is an all-in-one development kit that abstracts the complex
 
 ### Version 2.2.0 (Planned: Q1 2026)
 - ERC1155 support with auto-detection
-- setupAllowlist() method
-- ownerMint() method
 - Sepolia testnet support
 - Additional React hooks (useOffers, useBundles)
 

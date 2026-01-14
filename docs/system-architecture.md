@@ -4,7 +4,7 @@
 
 The Zuno Marketplace SDK follows a **layered architecture** with clear separation of concerns across four main layers: Core, Modules, React Integration, and Utilities. The architecture emphasizes modularity, testability, and developer experience through dependency injection, lazy loading, and event-driven communication.
 
-**Last Updated:** 2026-01-14
+**Last Updated:** 2026-01-13
 **Architecture Pattern:** Layered Architecture + Singleton + Dependency Injection
 **Data Flow:** Unidirectional (Top → Bottom) with Event Emission (Bottom → Top)
 

@@ -4,7 +4,7 @@
 
 This document defines the code standards, conventions, and best practices for the Zuno Marketplace SDK project. All contributors and maintainers must follow these guidelines to ensure code quality, consistency, and maintainability.
 
-**Last Updated:** 2026-01-14
+**Last Updated:** 2026-01-13
 **TypeScript Version:** 5.6+
 **Node Version:** >=18.0.0
 
