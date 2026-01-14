@@ -25,11 +25,20 @@ examples/
 │   ├── batch-operations.ts
 │   └── market-data.ts
 │
-└── auction/                # Auction operations
+├── auction/                # Auction operations
     ├── english-auction.ts
     ├── dutch-auction.ts
     ├── bidding-flow.ts
     └── auction-monitoring.ts
+│
+└── react/                  # React integration
+    ├── setup-and-provider.tsx
+    ├── collection-hooks.tsx
+    ├── exchange-hooks.tsx
+    ├── auction-hooks.tsx
+    ├── error-handling.tsx
+    ├── loading-states.tsx
+    └── optimistic-updates.tsx
 ```
 
 ---
@@ -299,6 +308,134 @@ node examples/auction/bidding-flow.js
 
 ---
 
+## React Integration
+
+### Provider Setup
+
+```tsx
+import { ZunoProvider } from 'zuno-marketplace-sdk/react';
+
+function App() {
+  return (
+    <ZunoProvider config={{ apiKey: process.env.NEXT_PUBLIC_ZUNO_API_KEY!, network: 'sepolia' }}>
+      <YourApp />
+    </ZunoProvider>
+  );
+}
+```
+
+### Collection Hooks
+
+```tsx
+import { useCollection, useCollectionInfo } from 'zuno-marketplace-sdk/react';
+
+function MintNFT() {
+  const { mintERC721 } = useCollection();
+  const { data: collection } = useCollectionInfo('0x...');
+
+  const handleMint = async () => {
+    const result = await mintERC721.mutateAsync({
+      collectionAddress: '0x...',
+      recipient: '0x...',
+      value: '0.1',
+    });
+    console.log('Minted:', result.tokenId);
+  };
+
+  return (
+    <div>
+      <p>Supply: {collection?.totalSupply} / {collection?.maxSupply}</p>
+      <button onClick={handleMint} disabled={mintERC721.isPending}>
+        {mintERC721.isPending ? 'Minting...' : 'Mint NFT'}
+      </button>
+    </div>
+  );
+}
+```
+
+### Exchange Hooks
+
+```tsx
+import { useExchange, useListings } from 'zuno-marketplace-sdk/react';
+
+function Marketplace({ collectionAddress }: { collectionAddress: string }) {
+  const { listNFT } = useExchange();
+  const { data: listings } = useListings(collectionAddress);
+
+  return (
+    <div>
+      {listings?.filter(l => l.status === 'active').map((listing) => (
+        <div key={listing.id}>
+          <h3>Token #{listing.tokenId}</h3>
+          <p>Price: {listing.price} ETH</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Auction Hooks
+
+```tsx
+import { useAuction, useAuctionDetails, useDutchAuctionPrice } from 'zuno-marketplace-sdk/react';
+
+function AuctionInterface({ auctionId }: { auctionId: string }) {
+  const { placeBid } = useAuction();
+  const { data: auction } = useAuctionDetails(auctionId);
+  const { data: currentPrice } = useDutchAuctionPrice(auctionId);
+
+  if (auction?.type === 'english') {
+    return (
+      <div>
+        <h3>English Auction</h3>
+        <p>Current Bid: {auction.currentBid} ETH</p>
+        <p>Highest Bidder: {auction.highestBidder || 'None'}</p>
+        <button onClick={() => placeBid.mutateAsync({ auctionId, amount: '2.0' })}>
+          Place Bid
+        </button>
+      </div>
+    );
+  }
+
+  // Dutch auction UI...
+}
+```
+
+### Error Handling
+
+```tsx
+import { ZunoErrorBoundary, ErrorDisplay } from 'zuno-marketplace-sdk/react';
+
+function App() {
+  return (
+    <ZunoErrorBoundary>
+      <YourApp />
+    </ZunoErrorBoundary>
+  );
+}
+
+function MyComponent() {
+  const { mintERC721 } = useCollection();
+
+  const handleMint = async () => {
+    try {
+      await mintERC721.mutateAsync({
+        collectionAddress: '0x...',
+        recipient: '0x...',
+        value: '0.1',
+      });
+    } catch (error) {
+      return <ErrorDisplay error={error} />;
+    }
+  };
+
+  return <button onClick={handleMint}>Mint NFT</button>;
+}
+```
+
+---
+
 ## SDK Features Coverage
 
 ### ✅ Collection Module
@@ -321,6 +458,15 @@ node examples/auction/bidding-flow.js
 - Batch auction operations
 - Auction monitoring & queries
 - Refund management
+
+### ✅ React Module
+- ZunoProvider setup and configuration
+- Collection hooks (mint, create, allowlist, info)
+- Exchange hooks (list, buy, cancel, market data)
+- Auction hooks (English, Dutch, bid, monitor)
+- Error handling and error boundaries
+- Loading states and skeleton components
+- Optimistic UI patterns
 
 ---
 
