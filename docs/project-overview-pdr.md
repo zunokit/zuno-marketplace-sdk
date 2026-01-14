@@ -4,7 +4,7 @@
 
 **Zuno Marketplace SDK** is a comprehensive, type-safe TypeScript SDK for building NFT marketplace applications on Ethereum and EVM-compatible chains. The SDK provides a complete suite of tools for NFT exchange, collection management, auction systems, and React integration with modern Web3 libraries.
 
-**Version:** 2.0.1-beta-claude.2
+**Version:** 2.1.1-beta-claude.3
 **Repository:** [github.com/ZunoKit/zuno-marketplace-sdk](https://github.com/ZunoKit/zuno-marketplace-sdk)
 **License:** MIT
 **Node Version:** >=18.0.0
@@ -17,11 +17,12 @@
 
 Zuno Marketplace SDK is an all-in-one development kit that abstracts the complexity of building NFT marketplace functionality. It provides:
 
-- **Smart Contract Integration**: Pre-built interfaces for Zuno marketplace contracts
+- **Smart Contract Integration**: Pre-built interfaces for Zuno marketplace contracts (ERC721, ERC1155)
 - **React Hooks**: 21+ ready-to-use hooks for common marketplace operations
 - **State Management**: Built-in TanStack Query v5 integration for data caching
 - **Wallet Support**: Seamless integration with Wagmi v2 for wallet connections
 - **Type Safety**: Full TypeScript support with strict typing throughout
+- **SSR Support**: WagmiProviderSync for Next.js app directory compatibility
 - **Developer Tools**: In-app DevTools for debugging logs, transactions, and cache
 
 ### Target Users
@@ -58,10 +59,11 @@ Zuno Marketplace SDK is an all-in-one development kit that abstracts the complex
 - Query listings by seller, collection, or global market
 
 #### Collection Module
-- Create ERC721 and ERC1155 collections
+- Create ERC721 and ERC1155 collections with auto-detection
 - Configure royalties, minting limits, and pricing
 - Mint NFTs with payment verification
-- Allowlist management (add/remove addresses)
+- Allowlist management (add/remove addresses, setupAllowlist)
+- Owner-only minting (ownerMint)
 - Allowlist-only mode configuration
 - Query collection info and user-owned tokens
 
@@ -76,10 +78,11 @@ Zuno Marketplace SDK is an all-in-one development kit that abstracts the complex
 
 #### React Integration
 - **21+ Production Hooks**: useExchange, useCollection, useAuction, useWallet, useBalance, useABI, etc.
-- **Provider Components**: ZunoProvider (all-in-one), ZunoContextProvider, WagmiSignerSync
+- **Provider Components**: ZunoProvider (all-in-one), ZunoContextProvider, WagmiProviderSync (SSR-safe)
 - **DevTools Component**: In-app debugging panel with Logs, Transactions, Cache, and Network tabs
 - **Wagmi v2 Integration**: Native support for WalletConnect, MetaMask, Coinbase Wallet
 - **TanStack Query v5**: Smart caching with configurable TTL and garbage collection
+- **SSR Support**: WagmiProviderSync for Next.js app directory compatibility
 
 #### Logging & Debugging
 - **5 Log Levels**: none, error, warn, info, debug
@@ -130,8 +133,8 @@ Zuno Marketplace SDK is an all-in-one development kit that abstracts the complex
 | Network | Status | Chain ID | Notes |
 |---------|:------:|---------|-------|
 | Local Development | ✅ Full Support | 31337 | Anvil/Hardhat local testing |
-| Sepolia Testnet | ⚠️ Coming Soon | 11155111 | Planned for Q1 2026 |
-| Ethereum Mainnet | ⚠️ Coming Soon | 1 | Planned for Q2 2026 |
+| Sepolia Testnet | ⚠️ Planned | 11155111 | Planned for Q1 2026 |
+| Ethereum Mainnet | ⚠️ Planned | 1 | Planned for Q2 2026 |
 | Polygon | ❌ Not Supported | 137 | Under consideration |
 | Arbitrum | ❌ Not Supported | 42161 | Under consideration |
 | Base | ❌ Not Supported | 8453 | Under consideration |
@@ -373,13 +376,27 @@ Zuno Marketplace SDK is an all-in-one development kit that abstracts the complex
 
 ## Roadmap
 
-### Version 2.1.0 (Planned: Q1 2026)
+### Version 2.1.0 (Released: 2026-01-11)
+- ✅ WagmiProviderSync for SSR support
+- ✅ Transaction retry logic with history tracking
+- ✅ Batch progress events
+- ✅ ListingId validation (strict bytes32)
+- ✅ Dutch auction warnings
+- ✅ Approval caching
+- ✅ LogStore optimization
+
+### Version 2.1.1 (Released: 2026-01-13)
+- ✅ Query invalidation on mutations
+- ✅ Enhanced error messages
+- ✅ Performance optimizations
+- ✅ Reduced bundle size
+
+### Version 2.2.0 (Planned: Q1 2026)
+- ERC1155 support with auto-detection
 - Sepolia testnet support
-- Enhanced error messages
-- Performance optimizations
 - Additional React hooks (useOffers, useBundles)
 
-### Version 2.2.0 (Planned: Q2 2026)
+### Version 2.3.0 (Planned: Q2 2026)
 - Ethereum mainnet support
 - Advanced analytics hooks
 - Real-time subscription support

@@ -2,10 +2,11 @@
 
 ## Overview
 
-The Zuno Marketplace SDK is a modular TypeScript library built with ~9,185 lines of code across 50+ source files. The codebase follows a clean architecture pattern with clear separation of concerns between core SDK functionality, business logic modules, React integration, and utilities.
+The Zuno Marketplace SDK is a modular TypeScript library built with ~8,555 lines of code across 41 source files. The codebase follows a clean architecture pattern with clear separation of concerns between core SDK functionality, business logic modules, React integration, and utilities.
 
-**Last Updated:** 2026-01-11
-**Total LOC:** ~9,185 lines (TypeScript)
+**Last Updated:** 2026-01-13
+**Total LOC:** ~8,555 lines (TypeScript)
+**Source Files:** 41 files
 **Language:** TypeScript 5.6+
 **Build System:** tsup (esbuild)
 
@@ -45,9 +46,9 @@ zuno-marketplace-sdk/
 
 | File | LOC | Purpose |
 |------|-----|---------|
-| `ZunoSDK.ts` | ~400 | Main SDK class (singleton pattern, module lazy-loading) |
-| `ZunoAPIClient.ts` | ~200 | HTTP client for Registry API (ABI/contract fetching) |
-| `ContractRegistry.ts` | ~300 | Contract instance caching with TanStack Query |
+| `ZunoSDK.ts` | ~521 | Main SDK class (singleton pattern, module lazy-loading) |
+| `ZunoAPIClient.ts` | ~431 | HTTP client for Registry API (ABI/contract fetching) |
+| `ContractRegistry.ts` | ~235 | Contract instance caching with TanStack Query |
 
 **Key Responsibilities:**
 - Singleton SDK instance management
@@ -65,10 +66,10 @@ zuno-marketplace-sdk/
 
 | File | LOC | Purpose |
 |------|-----|---------|
-| `BaseModule.ts` | ~150 | Abstract base class (template method pattern) |
-| `ExchangeModule.ts` | ~400 | NFT listing, buying, canceling |
-| `CollectionModule.ts` | ~450 | Collection creation, minting, allowlist |
-| `AuctionModule.ts` | ~500 | English/Dutch auctions, bidding, settlement |
+| `BaseModule.ts` | ~176 | Abstract base class (template method pattern) |
+| `ExchangeModule.ts` | ~624 | NFT listing, buying, canceling (11 public methods) |
+| `CollectionModule.ts` | ~1,046 | Collection creation, minting, allowlist (18 public methods) |
+| `AuctionModule.ts` | ~1,072 | English/Dutch auctions, bidding, settlement (13 public methods) |
 
 **BaseModule Dependencies (7 injected):**
 1. `ZunoAPIClient` - API communication
@@ -89,9 +90,10 @@ zuno-marketplace-sdk/
 - Query listings by seller
 
 **CollectionModule:**
-- Create ERC721/ERC1155 collections
+- Create ERC721/ERC1155 collections (v2.2.0 auto-detection)
 - Mint NFTs (with payment)
-- Allowlist management (add/remove addresses)
+- Allowlist management (add/remove addresses, setupAllowlist)
+- Owner-only minting (ownerMint)
 - Set allowlist-only mode
 - Query collection info
 - Query user-owned tokens
@@ -148,6 +150,7 @@ zuno-marketplace-sdk/
 |----------|---------|
 | `ZunoProvider` | All-in-one provider (Wagmi config + SDK + QueryClient) |
 | `ZunoContextProvider` | SDK instance context for manual SDK initialization |
+| `WagmiProviderSync` | SSR-safe provider sync (v2.1.0+) |
 | `WagmiSignerSync` | Syncs Wagmi signer to SDK (auto-updates on wallet change) |
 
 #### Components (`src/react/components/`)
@@ -297,6 +300,11 @@ Exports mock factories and testing utilities
 - `getConfig()`: Get current configuration
 - `getNetwork()`: Get current network
 
+**v2.1.0+ Features:**
+- WagmiProviderSync integration for SSR support
+- Transaction retry logic via TransactionStore
+- Enhanced error handling and recovery
+
 **Design Pattern:** Singleton + Lazy Loading
 
 ---
@@ -315,6 +323,7 @@ Exports mock factories and testing utilities
 - API key authentication (Bearer token)
 - TanStack Query integration for caching
 - Error handling with retry logic
+- Approval caching (v2.1.0+)
 
 ---
 
@@ -357,9 +366,11 @@ Exports mock factories and testing utilities
 
 **Key Methods:**
 - `createERC721Collection(params)`: Deploy ERC721 collection
-- `createERC1155Collection(params)`: Deploy ERC1155 collection
+- `createERC1155Collection(params)`: Deploy ERC1155 collection (v2.2.0)
 - `mintERC721(params)`: Mint ERC721 with payment
-- `mintERC1155(params)`: Mint ERC1155 with payment
+- `mintERC1155(params)`: Mint ERC1155 with payment (v2.2.0)
+- `setupAllowlist(params)`: Configure allowlist settings (v2.2.0)
+- `ownerMint(params)`: Owner-only minting (v2.2.0)
 - `addToAllowlist(params)`: Add addresses to allowlist
 - `removeFromAllowlist(params)`: Remove addresses
 - `setAllowlistOnly(params)`: Enable/disable allowlist-only mode
@@ -443,22 +454,21 @@ const { listNFT } = useExchange();
 
 | Directory | Files | LOC | Purpose |
 |-----------|-------|-----|---------|
-| `src/core/` | 3 | ~900 | Core SDK infrastructure |
-| `src/modules/` | 4 | ~1,500 | Business logic |
-| `src/react/` | 15+ | ~2,500 | React integration |
-| `src/types/` | 6 | ~600 | Type definitions |
-| `src/utils/` | 9 | ~1,200 | Utilities |
-| `src/__tests__/` | 20+ | ~2,500 | Tests |
-| **Total** | **57+** | **~9,185** | |
+| `src/core/` | 3 | ~1,192 | Core SDK infrastructure |
+| `src/modules/` | 4 | ~2,818 | Business logic |
+| `src/react/` | 17+ | ~1,800 | React integration |
+| `src/types/` | 5 | ~865 | Type definitions |
+| `src/utils/` | 7 | ~1,880 | Utilities |
+| `src/__tests__/` | 20+ | ~2,500+ | Tests |
+| **Total** | **41+** | **~8,555** | (excluding tests) |
 
 ### By Module
 
 | Module | LOC | Percentage |
 |--------|-----|------------|
-| React Integration | ~2,500 | 27% |
-| Tests | ~2,500 | 27% |
-| Core + Modules | ~2,400 | 26% |
-| Types + Utils | ~1,800 | 20% |
+| Core + Modules | ~4,010 | 47% |
+| React Integration | ~1,800 | 21% |
+| Types + Utils | ~2,745 | 32% |
 
 ---
 
