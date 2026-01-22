@@ -1,3 +1,9 @@
+## [2.1.1-beta-claude.6](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.5...v2.1.1-beta-claude.6) (2026-01-22)
+
+### 🐛 Bug Fixes
+
+* getListingsBySeller now queries both ERC721 and ERC1155 exchanges ([431ad8b](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/431ad8b436eae1b724ef2d701a043e2ece86ed82))
+
 ## [2.1.1-beta-claude.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.4...v2.1.1-beta-claude.5) (2026-01-22)
 
 ### 🐛 Bug Fixes
