@@ -1,3 +1,10 @@
+## [2.1.1-beta-claude.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.4...v2.1.1-beta-claude.5) (2026-01-22)
+
+### 🐛 Bug Fixes
+
+* **release:** disable npm auto-publish in betaConfig ([09b1c99](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/09b1c99e7e10799b68dd3e33ad54487c4a7cde54))
+* **release:** enable npm auto-publish for main and develop branches ([#104](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/104)) ([4230c22](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4230c22c37746ca8461026f0c46d030ffa96626a))
+
 ## [2.1.1-beta-claude.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.3...v2.1.1-beta-claude.4) (2026-01-22)
 
 ### 🐛 Bug Fixes
