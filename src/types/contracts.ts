@@ -85,10 +85,31 @@ export interface TransactionOptions {
  * List NFT parameters
  */
 export interface ListNFTParams {
+  /**
+   * NFT collection contract address
+   */
   collectionAddress: string;
+  /**
+   * Token ID to list
+   */
   tokenId: string;
+  /**
+   * Listing price in ETH (e.g., "1.5")
+   */
   price: string;
+  /**
+   * Listing duration in seconds
+   */
   duration: number;
+  /**
+   * Amount of tokens to list (for ERC1155 only)
+   * @default "1"
+   * @example "10" for 10 ERC1155 tokens
+   */
+  amount?: string;
+  /**
+   * Transaction options (gas limit, gas price, etc.)
+   */
   options?: TransactionOptions;
 }
 
@@ -96,10 +117,31 @@ export interface ListNFTParams {
  * Batch List NFT parameters
  */
 export interface BatchListNFTParams {
+  /**
+   * NFT collection contract address (must be same for all tokens)
+   */
   collectionAddress: string;
+  /**
+   * Array of token IDs to list
+   */
   tokenIds: string[];
+  /**
+   * Array of prices in ETH (one per token ID)
+   */
   prices: string[];
+  /**
+   * Listing duration in seconds (same for all)
+   */
   duration: number;
+  /**
+   * Array of amounts (for ERC1155 only)
+   * Length must match tokenIds.length
+   * @example ["1", "5", "10"] for 3 tokens with different amounts
+   */
+  amounts?: string[];
+  /**
+   * Transaction options
+   */
   options?: TransactionOptions;
 }
 

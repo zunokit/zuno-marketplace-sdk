@@ -11,6 +11,7 @@ import type {
   BatchBuyNFTParams,
   BatchCancelListingParams,
   TransactionOptions,
+  TokenStandard,
 } from '../types/contracts';
 import type {
   Listing,
@@ -19,6 +20,7 @@ import type {
 import {
   validateAddress,
   validateListNFTParams,
+  validateBatchListNFTParams,
   ErrorCodes,
 } from '../utils/errors';
 import { validateBytes32 } from '../utils/helpers';
@@ -133,7 +135,7 @@ export class ExchangeModule extends BaseModule {
     // Runtime validation
     validateListNFTParams(params);
 
-    const { collectionAddress, tokenId, price, duration, options } = params;
+    const { collectionAddress, tokenId, price, duration, amount, options } = params;
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
@@ -144,6 +146,14 @@ export class ExchangeModule extends BaseModule {
     // Ensure NFT is approved for Exchange
     await this.ensureApproval(collectionAddress, sellerAddress);
 
+    // Detect token standard to determine correct parameters
+    const tokenType: TokenStandard = await this.contractRegistry.verifyTokenStandard(
+      collectionAddress,
+      provider
+    );
+
+    this.log('Detected token type for listing', { collectionAddress, tokenType });
+
     // Get appropriate exchange contract based on token standard
     const exchangeContract = await this.getExchangeContract(
       collectionAddress,
@@ -151,14 +161,29 @@ export class ExchangeModule extends BaseModule {
       this.signer
     );
 
-    // Prepare parameters - contract expects: (address, uint256, uint256, uint256)
     const priceInWei = ethers.parseEther(price);
+
+    // Prepare parameters based on token type
+    const contractParams = tokenType === 'ERC1155'
+      ? [
+          collectionAddress,
+          tokenId,
+          amount || '1',
+          priceInWei,
+          duration,
+        ]
+      : [
+          collectionAddress,
+          tokenId,
+          priceInWei,
+          duration,
+        ];
 
     // Call contract method
     const tx = await txManager.sendTransaction(
       exchangeContract,
       'listNFT',
-      [collectionAddress, tokenId, priceInWei, duration],
+      contractParams,
       { ...options, module: 'Exchange' }
     );
 
@@ -529,6 +554,12 @@ export class ExchangeModule extends BaseModule {
     const listingStart = BigInt(data.listingStart);
     const status = Number(data.status);
 
+    // Extract amount field (present in contract struct)
+    // Convert to string for consistency with other BigNumber fields
+    const amount = data.amount
+      ? BigInt(data.amount).toString()
+      : undefined;
+
     // Contract enum: 0=Pending, 1=Active, 2=Sold, 3=Failed, 4=Cancelled
     const statusMap: Record<number, Listing['status']> = {
       0: 'pending',
@@ -552,6 +583,7 @@ export class ExchangeModule extends BaseModule {
       endTime,
       status: statusMap[status] || 'active',
       createdAt: new Date(startTime * 1000).toISOString(),
+      amount,
     };
   }
 
@@ -559,14 +591,10 @@ export class ExchangeModule extends BaseModule {
    * Batch list multiple NFTs from the SAME collection in 1 transaction
    */
   async batchListNFT(params: BatchListNFTParams): Promise<{ listingIds: string[]; tx: TransactionReceipt }> {
-    const { collectionAddress, tokenIds, prices, duration, options } = params;
+    // Runtime validation
+    validateBatchListNFTParams(params);
 
-    if (tokenIds.length === 0) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'Token IDs array cannot be empty');
-    }
-    if (tokenIds.length !== prices.length) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'Token IDs and prices arrays must have same length');
-    }
+    const { collectionAddress, tokenIds, prices, duration, amounts, options } = params;
 
     const normalizedCollection = validateAddress(collectionAddress);
 
@@ -575,6 +603,14 @@ export class ExchangeModule extends BaseModule {
     const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
 
     await this.ensureApproval(normalizedCollection, sellerAddress);
+
+    // Detect token standard to determine correct parameters
+    const tokenType: TokenStandard = await this.contractRegistry.verifyTokenStandard(
+      normalizedCollection,
+      provider
+    );
+
+    this.log('Detected token type for batch listing', { collectionAddress: normalizedCollection, tokenType });
 
     // Get appropriate exchange contract based on token standard
     const exchangeContract = await this.getExchangeContract(
@@ -585,10 +621,29 @@ export class ExchangeModule extends BaseModule {
 
     const pricesInWei = prices.map(p => ethers.parseEther(p));
 
+    // Prepare amounts array (default to array of '1's for ERC1155)
+    const normalizedAmounts = amounts || tokenIds.map(() => '1');
+
+    // Prepare parameters based on token type
+    const contractParams = tokenType === 'ERC1155'
+      ? [
+          normalizedCollection,
+          tokenIds,
+          normalizedAmounts,
+          pricesInWei,
+          duration,
+        ]
+      : [
+          normalizedCollection,
+          tokenIds,
+          pricesInWei,
+          duration,
+        ];
+
     const tx = await txManager.sendTransaction(
       exchangeContract,
       'batchListNFT',
-      [normalizedCollection, tokenIds, pricesInWei, duration],
+      contractParams,
       { ...options, module: 'Exchange' }
     );
 
