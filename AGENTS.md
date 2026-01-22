@@ -4,9 +4,9 @@ This file provides guidance to OpenCode when working with code in this repositor
 
 ## Project Overview
 
-**Name:** claudekit-engineer
+**Name:** zuno-marketplace-sdk
 **Type:** Node.js/TypeScript
-**Description:** A comprehensive boilerplate template for building professional software projects with **CLI Coding Agents** (**Claude Code** and **Open Code**). This template provides a complete development environment with AI-powered agent orchestration, automated workflows, and intelligent project management.
+**Description:** A TypeScript SDK for the Zuno NFT Marketplace with support for ERC721 and ERC1155 tokens, React hooks, and comprehensive trading operations.
 
 ## Role & Responsibilities
 

@@ -30,6 +30,7 @@ import { validateBytes32 } from '../utils/helpers';
  */
 export class ExchangeModule extends BaseModule {
   private approvalCache = new Map<string, boolean>();
+  private tokenStandardCache = new Map<string, TokenStandard>();
 
   private log(message: string, data?: unknown) {
     this.logger.debug(message, { module: 'Exchange', data });
@@ -48,7 +49,30 @@ export class ExchangeModule extends BaseModule {
    */
   clearApprovalCache(): void {
     this.approvalCache.clear();
-    this.log('Approval cache cleared');
+    this.tokenStandardCache.clear();
+    this.log('Caches cleared');
+  }
+
+  /**
+   * Get token standard with caching
+   */
+  private async getTokenStandard(
+    collectionAddress: string,
+    provider: ethers.Provider
+  ): Promise<TokenStandard> {
+    const cacheKey = collectionAddress.toLowerCase();
+    const cached = this.tokenStandardCache.get(cacheKey);
+    if (cached) {
+      this.log('Token standard cache hit', { collectionAddress, tokenType: cached });
+      return cached;
+    }
+
+    const tokenType = await this.contractRegistry.verifyTokenStandard(
+      collectionAddress,
+      provider
+    );
+    this.tokenStandardCache.set(cacheKey, tokenType);
+    return tokenType;
   }
 
   /**
@@ -58,20 +82,18 @@ export class ExchangeModule extends BaseModule {
   private async getExchangeContract(
     collectionAddress: string,
     provider: ethers.Provider,
-    signer?: ethers.Signer
+    signer?: ethers.Signer,
+    tokenType?: TokenStandard
   ): Promise<ethers.Contract> {
-    // Detect token standard
-    const tokenType = await this.contractRegistry.verifyTokenStandard(
-      collectionAddress,
-      provider
-    );
+    // Detect token standard if not provided
+    const detectedType = tokenType ?? await this.getTokenStandard(collectionAddress, provider);
 
     // Select appropriate contract
-    const contractType = tokenType === 'ERC1155'
+    const contractType = detectedType === 'ERC1155'
       ? 'ERC1155NFTExchange'
       : 'ERC721NFTExchange';
 
-    this.log('Using exchange contract', { collectionAddress, tokenType, contractType });
+    this.log('Using exchange contract', { collectionAddress, tokenType: detectedType, contractType });
 
     return this.contractRegistry.getContract(
       contractType,
@@ -88,7 +110,9 @@ export class ExchangeModule extends BaseModule {
    */
   private async ensureApproval(
     collectionAddress: string,
-    ownerAddress: string
+    ownerAddress: string,
+    tokenType?: TokenStandard,
+    provider?: ethers.Provider
   ): Promise<void> {
     const cacheKey = `${collectionAddress.toLowerCase()}-${ownerAddress.toLowerCase()}`;
 
@@ -97,13 +121,15 @@ export class ExchangeModule extends BaseModule {
       return;
     }
 
-    const provider = this.ensureProvider();
+    const effectiveProvider = provider ?? this.ensureProvider();
     const signer = this.ensureSigner();
 
     // Get correct exchange contract address for operator
     const exchangeContract = await this.getExchangeContract(
       collectionAddress,
-      provider
+      effectiveProvider,
+      signer,
+      tokenType
     );
     const operatorAddress = await exchangeContract.getAddress();
 
@@ -140,25 +166,22 @@ export class ExchangeModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
+    // Detect token standard once (cached per collection)
+    const tokenType = await this.getTokenStandard(collectionAddress, provider);
+    this.log('Detected token type for listing', { collectionAddress, tokenType });
+
     // Get seller address
     const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
 
-    // Ensure NFT is approved for Exchange
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    // Ensure NFT is approved for Exchange (pass tokenType to avoid re-detection)
+    await this.ensureApproval(collectionAddress, sellerAddress, tokenType, provider);
 
-    // Detect token standard to determine correct parameters
-    const tokenType: TokenStandard = await this.contractRegistry.verifyTokenStandard(
-      collectionAddress,
-      provider
-    );
-
-    this.log('Detected token type for listing', { collectionAddress, tokenType });
-
-    // Get appropriate exchange contract based on token standard
+    // Get appropriate exchange contract (pass tokenType to avoid re-detection)
     const exchangeContract = await this.getExchangeContract(
       collectionAddress,
       provider,
-      this.signer
+      this.signer,
+      tokenType
     );
 
     const priceInWei = ethers.parseEther(price);
@@ -602,21 +625,19 @@ export class ExchangeModule extends BaseModule {
     const provider = this.ensureProvider();
     const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
 
-    await this.ensureApproval(normalizedCollection, sellerAddress);
-
-    // Detect token standard to determine correct parameters
-    const tokenType: TokenStandard = await this.contractRegistry.verifyTokenStandard(
-      normalizedCollection,
-      provider
-    );
-
+    // Detect token standard once (cached per collection)
+    const tokenType = await this.getTokenStandard(normalizedCollection, provider);
     this.log('Detected token type for batch listing', { collectionAddress: normalizedCollection, tokenType });
 
-    // Get appropriate exchange contract based on token standard
+    // Ensure NFT is approved for Exchange (pass tokenType to avoid re-detection)
+    await this.ensureApproval(normalizedCollection, sellerAddress, tokenType, provider);
+
+    // Get appropriate exchange contract (pass tokenType to avoid re-detection)
     const exchangeContract = await this.getExchangeContract(
       normalizedCollection,
       provider,
-      this.signer
+      this.signer,
+      tokenType
     );
 
     const pricesInWei = prices.map(p => ethers.parseEther(p));
