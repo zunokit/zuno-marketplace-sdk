@@ -80,7 +80,7 @@ const betaConfig = {
     [
       '@semantic-release/npm',
       {
-        npmPublish: true
+        npmPublish: false
       }
     ],
     [
