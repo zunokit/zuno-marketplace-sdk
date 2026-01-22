@@ -495,25 +495,43 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Get listing details
+   * Get listing details (queries both ERC721 and ERC1155 exchanges)
    * @param listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
    */
   async getListing(listingId: string): Promise<Listing> {
     validateBytes32(listingId, 'listingId');
 
     const provider = this.ensureProvider();
-    const exchangeContract = await this.contractRegistry.getContract(
+    const txManager = this.ensureTxManager();
+
+    // Try ERC721NFTExchange first, then ERC1155NFTExchange
+    const erc721Contract = await this.contractRegistry.getContract(
       'ERC721NFTExchange',
       this.getNetworkId(),
       provider
     );
 
-    const txManager = this.ensureTxManager();
-    const listing = await txManager.callContract<ethers.Result>(
-      exchangeContract,
+    const erc1155Contract = await this.contractRegistry.getContract(
+      'ERC1155NFTExchange',
+      this.getNetworkId(),
+      provider
+    );
+
+    // Query ERC721 first
+    let listing = await txManager.callContract<ethers.Result>(
+      erc721Contract,
       's_listings',
       [listingId]
     );
+
+    // If ERC721 returns zero address (not found), try ERC1155
+    if (listing.seller === ethers.ZeroAddress) {
+      listing = await txManager.callContract<ethers.Result>(
+        erc1155Contract,
+        's_listings',
+        [listingId]
+      );
+    }
 
     return this.formatListing(listingId, listing);
   }
