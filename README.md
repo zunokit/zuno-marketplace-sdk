@@ -34,9 +34,16 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 | Testnet (Sepolia) |   ⚠️   | 11155111  | Planned for Q1 2026            |
 | Ethereum Mainnet  |   ⚠️   |     1     | Planned for Q2 2026            |
 
-## 🆕 What's New in v2.1.1-beta-claude.3
+## 🆕 What's New in v2.1.1-beta-claude.4
 
 ### ✨ v2.1.1 Features
+
+- **ERC1155 Listing Support** - Full support for ERC1155 NFT listings with configurable amounts
+- **Auto Token Detection** - Automatic detection of ERC721 vs ERC1155 token standards
+- **Enhanced Validation** - Comprehensive validation for amount parameters
+- **Backward Compatible** - ERC721 listings continue to work without changes
+
+### ✨ v2.1.0 Features
 
 - **Query Invalidation** - Automatic cache invalidation on mutations
 - **Enhanced Error Messages** - More descriptive error context
@@ -173,11 +180,29 @@ export default function HomePage() {
 ### Exchange
 
 ```typescript
-// List NFT
+// List ERC721 NFT (backward compatible)
 const { listingId, tx } = await sdk.exchange.listNFT({
   collectionAddress: "0x...",
   tokenId: "1",
   price: "1.5",
+  duration: 86400,
+});
+
+// List ERC1155 NFT with amount
+const { listingId: erc1155Listing } = await sdk.exchange.listNFT({
+  collectionAddress: "0x...",
+  tokenId: "1",
+  amount: "10",  // List 10 tokens
+  price: "1.5",
+  duration: 86400,
+});
+
+// Batch list ERC1155 with amounts
+const { listingIds } = await sdk.exchange.batchListNFT({
+  collectionAddress: "0x...",
+  tokenIds: ["1", "2", "3"],
+  amounts: ["5", "10", "15"],
+  prices: ["1.0", "2.0", "3.0"],
   duration: 86400,
 });
 
@@ -186,7 +211,13 @@ const { tx } = await sdk.exchange.buyNFT({ listingId: "0x..." });
 
 // Cancel listing
 await sdk.exchange.cancelListing("0x...");
+
+// Get listing with amount (ERC1155)
+const listing = await sdk.exchange.getListing("0x...");
+console.log(listing.amount); // "10" for ERC1155, undefined for ERC721
 ```
+
+> **Note:** See [ERC1155 Listing Guide](./docs/erc1155-listing-guide.md) for detailed documentation on ERC1155 support.
 
 ### Collection
 

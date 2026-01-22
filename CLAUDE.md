@@ -74,7 +74,7 @@ This ensures packages installed by `install.sh` (google-genai, pypdf, etc.) are 
 
 We keep all important docs in `./docs` folder and keep updating them, structure like below:
 
-```
+```text
 ./docs
 ├── project-overview-pdr.md
 ├── code-standards.md
