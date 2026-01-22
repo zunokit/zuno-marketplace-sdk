@@ -542,26 +542,44 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Get listings by seller
+   * Get listings by seller (queries both ERC721 and ERC1155 exchanges)
    */
   async getListingsBySeller(seller: string): Promise<Listing[]> {
     const normalizedSeller = validateAddress(seller, 'seller');
-
     const provider = this.ensureProvider();
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
-      provider
-    );
-
     const txManager = this.ensureTxManager();
-    const listingIds = await txManager.callContract<string[]>(
-      exchangeContract,
-      'getListingsBySeller',
-      [normalizedSeller]
-    );
 
-    return Promise.all(listingIds.map((id) => this.getListing(id)));
+    // Query both ERC721 and ERC1155 exchanges in parallel
+    const [erc721ListingIds, erc1155ListingIds] = await Promise.all([
+      (async () => {
+        const erc721Contract = await this.contractRegistry.getContract(
+          'ERC721NFTExchange',
+          this.getNetworkId(),
+          provider
+        );
+        return txManager.callContract<string[]>(
+          erc721Contract,
+          'getListingsBySeller',
+          [normalizedSeller]
+        );
+      })(),
+      (async () => {
+        const erc1155Contract = await this.contractRegistry.getContract(
+          'ERC1155NFTExchange',
+          this.getNetworkId(),
+          provider
+        );
+        return txManager.callContract<string[]>(
+          erc1155Contract,
+          'getListingsBySeller',
+          [normalizedSeller]
+        );
+      })(),
+    ]);
+
+    // Combine and fetch all listing details
+    const allListingIds = [...erc721ListingIds, ...erc1155ListingIds];
+    return Promise.all(allListingIds.map((id) => this.getListing(id)));
   }
 
   /**
