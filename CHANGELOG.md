@@ -1,3 +1,9 @@
+## [2.1.1-beta-claude.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.3...v2.1.1-beta-claude.4) (2026-01-22)
+
+### 🐛 Bug Fixes
+
+* **erc1155:** add amount parameter to listNFT for ERC1155 ([#102](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/102)) ([7963001](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/7963001805462b9f299c53ceb160b342aea9b9a3)), closes [#99](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/99)
+
 ## [2.1.1-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.2...v2.1.1-beta-claude.3) (2026-01-13)
 
 ### 🐛 Bug Fixes
