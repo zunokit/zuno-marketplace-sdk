@@ -230,12 +230,13 @@ export class ExchangeModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get listing details to determine which exchange contract to use
+    const listing = await this.getListing(listingId);
+
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      listing.collectionAddress,
       provider,
-      undefined,
       this.signer
     );
 
@@ -301,12 +302,14 @@ export class ExchangeModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get first listing to determine which exchange contract to use
+    // Note: All listings in a batch should be from the same token standard
+    const firstListing = await this.getListing(listingIds[0]);
+
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      firstListing.collectionAddress,
       provider,
-      undefined,
       this.signer
     );
 
@@ -360,12 +363,13 @@ export class ExchangeModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get listing details to determine which exchange contract to use
+    const listing = await this.getListing(listingId);
+
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      listing.collectionAddress,
       provider,
-      undefined,
       this.signer
     );
 
@@ -423,12 +427,14 @@ export class ExchangeModule extends BaseModule {
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get first listing to determine which exchange contract to use
+    // Note: All listings in a batch should be from the same token standard
+    const firstListing = await this.getListing(listingIds[0]);
+
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      firstListing.collectionAddress,
       provider,
-      undefined,
       this.signer
     );
 
@@ -478,9 +484,13 @@ export class ExchangeModule extends BaseModule {
     validateBytes32(listingId, 'listingId');
 
     const provider = this.ensureProvider();
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+
+    // Get listing details to determine which exchange contract to use
+    const listing = await this.getListing(listingId);
+
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      listing.collectionAddress,
       provider
     );
 
