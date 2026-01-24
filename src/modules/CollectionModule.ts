@@ -12,6 +12,7 @@ import type {
   MintERC1155Params,
   TokenStandard,
   ContractType,
+  TransactionOptions,
 } from '../types/contracts';
 import type { TransactionReceipt } from '../types/entities';
 import { validateAddress, ErrorCodes } from '../utils/errors';
@@ -126,20 +127,20 @@ export class CollectionModule extends BaseModule {
     const { collectionAddress, recipient, value, options } = params;
     this.log('mintERC721 started', { collectionAddress, recipient, value });
 
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateAddress(recipient, 'recipient');
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedRecipient = validateAddress(recipient, 'recipient');
 
     const txManager = this.ensureTxManager();
     this.ensureProvider();
 
     const mintABI = ['function mint(address to) payable'];
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(collectionAddress, mintABI, this.signer);
+    const collectionContract = new ethers.Contract(normalizedCollection, mintABI, this.signer);
 
     const txOptions = { ...options, value: value || options?.value };
 
     this.log('Sending mint transaction');
-    const receipt = await txManager.sendTransaction(collectionContract, 'mint', [recipient], { ...txOptions, module: 'Collection' });
+    const receipt = await txManager.sendTransaction(collectionContract, 'mint', [normalizedRecipient], { ...txOptions, module: 'Collection' });
 
     const tokenId = await this.extractTokenId(receipt);
     this.log('mintERC721 completed', { tokenId, txHash: receipt.hash });
@@ -156,8 +157,8 @@ export class CollectionModule extends BaseModule {
     const { collectionAddress, recipient, amount, value, options } = params;
     this.log('batchMintERC721 started', { collectionAddress, recipient, amount, value });
 
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateAddress(recipient, 'recipient');
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedRecipient = validateAddress(recipient, 'recipient');
 
     if (amount <= 0) {
       throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
@@ -168,12 +169,12 @@ export class CollectionModule extends BaseModule {
 
     const batchMintABI = ['function batchMintERC721(address to, uint256 amount) payable'];
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(collectionAddress, batchMintABI, this.signer);
+    const collectionContract = new ethers.Contract(normalizedCollection, batchMintABI, this.signer);
 
     const txOptions = { ...options, value: value || options?.value };
 
     this.log('Sending batch mint transaction', { amount });
-    const receipt = await txManager.sendTransaction(collectionContract, 'batchMintERC721', [recipient, amount], { ...txOptions, module: 'Collection' });
+    const receipt = await txManager.sendTransaction(collectionContract, 'batchMintERC721', [normalizedRecipient, amount], { ...txOptions, module: 'Collection' });
     this.log('batchMintERC721 completed', { txHash: receipt.hash });
 
     return { tx: receipt };
@@ -188,20 +189,20 @@ export class CollectionModule extends BaseModule {
     const { collectionAddress, recipient, amount, value, options } = params;
     this.log('mintERC1155 started', { collectionAddress, recipient, amount, value });
 
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateAddress(recipient, 'recipient');
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedRecipient = validateAddress(recipient, 'recipient');
 
     const txManager = this.ensureTxManager();
     this.ensureProvider();
 
     const mintABI = ['function mint(address to, uint256 amount) payable'];
     const { ethers } = await import('ethers');
-    const collectionContract = new ethers.Contract(collectionAddress, mintABI, this.signer);
+    const collectionContract = new ethers.Contract(normalizedCollection, mintABI, this.signer);
 
     const txOptions = { ...options, value: value || options?.value };
 
     this.log('Sending mint transaction');
-    const tx = await txManager.sendTransaction(collectionContract, 'mint', [recipient, amount], { ...txOptions, module: 'Collection' });
+    const tx = await txManager.sendTransaction(collectionContract, 'mint', [normalizedRecipient, amount], { ...txOptions, module: 'Collection' });
     this.log('mintERC1155 completed', { txHash: tx.hash });
 
     return { tx };
@@ -216,8 +217,8 @@ export class CollectionModule extends BaseModule {
     const { collectionAddress, recipient, amount, value, options } = params;
     this.log('batchMintERC1155 started', { collectionAddress, recipient, amount, value });
 
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateAddress(recipient, 'recipient');
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedRecipient = validateAddress(recipient, 'recipient');
 
     if (amount <= 0) {
       throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
@@ -228,13 +229,13 @@ export class CollectionModule extends BaseModule {
 
     const { ethers } = await import('ethers');
     const contract = new ethers.Contract(
-      collectionAddress,
+      normalizedCollection,
       ['function batchMintERC1155(address to, uint256 amount) payable'],
       this.signer
     );
 
     const txOptions = { ...options, value: value || options?.value };
-    const tx = await txManager.sendTransaction(contract, 'batchMintERC1155', [recipient, amount], { ...txOptions, module: 'Collection' });
+    const tx = await txManager.sendTransaction(contract, 'batchMintERC1155', [normalizedRecipient, amount], { ...txOptions, module: 'Collection' });
     this.log('batchMintERC1155 completed', { txHash: tx.hash });
 
     return { tx };
@@ -248,13 +249,13 @@ export class CollectionModule extends BaseModule {
     tokenType: TokenStandard;
   }> {
     this.log('verifyCollection started', { address });
-    validateAddress(address);
+    const normalizedAddress = validateAddress(address);
 
     const provider = this.ensureProvider();
 
     try {
-      const tokenType = await this.contractRegistry.verifyTokenStandard(address, provider);
-      this.log('verifyCollection completed', { address, tokenType, isValid: tokenType !== 'Unknown' });
+      const tokenType = await this.contractRegistry.verifyTokenStandard(normalizedAddress, provider);
+      this.log('verifyCollection completed', { address: normalizedAddress, tokenType, isValid: tokenType !== 'Unknown' });
       return { isValid: tokenType !== 'Unknown', tokenType };
     } catch {
       this.log('verifyCollection failed', { address });
@@ -278,16 +279,16 @@ export class CollectionModule extends BaseModule {
     owner: string;
   }> {
     this.log('getCollectionInfo started', { address });
-    validateAddress(address);
+    const normalizedAddress = validateAddress(address);
 
     const provider = this.ensureProvider();
 
-    const tokenType = await this.contractRegistry.verifyTokenStandard(address, provider);
+    const tokenType = await this.contractRegistry.verifyTokenStandard(normalizedAddress, provider);
     if (tokenType === 'Unknown') {
       this.log('getCollectionInfo failed - unknown token standard', { address });
       throw this.error(ErrorCodes.CONTRACT_CALL_FAILED, 'Unable to detect token standard');
     }
-    this.log('Token standard detected', { address, tokenType });
+    this.log('Token standard detected', { address: normalizedAddress, tokenType });
 
     const minimalABI = [
       'function name() view returns (string)',
@@ -301,7 +302,7 @@ export class CollectionModule extends BaseModule {
     ];
 
     const { ethers } = await import('ethers');
-    const contract = new ethers.Contract(address, minimalABI, provider);
+    const contract = new ethers.Contract(normalizedAddress, minimalABI, provider);
 
     const [name, symbol, description, royaltyFee, owner] = await Promise.all([
       safeCall(() => contract.name(), 'Unknown Collection'),
@@ -464,16 +465,12 @@ export class CollectionModule extends BaseModule {
     userAddress: string
   ): Promise<Array<{ tokenId: string; amount: number }>> {
     this.log('getMintedTokens started', { collectionAddress, userAddress });
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateAddress(userAddress, 'userAddress');
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedUser = validateAddress(userAddress, 'userAddress');
 
     const provider = this.ensureProvider();
     const { ethers } = await import('ethers');
-    
-    // Normalize addresses to proper checksum format
-    const normalizedCollection = ethers.getAddress(collectionAddress);
-    const normalizedUser = ethers.getAddress(userAddress);
-    
+
     const tokensMap = new Map<string, number>();
 
     // 1. Check custom Minted event (Zuno collections)
@@ -588,14 +585,10 @@ export class CollectionModule extends BaseModule {
     userAddress: string
   ): Promise<Array<{ tokenId: string; amount: number }>> {
     this.log('getUserOwnedTokens started', { collectionAddress, userAddress });
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateAddress(userAddress, 'userAddress');
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedUser = validateAddress(userAddress, 'userAddress');
 
     const { ethers } = await import('ethers');
-    
-    // Normalize addresses to proper checksum format
-    const normalizedCollection = ethers.getAddress(collectionAddress);
-    const normalizedUser = ethers.getAddress(userAddress);
 
     // First get minted tokens as candidates
     const mintedTokens = await this.getMintedTokens(normalizedCollection, normalizedUser);
@@ -755,15 +748,16 @@ export class CollectionModule extends BaseModule {
     addresses: string[]
   ): Promise<{ tx: TransactionReceipt }> {
     this.log('addToAllowlist started', { collectionAddress, count: addresses.length });
-    
-    validateAddress(collectionAddress, 'collectionAddress');
+
+    // Validate and normalize collection address
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
     validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');
-    
+
     const abi = ['function addToAllowlist(address[] calldata addresses) external'];
-    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+    const contract = new ethers.Contract(normalizedCollection, abi, this.signer);
 
     const tx = await txManager.sendTransaction(contract, 'addToAllowlist', [addresses], { module: 'Collection' });
     this.log('addToAllowlist completed', { txHash: tx.hash });
@@ -802,15 +796,16 @@ export class CollectionModule extends BaseModule {
     addresses: string[]
   ): Promise<{ tx: TransactionReceipt }> {
     this.log('removeFromAllowlist started', { collectionAddress, count: addresses.length });
-    
-    validateAddress(collectionAddress, 'collectionAddress');
+
+    // Validate and normalize collection address
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
     validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');
-    
+
     const abi = ['function removeFromAllowlist(address[] calldata addresses) external'];
-    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+    const contract = new ethers.Contract(normalizedCollection, abi, this.signer);
 
     const tx = await txManager.sendTransaction(contract, 'removeFromAllowlist', [addresses], { module: 'Collection' });
     this.log('removeFromAllowlist completed', { txHash: tx.hash });
@@ -847,14 +842,15 @@ export class CollectionModule extends BaseModule {
     enabled: boolean
   ): Promise<{ tx: TransactionReceipt }> {
     this.log('setAllowlistOnly started', { collectionAddress, enabled });
-    
-    validateAddress(collectionAddress, 'collectionAddress');
+
+    // Validate and normalize collection address
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
 
     const txManager = this.ensureTxManager();
     const { ethers } = await import('ethers');
-    
+
     const abi = ['function setAllowlistOnly(bool allowlistOnly) external'];
-    const contract = new ethers.Contract(collectionAddress, abi, this.signer);
+    const contract = new ethers.Contract(normalizedCollection, abi, this.signer);
 
     const tx = await txManager.sendTransaction(contract, 'setAllowlistOnly', [enabled], { module: 'Collection' });
     this.log('setAllowlistOnly completed', { txHash: tx.hash });
@@ -884,16 +880,17 @@ export class CollectionModule extends BaseModule {
    * ```
    */
   async isInAllowlist(collectionAddress: string, address: string): Promise<boolean> {
-    validateAddress(collectionAddress, 'collectionAddress');
-    validateAddress(address, 'address');
+    // Validate and normalize both addresses
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedAddress = validateAddress(address, 'address');
 
     const provider = this.ensureProvider();
     const { ethers } = await import('ethers');
-    
-    const abi = ['function isInAllowlist(address account) external view returns (bool)'];
-    const contract = new ethers.Contract(collectionAddress, abi, provider);
 
-    return await contract.isInAllowlist(address);
+    const abi = ['function isInAllowlist(address account) external view returns (bool)'];
+    const contract = new ethers.Contract(normalizedCollection, abi, provider);
+
+    return await contract.isInAllowlist(normalizedAddress);
   }
 
   /**
@@ -916,14 +913,133 @@ export class CollectionModule extends BaseModule {
    * ```
    */
   async isAllowlistOnly(collectionAddress: string): Promise<boolean> {
-    validateAddress(collectionAddress, 'collectionAddress');
+    // Validate and normalize collection address
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
 
     const provider = this.ensureProvider();
     const { ethers } = await import('ethers');
-    
+
     const abi = ['function isAllowlistOnly() external view returns (bool)'];
-    const contract = new ethers.Contract(collectionAddress, abi, provider);
+    const contract = new ethers.Contract(normalizedCollection, abi, provider);
 
     return await contract.isAllowlistOnly();
+  }
+
+  /**
+   * Setup allowlist in a single transaction
+   *
+   * Combines addToAllowlist + setAllowlistOnly in one atomic transaction
+   * reducing Metamask confirmations from 2-3 to 1.
+   *
+   * @param collectionAddress - The collection contract address
+   * @param addresses - Array of addresses to add to allowlist (max 100)
+   * @param enableAllowlistOnly - If true, only allowlisted addresses can mint
+   * @param options - Transaction options
+   * @returns Promise resolving to transaction receipt
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If collection address is invalid
+   * @throws {ZunoSDKError} INVALID_PARAMETER - If addresses array is empty or exceeds batch limit
+   *
+   * @example
+   * ```typescript
+   * // Setup allowlist with 50 addresses and enable allowlist-only mode
+   * const { tx } = await sdk.collection.setupAllowlist(
+   *   "0x1234...",
+   *   ["0xabc...", "0xdef...", ...], // up to 100 addresses
+   *   true
+   * );
+   * console.log('Allowlist setup complete:', tx.transactionHash);
+   * ```
+   */
+  async setupAllowlist(
+    collectionAddress: string,
+    addresses: string[],
+    enableAllowlistOnly: boolean,
+    options?: TransactionOptions
+  ): Promise<{ tx: TransactionReceipt }> {
+    this.log('setupAllowlist started', { collectionAddress, addressCount: addresses.length, enableAllowlistOnly });
+
+    // Validate and normalize collection address
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
+
+    const txManager = this.ensureTxManager();
+    const signer = this.ensureSigner();
+
+    const abi = ['function setupAllowlist(address[] calldata addresses, bool enableAllowlistOnly) external'];
+    const { ethers } = await import('ethers');
+    const contract = new ethers.Contract(normalizedCollection, abi, signer);
+
+    const tx = await txManager.sendTransaction(contract, 'setupAllowlist', [addresses, enableAllowlistOnly], { ...options, module: 'Collection' });
+    this.log('setupAllowlist completed', { txHash: tx.hash });
+
+    return { tx };
+  }
+
+  /**
+   * Mint NFTs as collection owner (bypasses all restrictions except maxSupply)
+   *
+   * This function allows collection owners to mint NFTs without the standard
+   * restrictions like payment requirements, timing restrictions, allowlist checks,
+   * or per-wallet mint limits. Only the maxSupply limit is enforced.
+   *
+   * @param collectionAddress - The collection contract address
+   * @param recipient - Address to receive the minted NFT(s)
+   * @param amount - Number of NFTs to mint (default: 1)
+   * @param options - Transaction options
+   * @returns Promise resolving to transaction receipt with tokenId(s)
+   *
+   * @throws {ZunoSDKError} INVALID_ADDRESS - If collection address is invalid
+   * @throws {ZunoMarketplaceError} INSUFFICIENT_SUPPLY - If minting would exceed maxSupply
+   *
+   * @example
+   * ```typescript
+   * // Mint 5 NFTs as owner
+   * const { tx, tokenId } = await sdk.collection.ownerMint(
+   *   "0x1234...",
+   *   "0xabc...",
+   *   5
+   * );
+   * console.log('Minted NFT:', tokenId, 'to:', recipient);
+   * ```
+   */
+  async ownerMint(
+    collectionAddress: string,
+    recipient: string,
+    amount: number = 1,
+    options?: TransactionOptions
+  ): Promise<{ tx: TransactionReceipt; tokenId?: string }> {
+    this.log('ownerMint started', { collectionAddress, recipient, amount });
+
+    // Validate and normalize addresses
+    const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
+    const normalizedRecipient = validateAddress(recipient, 'recipient');
+
+    if (amount <= 0) {
+      throw this.error(ErrorCodes.INVALID_AMOUNT, 'amount must be greater than 0');
+    }
+
+    const txManager = this.ensureTxManager();
+    const signer = this.ensureSigner();
+
+    // Create contract directly with ownerMint ABI
+    const ownerMintABI = ['function ownerMint(address to, uint256 amount) external'];
+    const { ethers } = await import('ethers');
+    const contract = new ethers.Contract(normalizedCollection, ownerMintABI, signer);
+
+    // Convert amount to BigInt
+    const amountBigInt = BigInt(amount);
+
+    const tx = await txManager.sendTransaction(
+      contract,
+      'ownerMint',
+      [normalizedRecipient, amountBigInt],
+      { ...options, module: 'Collection' }
+    );
+
+    this.log('ownerMint completed', { txHash: tx.hash });
+
+    // Return transaction receipt - tokenId would need to be extracted from logs if needed
+    return { tx };
   }
 }

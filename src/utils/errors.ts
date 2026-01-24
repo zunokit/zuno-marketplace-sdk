@@ -200,16 +200,29 @@ export function assert(
 }
 
 /**
- * Validate Ethereum address
+ * Validate Ethereum address and return normalized form
+ * @param address - The address to validate
+ * @param paramName - Parameter name for error messages
+ * @returns The normalized address (lowercase)
+ * @throws {ZunoSDKError} If address is invalid format
+ *
+ * Note: This validates address format and normalizes to lowercase.
+ * Full EIP-55 checksum validation requires Keccak-256 and is not implemented here.
  */
-export function validateAddress(address: string, paramName = 'address'): void {
+export function validateAddress(address: string, paramName = 'address'): string {
+  // Basic format check first
   const ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 
-  assert(
-    typeof address === 'string' && ADDRESS_REGEX.test(address),
-    ErrorCodes.INVALID_ADDRESS,
-    `Invalid ${paramName}: ${address}`
-  );
+  if (typeof address !== 'string' || !ADDRESS_REGEX.test(address)) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_ADDRESS,
+      `Invalid ${paramName}: ${address}. Address must be a 42-character hex string starting with 0x.`
+    );
+  }
+
+  // Normalize to lowercase for consistency
+  const addressLower = address.toLowerCase();
+  return addressLower;
 }
 
 /**
@@ -301,6 +314,7 @@ export function validateListNFTParams(params: unknown): asserts params is {
   tokenId: string;
   price: string;
   duration: number;
+  amount?: string;
   options?: Record<string, unknown>;
 } {
   if (!params || typeof params !== 'object') {
@@ -313,6 +327,104 @@ export function validateListNFTParams(params: unknown): asserts params is {
   validateTokenId(p.tokenId as string, 'tokenId');
   validateAmount(p.price as string, 'price');
   validateDuration(p.duration as number, 'duration');
+
+  // Validate amount if provided
+  if (p.amount !== undefined) {
+    try {
+      const amount = BigInt(p.amount as string);
+      if (amount <= 0) {
+        throw new ZunoSDKError(
+          ErrorCodes.INVALID_PARAMETER,
+          'Amount must be greater than 0'
+        );
+      }
+    } catch (error) {
+      if (error instanceof ZunoSDKError) throw error;
+      throw new ZunoSDKError(
+        ErrorCodes.INVALID_PARAMETER,
+        'Invalid amount format'
+      );
+    }
+  }
+}
+
+/**
+ * Runtime type guard for BatchListNFTParams
+ */
+export function validateBatchListNFTParams(params: unknown): asserts params is {
+  collectionAddress: string;
+  tokenIds: string[];
+  prices: string[];
+  duration: number;
+  amounts?: string[];
+  options?: Record<string, unknown>;
+} {
+  if (!params || typeof params !== 'object') {
+    throw new ZunoSDKError(ErrorCodes.INVALID_PARAMETER, 'Params must be an object');
+  }
+
+  const p = params as Record<string, unknown>;
+
+  validateAddress(p.collectionAddress as string, 'collectionAddress');
+
+  if (!Array.isArray(p.tokenIds) || p.tokenIds.length === 0) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_PARAMETER,
+      'Token IDs array cannot be empty'
+    );
+  }
+
+  if (!Array.isArray(p.prices) || p.prices.length === 0) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_PARAMETER,
+      'Prices array cannot be empty'
+    );
+  }
+
+  if (p.tokenIds.length !== p.prices.length) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_PARAMETER,
+      'Token IDs and prices arrays must have the same length'
+    );
+  }
+
+  validateDuration(p.duration as number, 'duration');
+
+  // Validate amounts array if provided
+  if (p.amounts !== undefined) {
+    if (!Array.isArray(p.amounts)) {
+      throw new ZunoSDKError(
+        ErrorCodes.INVALID_PARAMETER,
+        'Amounts must be an array'
+      );
+    }
+
+    if (p.amounts.length !== p.tokenIds.length) {
+      throw new ZunoSDKError(
+        ErrorCodes.INVALID_PARAMETER,
+        'Amounts array must have the same length as token IDs array'
+      );
+    }
+
+    // Validate each amount > 0
+    for (let i = 0; i < p.amounts.length; i++) {
+      try {
+        const amount = BigInt(p.amounts[i] as string);
+        if (amount <= 0) {
+          throw new ZunoSDKError(
+            ErrorCodes.INVALID_PARAMETER,
+            `Amount at index ${i} must be greater than 0`
+          );
+        }
+      } catch (error) {
+        if (error instanceof ZunoSDKError) throw error;
+        throw new ZunoSDKError(
+          ErrorCodes.INVALID_PARAMETER,
+          `Invalid amount format at index ${i}`
+        );
+      }
+    }
+  }
 }
 
 /**

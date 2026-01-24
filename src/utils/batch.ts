@@ -2,7 +2,7 @@
  * Batch operation utilities for Zuno SDK
  */
 
-import { ZunoSDKError, ErrorCodes } from './errors';
+import { ZunoSDKError, ErrorCodes } from "./errors";
 
 /**
  * Batch operation size limits
@@ -18,18 +18,19 @@ export const BATCH_LIMITS = {
 
 /**
  * Validate batch operation array size
- * 
+ *
+ * @template T - The type of items in the array
  * @param items - Array to validate
  * @param maxSize - Maximum allowed size
  * @param paramName - Parameter name for error messages
  * @throws {ZunoSDKError} INVALID_PARAMETER if array is empty
  * @throws {ZunoSDKError} BATCH_SIZE_EXCEEDED if exceeds max
- * 
+ *
  * @example
  * ```typescript
  * // Validate auction IDs array
  * validateBatchSize(auctionIds, BATCH_LIMITS.AUCTIONS, 'auctionIds');
- * 
+ *
  * // Validate allowlist addresses
  * validateBatchSize(addresses, BATCH_LIMITS.ALLOWLIST, 'addresses');
  * ```
@@ -45,7 +46,7 @@ export function validateBatchSize<T>(
       `${paramName} cannot be empty`
     );
   }
-  
+
   if (items.length > maxSize) {
     throw new ZunoSDKError(
       ErrorCodes.BATCH_SIZE_EXCEEDED,

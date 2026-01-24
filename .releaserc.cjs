@@ -80,7 +80,7 @@ const betaConfig = {
     [
       '@semantic-release/npm',
       {
-        npmPublish: false  // TODO: Re-enable after fixing NPM_TOKEN
+        npmPublish: false
       }
     ],
     [
@@ -153,7 +153,7 @@ const productionConfig = {
     [
       '@semantic-release/npm',
       {
-        npmPublish: false  // TODO: Re-enable after fixing NPM_TOKEN
+        npmPublish: true
       }
     ],
     [

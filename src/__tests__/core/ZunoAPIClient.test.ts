@@ -190,6 +190,7 @@ describe('ZunoAPIClient methods', () => {
   let mockAxiosInstance: any;
 
   beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const axios = require('axios');
     mockAxiosInstance = {
       get: jest.fn(),

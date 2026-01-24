@@ -11,6 +11,7 @@ import type {
   BatchBuyNFTParams,
   BatchCancelListingParams,
   TransactionOptions,
+  TokenStandard,
 } from '../types/contracts';
 import type {
   Listing,
@@ -19,6 +20,7 @@ import type {
 import {
   validateAddress,
   validateListNFTParams,
+  validateBatchListNFTParams,
   ErrorCodes,
 } from '../utils/errors';
 import { validateBytes32 } from '../utils/helpers';
@@ -28,6 +30,7 @@ import { validateBytes32 } from '../utils/helpers';
  */
 export class ExchangeModule extends BaseModule {
   private approvalCache = new Map<string, boolean>();
+  private tokenStandardCache = new Map<string, TokenStandard>();
 
   private log(message: string, data?: unknown) {
     this.logger.debug(message, { module: 'Exchange', data });
@@ -35,10 +38,10 @@ export class ExchangeModule extends BaseModule {
 
   /**
    * Clear the approval status cache
-   * 
+   *
    * Use this when you need to force re-checking approval status,
    * for example after revoking approvals or switching accounts.
-   * 
+   *
    * @example
    * ```typescript
    * sdk.exchange.clearApprovalCache();
@@ -46,7 +49,59 @@ export class ExchangeModule extends BaseModule {
    */
   clearApprovalCache(): void {
     this.approvalCache.clear();
-    this.log('Approval cache cleared');
+    this.tokenStandardCache.clear();
+    this.log('Caches cleared');
+  }
+
+  /**
+   * Get token standard with caching
+   */
+  private async getTokenStandard(
+    collectionAddress: string,
+    provider: ethers.Provider
+  ): Promise<TokenStandard> {
+    const cacheKey = collectionAddress.toLowerCase();
+    const cached = this.tokenStandardCache.get(cacheKey);
+    if (cached) {
+      this.log('Token standard cache hit', { collectionAddress, tokenType: cached });
+      return cached;
+    }
+
+    const tokenType = await this.contractRegistry.verifyTokenStandard(
+      collectionAddress,
+      provider
+    );
+    this.tokenStandardCache.set(cacheKey, tokenType);
+    return tokenType;
+  }
+
+  /**
+   * Get appropriate exchange contract based on token standard
+   * Auto-detects ERC721 vs ERC1155 and returns correct exchange contract
+   */
+  private async getExchangeContract(
+    collectionAddress: string,
+    provider: ethers.Provider,
+    signer?: ethers.Signer,
+    tokenType?: TokenStandard
+  ): Promise<ethers.Contract> {
+    // Detect token standard if not provided
+    const detectedType = tokenType ?? await this.getTokenStandard(collectionAddress, provider);
+
+    // Select appropriate contract
+    const contractType = detectedType === 'ERC1155'
+      ? 'ERC1155NFTExchange'
+      : 'ERC721NFTExchange';
+
+    this.log('Using exchange contract', { collectionAddress, tokenType: detectedType, contractType });
+
+    return this.contractRegistry.getContract(
+      contractType,
+      this.getNetworkId(),
+      provider,
+      undefined,
+      signer
+    );
   }
 
   /**
@@ -55,7 +110,9 @@ export class ExchangeModule extends BaseModule {
    */
   private async ensureApproval(
     collectionAddress: string,
-    ownerAddress: string
+    ownerAddress: string,
+    tokenType?: TokenStandard,
+    provider?: ethers.Provider
   ): Promise<void> {
     const cacheKey = `${collectionAddress.toLowerCase()}-${ownerAddress.toLowerCase()}`;
 
@@ -64,21 +121,23 @@ export class ExchangeModule extends BaseModule {
       return;
     }
 
-    const provider = this.ensureProvider();
+    const effectiveProvider = provider ?? this.ensureProvider();
     const signer = this.ensureSigner();
 
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
-      provider
+    // Get correct exchange contract address for operator
+    const exchangeContract = await this.getExchangeContract(
+      collectionAddress,
+      effectiveProvider,
+      signer,
+      tokenType
     );
     const operatorAddress = await exchangeContract.getAddress();
 
-    const erc721Abi = [
+    const approvalAbi = [
       'function isApprovedForAll(address owner, address operator) view returns (bool)',
       'function setApprovalForAll(address operator, bool approved)',
     ];
-    const nftContract = new ethers.Contract(collectionAddress, erc721Abi, signer);
+    const nftContract = new ethers.Contract(collectionAddress, approvalAbi, signer);
 
     const isApproved = await nftContract.isApprovedForAll(ownerAddress, operatorAddress);
 
@@ -102,34 +161,52 @@ export class ExchangeModule extends BaseModule {
     // Runtime validation
     validateListNFTParams(params);
 
-    const { collectionAddress, tokenId, price, duration, options } = params;
+    const { collectionAddress, tokenId, price, duration, amount, options } = params;
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
 
+    // Detect token standard once (cached per collection)
+    const tokenType = await this.getTokenStandard(collectionAddress, provider);
+    this.log('Detected token type for listing', { collectionAddress, tokenType });
+
     // Get seller address
     const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
 
-    // Ensure NFT is approved for Exchange
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    // Ensure NFT is approved for Exchange (pass tokenType to avoid re-detection)
+    await this.ensureApproval(collectionAddress, sellerAddress, tokenType, provider);
 
-    // Get contract instance
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get appropriate exchange contract (pass tokenType to avoid re-detection)
+    const exchangeContract = await this.getExchangeContract(
+      collectionAddress,
       provider,
-      undefined,
-      this.signer
+      this.signer,
+      tokenType
     );
 
-    // Prepare parameters - contract expects: (address, uint256, uint256, uint256)
     const priceInWei = ethers.parseEther(price);
+
+    // Prepare parameters based on token type
+    const contractParams = tokenType === 'ERC1155'
+      ? [
+          collectionAddress,
+          tokenId,
+          amount || '1',
+          priceInWei,
+          duration,
+        ]
+      : [
+          collectionAddress,
+          tokenId,
+          priceInWei,
+          duration,
+        ];
 
     // Call contract method
     const tx = await txManager.sendTransaction(
       exchangeContract,
       'listNFT',
-      [collectionAddress, tokenId, priceInWei, duration],
+      contractParams,
       { ...options, module: 'Exchange' }
     );
 
@@ -418,25 +495,43 @@ export class ExchangeModule extends BaseModule {
   }
 
   /**
-   * Get listing details
+   * Get listing details (queries both ERC721 and ERC1155 exchanges)
    * @param listingId - Listing ID in bytes32 hex format (0x followed by 64 hex characters)
    */
   async getListing(listingId: string): Promise<Listing> {
     validateBytes32(listingId, 'listingId');
 
     const provider = this.ensureProvider();
-    const exchangeContract = await this.contractRegistry.getContract(
+    const txManager = this.ensureTxManager();
+
+    // Try ERC721NFTExchange first, then ERC1155NFTExchange
+    const erc721Contract = await this.contractRegistry.getContract(
       'ERC721NFTExchange',
       this.getNetworkId(),
       provider
     );
 
-    const txManager = this.ensureTxManager();
-    const listing = await txManager.callContract<ethers.Result>(
-      exchangeContract,
+    const erc1155Contract = await this.contractRegistry.getContract(
+      'ERC1155NFTExchange',
+      this.getNetworkId(),
+      provider
+    );
+
+    // Query ERC721 first
+    let listing = await txManager.callContract<ethers.Result>(
+      erc721Contract,
       's_listings',
       [listingId]
     );
+
+    // If ERC721 returns zero address (not found), try ERC1155
+    if (listing.seller === ethers.ZeroAddress) {
+      listing = await txManager.callContract<ethers.Result>(
+        erc1155Contract,
+        's_listings',
+        [listingId]
+      );
+    }
 
     return this.formatListing(listingId, listing);
   }
@@ -445,12 +540,12 @@ export class ExchangeModule extends BaseModule {
    * Get listings by collection
    */
   async getListings(collectionAddress: string): Promise<Listing[]> {
-    validateAddress(collectionAddress);
+    const normalizedCollection = validateAddress(collectionAddress);
 
     const provider = this.ensureProvider();
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Get appropriate exchange contract based on token standard
+    const exchangeContract = await this.getExchangeContract(
+      normalizedCollection,
       provider
     );
 
@@ -458,33 +553,51 @@ export class ExchangeModule extends BaseModule {
     const listingIds = await txManager.callContract<string[]>(
       exchangeContract,
       'getListingsByCollection',
-      [collectionAddress]
+      [normalizedCollection]
     );
 
     return Promise.all(listingIds.map((id) => this.getListing(id)));
   }
 
   /**
-   * Get listings by seller
+   * Get listings by seller (queries both ERC721 and ERC1155 exchanges)
    */
   async getListingsBySeller(seller: string): Promise<Listing[]> {
-    validateAddress(seller, 'seller');
-
+    const normalizedSeller = validateAddress(seller, 'seller');
     const provider = this.ensureProvider();
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
-      provider
-    );
-
     const txManager = this.ensureTxManager();
-    const listingIds = await txManager.callContract<string[]>(
-      exchangeContract,
-      'getListingsBySeller',
-      [seller]
-    );
 
-    return Promise.all(listingIds.map((id) => this.getListing(id)));
+    // Query both ERC721 and ERC1155 exchanges in parallel
+    const [erc721ListingIds, erc1155ListingIds] = await Promise.all([
+      (async () => {
+        const erc721Contract = await this.contractRegistry.getContract(
+          'ERC721NFTExchange',
+          this.getNetworkId(),
+          provider
+        );
+        return txManager.callContract<string[]>(
+          erc721Contract,
+          'getListingsBySeller',
+          [normalizedSeller]
+        );
+      })(),
+      (async () => {
+        const erc1155Contract = await this.contractRegistry.getContract(
+          'ERC1155NFTExchange',
+          this.getNetworkId(),
+          provider
+        );
+        return txManager.callContract<string[]>(
+          erc1155Contract,
+          'getListingsBySeller',
+          [normalizedSeller]
+        );
+      })(),
+    ]);
+
+    // Combine and fetch all listing details
+    const allListingIds = [...erc721ListingIds, ...erc1155ListingIds];
+    return Promise.all(allListingIds.map((id) => this.getListing(id)));
   }
 
   /**
@@ -499,6 +612,12 @@ export class ExchangeModule extends BaseModule {
     const listingDuration = BigInt(data.listingDuration);
     const listingStart = BigInt(data.listingStart);
     const status = Number(data.status);
+
+    // Extract amount field (present in contract struct)
+    // Convert to string for consistency with other BigNumber fields
+    const amount = data.amount
+      ? BigInt(data.amount).toString()
+      : undefined;
 
     // Contract enum: 0=Pending, 1=Active, 2=Sold, 3=Failed, 4=Cancelled
     const statusMap: Record<number, Listing['status']> = {
@@ -523,6 +642,7 @@ export class ExchangeModule extends BaseModule {
       endTime,
       status: statusMap[status] || 'active',
       createdAt: new Date(startTime * 1000).toISOString(),
+      amount,
     };
   }
 
@@ -530,37 +650,57 @@ export class ExchangeModule extends BaseModule {
    * Batch list multiple NFTs from the SAME collection in 1 transaction
    */
   async batchListNFT(params: BatchListNFTParams): Promise<{ listingIds: string[]; tx: TransactionReceipt }> {
-    const { collectionAddress, tokenIds, prices, duration, options } = params;
+    // Runtime validation
+    validateBatchListNFTParams(params);
 
-    if (tokenIds.length === 0) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'Token IDs array cannot be empty');
-    }
-    if (tokenIds.length !== prices.length) {
-      throw this.error(ErrorCodes.INVALID_PARAMETER, 'Token IDs and prices arrays must have same length');
-    }
+    const { collectionAddress, tokenIds, prices, duration, amounts, options } = params;
 
-    validateAddress(collectionAddress);
+    const normalizedCollection = validateAddress(collectionAddress);
 
     const txManager = this.ensureTxManager();
     const provider = this.ensureProvider();
     const sellerAddress = this.signer ? await this.signer.getAddress() : ethers.ZeroAddress;
 
-    await this.ensureApproval(collectionAddress, sellerAddress);
+    // Detect token standard once (cached per collection)
+    const tokenType = await this.getTokenStandard(normalizedCollection, provider);
+    this.log('Detected token type for batch listing', { collectionAddress: normalizedCollection, tokenType });
 
-    const exchangeContract = await this.contractRegistry.getContract(
-      'ERC721NFTExchange',
-      this.getNetworkId(),
+    // Ensure NFT is approved for Exchange (pass tokenType to avoid re-detection)
+    await this.ensureApproval(normalizedCollection, sellerAddress, tokenType, provider);
+
+    // Get appropriate exchange contract (pass tokenType to avoid re-detection)
+    const exchangeContract = await this.getExchangeContract(
+      normalizedCollection,
       provider,
-      undefined,
-      this.signer
+      this.signer,
+      tokenType
     );
 
     const pricesInWei = prices.map(p => ethers.parseEther(p));
 
+    // Prepare amounts array (default to array of '1's for ERC1155)
+    const normalizedAmounts = amounts || tokenIds.map(() => '1');
+
+    // Prepare parameters based on token type
+    const contractParams = tokenType === 'ERC1155'
+      ? [
+          normalizedCollection,
+          tokenIds,
+          normalizedAmounts,
+          pricesInWei,
+          duration,
+        ]
+      : [
+          normalizedCollection,
+          tokenIds,
+          pricesInWei,
+          duration,
+        ];
+
     const tx = await txManager.sendTransaction(
       exchangeContract,
       'batchListNFT',
-      [collectionAddress, tokenIds, pricesInWei, duration],
+      contractParams,
       { ...options, module: 'Exchange' }
     );
 

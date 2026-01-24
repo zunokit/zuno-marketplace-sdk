@@ -19,14 +19,99 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 
 ## Platform Support
 
-| Feature | Status |
-|---------|:------:|
-| Zuno ABIs & Contracts | ✅ Fully Supported |
-| Custom ABIs/Contracts | ❌ Not Supported |
-| Local Development | ✅ Full Support |
-| Testnet/Mainnet | ⚠️ Coming Soon |
+| Feature         | Status | Description                                      |
+| --------------- | :----: | ------------------------------------------------ |
+| Zuno ABIs       |   ✅   | Fully supported with built-in registry           |
+| Zuno Contracts  |   ✅   | Full integration with Zuno marketplace contracts |
+| Other ABIs      |   ❌   | Not supported yet                                |
+| Other Contracts |   ❌   | Custom contract support not available            |
 
-## Installation
+### Network Support
+
+| Network           | Status | Chain ID  | Description                    |
+| ----------------- | :----: | :-------: | ------------------------------ |
+| Local Development |   ✅   |  31337    | Full support for local testing |
+| Testnet (Sepolia) |   ⚠️   | 11155111  | Planned for Q1 2026            |
+| Ethereum Mainnet  |   ⚠️   |     1     | Planned for Q2 2026            |
+
+## 🆕 What's New in v2.1.1-beta-claude.4
+
+### ✨ v2.1.1 Features
+
+- **ERC1155 Listing Support** - Full support for ERC1155 NFT listings with configurable amounts
+- **Auto Token Detection** - Automatic detection of ERC721 vs ERC1155 token standards
+- **Enhanced Validation** - Comprehensive validation for amount parameters
+- **Backward Compatible** - ERC721 listings continue to work without changes
+
+### ✨ v2.1.0 Features
+
+- **Query Invalidation** - Automatic cache invalidation on mutations
+- **Enhanced Error Messages** - More descriptive error context
+- **Performance Optimizations** - Reduced bundle size and faster initialization
+
+### ✨ v2.1.0 Features
+
+- **WagmiProviderSync & SSR Support** - Sync provider state with SSR-safe initialization
+- **Transaction Retry Logic** - Enhanced transactionStore with retry and history tracking
+- **Batch Progress Events** - Real-time progress updates for batch operations
+- **ListingId Validation** - Strict bytes32 format validation for listing IDs
+- **Dutch Auction Warnings** - Warning logs for price clamp adjustments
+- **Approval Caching** - Reduced RPC calls with approval status caching
+- **LogStore Optimization** - Better performance under high-frequency logging
+
+---
+
+## 📖 v2.0.0 Features
+
+### Batch Auction Operations
+
+```typescript
+// Batch create English auctions (max 20 per tx)
+const { auctionIds, tx } = await sdk.auction.batchCreateEnglishAuction({
+  collectionAddress: "0x...",
+  tokenIds: ["1", "2", "3"],
+  startingBid: "1.0",
+  duration: 86400 * 7,
+});
+
+// Batch cancel auctions
+const { cancelledCount, tx } = await sdk.auction.batchCancelAuction([
+  "1",
+  "2",
+  "3",
+]);
+```
+
+### 📖 Allowlist Management
+
+```typescript
+// Add addresses to allowlist
+await sdk.collection.addToAllowlist({
+  collectionAddress: "0x...",
+  addresses: ["0x...", "0x..."],
+});
+
+// Enable allowlist-only mode (permanent restriction)
+await sdk.collection.setAllowlistOnly({
+  collectionAddress: "0x...",
+  enabled: true,
+});
+
+// Check allowlist status
+const isAllowed = await sdk.collection.isInAllowlist({
+  collectionAddress: "0x...",
+  address: "0x...",
+});
+```
+
+### v2.0.0 Highlights
+
+- Tree-shakeable imports for smaller bundles
+- Testing utilities (`zuno-marketplace-sdk/testing`)
+- DevTools component for visual debugging
+- Standalone logger module
+
+## 📦 Installation
 
 ```bash
 npm install zuno-marketplace-sdk ethers@6 @tanstack/react-query wagmi viem
@@ -38,7 +123,7 @@ npm install zuno-marketplace-sdk ethers@6 @tanstack/react-query wagmi viem
 
 ```tsx
 // app/layout.tsx
-import { ZunoProvider } from 'zuno-marketplace-sdk/react';
+import { ZunoProvider } from "zuno-marketplace-sdk/react";
 
 export default function RootLayout({ children }) {
   return (
@@ -47,7 +132,7 @@ export default function RootLayout({ children }) {
         <ZunoProvider
           config={{
             apiKey: process.env.NEXT_PUBLIC_ZUNO_API_KEY!,
-            network: 'sepolia',
+            network: "sepolia",
           }}
         >
           {children}
@@ -60,9 +145,9 @@ export default function RootLayout({ children }) {
 
 ```tsx
 // app/page.tsx
-'use client';
+"use client";
 
-import { useExchange, useWallet } from 'zuno-marketplace-sdk/react';
+import { useExchange, useWallet } from "zuno-marketplace-sdk/react";
 
 export default function HomePage() {
   const { address, connect, isConnected } = useWallet();
@@ -70,12 +155,12 @@ export default function HomePage() {
 
   const handleList = async () => {
     const { listingId, tx } = await listNFT.mutateAsync({
-      collectionAddress: '0x...',
-      tokenId: '1',
-      price: '1.5',
+      collectionAddress: "0x...",
+      tokenId: "1",
+      price: "1.5",
       duration: 86400,
     });
-    console.log('Listed:', listingId);
+    console.log("Listed:", listingId);
   };
 
   return (
@@ -95,45 +180,69 @@ export default function HomePage() {
 ### Exchange
 
 ```typescript
-// List NFT
+// List ERC721 NFT (backward compatible)
 const { listingId, tx } = await sdk.exchange.listNFT({
-  collectionAddress: '0x...',
-  tokenId: '1',
-  price: '1.5',
+  collectionAddress: "0x...",
+  tokenId: "1",
+  price: "1.5",
+  duration: 86400,
+});
+
+// List ERC1155 NFT with amount
+const { listingId: erc1155Listing } = await sdk.exchange.listNFT({
+  collectionAddress: "0x...",
+  tokenId: "1",
+  amount: "10",  // List 10 tokens
+  price: "1.5",
+  duration: 86400,
+});
+
+// Batch list ERC1155 with amounts
+const { listingIds } = await sdk.exchange.batchListNFT({
+  collectionAddress: "0x...",
+  tokenIds: ["1", "2", "3"],
+  amounts: ["5", "10", "15"],
+  prices: ["1.0", "2.0", "3.0"],
   duration: 86400,
 });
 
 // Buy NFT
-const { tx } = await sdk.exchange.buyNFT({ listingId: '0x...' });
+const { tx } = await sdk.exchange.buyNFT({ listingId: "0x..." });
 
 // Cancel listing
-await sdk.exchange.cancelListing('0x...');
+await sdk.exchange.cancelListing("0x...");
+
+// Get listing with amount (ERC1155)
+const listing = await sdk.exchange.getListing("0x...");
+console.log(listing.amount); // "10" for ERC1155, undefined for ERC721
 ```
+
+> **Note:** See [ERC1155 Listing Guide](./docs/erc1155-listing-guide.md) for detailed documentation on ERC1155 support.
 
 ### Collection
 
 ```typescript
 // Create ERC721 collection
 const { address, tx } = await sdk.collection.createERC721Collection({
-  name: 'My NFTs',
-  symbol: 'MNFT',
+  name: "My NFTs",
+  symbol: "MNFT",
   maxSupply: 10000,
-  mintPrice: '0.1',
+  mintPrice: "0.1",
   royaltyFee: 500,
-  tokenURI: 'ipfs://...',
+  tokenURI: "ipfs://...",
 });
 
 // Mint NFT
 const { tokenId, tx } = await sdk.collection.mintERC721({
-  collectionAddress: '0x...',
-  recipient: '0x...',
-  value: '0.1',
+  collectionAddress: "0x...",
+  recipient: "0x...",
+  value: "0.1",
 });
 
 // Allowlist management
 await sdk.collection.addToAllowlist({
-  collectionAddress: '0x...',
-  addresses: ['0x...', '0x...'],
+  collectionAddress: "0x...",
+  addresses: ["0x...", "0x..."],
 });
 ```
 
@@ -142,32 +251,32 @@ await sdk.collection.addToAllowlist({
 ```typescript
 // Create English auction
 const { auctionId, tx } = await sdk.auction.createEnglishAuction({
-  collectionAddress: '0x...',
-  tokenId: '1',
-  startingBid: '1.0',
+  collectionAddress: "0x...",
+  tokenId: "1",
+  startingBid: "1.0",
   duration: 86400 * 7,
 });
 
 // Create Dutch auction
 const { auctionId, tx } = await sdk.auction.createDutchAuction({
-  collectionAddress: '0x...',
-  tokenId: '1',
-  startPrice: '10.0',
-  endPrice: '1.0',
+  collectionAddress: "0x...",
+  tokenId: "1",
+  startPrice: "10.0",
+  endPrice: "1.0",
   duration: 86400,
 });
 
 // Place bid
 const { tx } = await sdk.auction.placeBid({
-  auctionId: '1',
-  amount: '1.5',
+  auctionId: "1",
+  amount: "1.5",
 });
 
 // Batch operations
 const { auctionIds, tx } = await sdk.auction.batchCreateEnglishAuction({
-  collectionAddress: '0x...',
-  tokenIds: ['1', '2', '3'],
-  startingBid: '1.0',
+  collectionAddress: "0x...",
+  tokenIds: ["1", "2", "3"],
+  startingBid: "1.0",
   duration: 86400 * 7,
 });
 ```
@@ -182,7 +291,7 @@ import {
   useWallet,
   useZunoSDK,
   useZunoLogger,
-} from 'zuno-marketplace-sdk/react';
+} from "zuno-marketplace-sdk/react";
 
 function App() {
   const { listNFT, buyNFT } = useExchange();
@@ -192,7 +301,7 @@ function App() {
   const sdk = useZunoSDK();
   const logger = useZunoLogger();
 
-  logger.info('App rendered');
+  logger.info("App rendered");
   return <div>Network: {sdk.getConfig().network}</div>;
 }
 ```
@@ -202,7 +311,7 @@ function App() {
 ### React Components
 
 ```tsx
-import { useZunoSDK, useZunoLogger } from 'zuno-marketplace-sdk/react';
+import { useZunoSDK, useZunoLogger } from "zuno-marketplace-sdk/react";
 
 function MyComponent() {
   const sdk = useZunoSDK();
@@ -214,12 +323,12 @@ function MyComponent() {
 ### Non-React Contexts
 
 ```typescript
-import { ZunoSDK, getSdk, getLogger } from 'zuno-marketplace-sdk';
+import { ZunoSDK, getSdk, getLogger } from "zuno-marketplace-sdk";
 
 // Initialize once
 ZunoSDK.getInstance({
   apiKey: process.env.ZUNO_API_KEY!,
-  network: 'sepolia',
+  network: "sepolia",
 });
 
 // Use anywhere
@@ -232,20 +341,20 @@ const logger = getLogger();
 ### Zuno DevTools
 
 ```tsx
-import { ZunoDevTools } from 'zuno-marketplace-sdk/react';
+import { ZunoDevTools } from "zuno-marketplace-sdk/react";
 
 function App() {
   return (
     <>
       <YourApp />
-      {process.env.NODE_ENV === 'development' && (
+      {process.env.NODE_ENV === "development" && (
         <ZunoDevTools
           config={{
             showLogger: true,
             showTransactions: true,
             showCache: true,
             showNetwork: true,
-            position: 'bottom-right',
+            position: "bottom-right",
           }}
         />
       )}
@@ -258,10 +367,10 @@ function App() {
 
 ```typescript
 const sdk = new ZunoSDK({
-  apiKey: 'xxx',
-  network: 'sepolia',
+  apiKey: "xxx",
+  network: "sepolia",
   logger: {
-    level: 'debug', // 'none' | 'error' | 'warn' | 'info' | 'debug'
+    level: "debug", // 'none' | 'error' | 'warn' | 'info' | 'debug'
     timestamp: true,
     modulePrefix: true,
     logTransactions: true,
