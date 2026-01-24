@@ -1,3 +1,10 @@
+## [2.1.0-beta.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0-beta.2...v2.1.0-beta.3) (2026-01-24)
+
+### 🐛 Bug Fixes
+
+* **sdk:** add missing ErrorCode type import ([c5d57c5](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/c5d57c5984924f6d8abe04affd53b239d796a63c))
+* **sdk:** add USER_REJECTED error code for cancelled transactions ([e2243c7](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e2243c7aa2d858fe210acab2a36b12d3a193fca6)), closes [#109](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/109)
+
 ## [2.1.0-beta.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0-beta.1...v2.1.0-beta.2) (2026-01-24)
 
 ### 🐛 Bug Fixes
