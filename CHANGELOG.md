@@ -1,3 +1,9 @@
+## [2.1.0-beta.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0-beta.1...v2.1.0-beta.2) (2026-01-24)
+
+### 🐛 Bug Fixes
+
+* **exchange:** auto-detect ERC721 vs ERC1155 exchange contracts ([66fc049](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/66fc0492249de3bedd53e11a84bc13eb0d5b70a2))
+
 ## [2.1.1-beta-claude.7](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.6...v2.1.1-beta-claude.7) (2026-01-22)
 
 ### 🐛 Bug Fixes
