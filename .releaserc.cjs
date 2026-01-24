@@ -2,7 +2,7 @@
  * Semantic Release Configuration
  *
  * Dynamically provides configuration based on the current branch:
- * - develop/develop-claude branches: Uses beta release configuration
+ * - develop branch: Uses beta release configuration
  * - main branch: Uses production release configuration
  */
 
@@ -24,10 +24,6 @@ const betaConfig = {
     {
       name: 'develop',
       prerelease: 'beta'
-    },
-    {
-      name: 'develop-claude',
-      prerelease: 'beta-claude'
     }
   ],
   plugins: [
@@ -168,7 +164,7 @@ const productionConfig = {
 };
 
 // Select and export the appropriate configuration
-const isBetaBranch = currentBranch === 'develop' || currentBranch === 'develop-claude';
+const isBetaBranch = currentBranch === 'develop';
 const config = isBetaBranch ? betaConfig : productionConfig;
 
 console.error(`[semantic-release] Using ${isBetaBranch ? 'BETA' : 'PRODUCTION'} config`);
