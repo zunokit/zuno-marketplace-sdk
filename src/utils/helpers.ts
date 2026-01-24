@@ -4,7 +4,7 @@
 
 import { ethers } from 'ethers';
 import type { TransactionReceipt } from '../types/entities';
-import { ZunoSDKError, ErrorCodes } from './errors';
+import { ZunoSDKError, ErrorCodes, type ErrorCode } from './errors';
 
 /**
  * Retry configuration
@@ -137,7 +137,7 @@ export function formatTransactionReceipt(
  */
 export function parseTransactionError(error: Error): ZunoSDKError {
   // Error pattern mapping: pattern -> [errorCode, errorMessage]
-  const errorPatterns: Array<[string, [string, string]]> = [
+  const errorPatterns: Array<[string, [ErrorCode, string]]> = [
     ['user rejected', [ErrorCodes.USER_REJECTED, 'Transaction cancelled by user']],
     ['insufficient funds', [ErrorCodes.INSUFFICIENT_FUNDS, 'Insufficient funds for transaction']],
     ['nonce too low', [ErrorCodes.NONCE_TOO_LOW, 'Transaction nonce too low']],
