@@ -233,11 +233,15 @@ export class ExchangeModule extends BaseModule {
     // Get listing details to determine which exchange contract to use
     const listing = await this.getListing(listingId);
 
+    // Get token standard to determine which exchange contract to use
+    const tokenStandard = await this.getTokenStandard(listing.collectionAddress, provider);
+
     // Get appropriate exchange contract based on token standard
     const exchangeContract = await this.getExchangeContract(
       listing.collectionAddress,
       provider,
-      this.signer
+      this.signer,
+      tokenStandard
     );
 
     // Convert ETH value to wei for transaction
@@ -250,10 +254,16 @@ export class ExchangeModule extends BaseModule {
     };
 
     // Call contract method
+    // For ERC1155, pass listing amount to disambiguate overloaded buyNFT functions
+    // (buyNFT(bytes32) vs buyNFT(bytes32,uint256))
+    const args = tokenStandard === 'ERC1155' && listing.amount
+      ? [listingId, listing.amount]
+      : [listingId];
+
     const tx = await txManager.sendTransaction(
       exchangeContract,
       'buyNFT',
-      [listingId],
+      args,
       { ...txOptions, module: 'Exchange' }
     );
 
