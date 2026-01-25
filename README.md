@@ -34,7 +34,7 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 | Testnet (Sepolia) |   ⚠️   | 11155111  | Planned for Q1 2026            |
 | Ethereum Mainnet  |   ⚠️   |     1     | Planned for Q2 2026            |
 
-## 🆕 What's New in v2.1.1-beta-claude.4
+## 🆕 What's New in v2.1.1
 
 ### ✨ v2.1.1 Features
 
@@ -45,17 +45,14 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 
 ### ✨ v2.1.0 Features
 
-- **Query Invalidation** - Automatic cache invalidation on mutations
-- **Enhanced Error Messages** - More descriptive error context
-- **Performance Optimizations** - Reduced bundle size and faster initialization
-
-### ✨ v2.1.0 Features
-
 - **WagmiProviderSync & SSR Support** - Sync provider state with SSR-safe initialization
 - **Transaction Retry Logic** - Enhanced transactionStore with retry and history tracking
 - **Batch Progress Events** - Real-time progress updates for batch operations
 - **ListingId Validation** - Strict bytes32 format validation for listing IDs
 - **Dutch Auction Warnings** - Warning logs for price clamp adjustments
+
+### ⚡️ Performance Improvements
+
 - **Approval Caching** - Reduced RPC calls with approval status caching
 - **LogStore Optimization** - Better performance under high-frequency logging
 

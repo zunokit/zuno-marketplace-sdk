@@ -587,11 +587,7 @@ export class CollectionModule extends BaseModule {
     collectionAddress: string,
     userAddress: string
   ): Promise<Array<{ tokenId: string; amount: number }>> {
-    this.log('=== getUserOwnedTokens START ===', {
-      collectionAddress,
-      userAddress,
-      timestamp: new Date().toISOString()
-    });
+    this.log('getUserOwnedTokens started', { collectionAddress, userAddress });
     const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
     const normalizedUser = validateAddress(userAddress, 'userAddress');
 
