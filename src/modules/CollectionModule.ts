@@ -587,20 +587,33 @@ export class CollectionModule extends BaseModule {
     collectionAddress: string,
     userAddress: string
   ): Promise<Array<{ tokenId: string; amount: number }>> {
-    this.log('getUserOwnedTokens started', { collectionAddress, userAddress });
+    this.log('=== getUserOwnedTokens START ===', {
+      collectionAddress,
+      userAddress,
+      timestamp: new Date().toISOString()
+    });
     const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
     const normalizedUser = validateAddress(userAddress, 'userAddress');
 
     const { ethers } = await import('ethers');
 
     // Get all tokens transferred to user (mint + purchases + transfers)
+    this.log('[getUserOwnedTokens] Fetching transferred tokens...');
     const transferredTokens = await this.getTransferredTokens(normalizedCollection, normalizedUser);
+    this.log('[getUserOwnedTokens] Transferred tokens found', {
+      count: transferredTokens.length,
+      tokens: transferredTokens
+    });
 
     if (transferredTokens.length === 0) {
+      this.log('[getUserOwnedTokens] No transferred tokens, returning empty array');
       return [];
     }
 
     const provider = this.ensureProvider();
+    this.log('[getUserOwnedTokens] Provider obtained', {
+      provider: provider.constructor.name
+    });
 
     const ERC721_ABI = ['function ownerOf(uint256 tokenId) view returns (address)'];
     const ERC1155_ABI = ['function balanceOf(address account, uint256 id) view returns (uint256)'];
@@ -609,29 +622,61 @@ export class CollectionModule extends BaseModule {
     const erc1155Contract = new ethers.Contract(normalizedCollection, ERC1155_ABI, provider);
 
     const ownedTokensMap = new Map<string, number>();
+    let verifiedCount = 0;
+    let notOwnedCount = 0;
+    let errorCount = 0;
 
+    this.log('[getUserOwnedTokens] Verifying ownership for each token...');
     for (const token of transferredTokens) {
       try {
         // Try ERC721 ownerOf first
+        this.log(`[getUserOwnedTokens] Checking ERC721 ownerOf for token ${token.tokenId}...`);
         const owner = await erc721Contract.ownerOf(token.tokenId);
+        this.log(`[getUserOwnedTokens] Token ${token.tokenId} owner:`, {
+          owner,
+          isUser: owner.toLowerCase() === normalizedUser.toLowerCase()
+        });
         if (owner.toLowerCase() === normalizedUser.toLowerCase()) {
           ownedTokensMap.set(token.tokenId, 1);
+          verifiedCount++;
+        } else {
+          notOwnedCount++;
         }
-      } catch {
+      } catch (e721Error) {
+        this.log(`[getUserOwnedTokens] ERC721 ownerOf failed for token ${token.tokenId}, trying ERC1155...`, {
+          error: (e721Error as Error).message
+        });
         // Fallback to ERC1155 balanceOf
         try {
           const balance = await erc1155Contract.balanceOf(normalizedUser, token.tokenId);
+          this.log(`[getUserOwnedTokens] Token ${token.tokenId} ERC1155 balance:`, {
+            balance: balance.toString()
+          });
           if (balance > 0n) {
             ownedTokensMap.set(token.tokenId, Number(balance));
+            verifiedCount++;
+          } else {
+            notOwnedCount++;
           }
-        } catch {
-          // Token not owned or invalid - skip
+        } catch (e1155Error) {
+          this.log(`[getUserOwnedTokens] ERC1155 balanceOf failed for token ${token.tokenId}`, {
+            error: (e1155Error as Error).message
+          });
+          errorCount++;
         }
       }
     }
 
     const ownedTokens = Array.from(ownedTokensMap.entries()).map(([tokenId, amount]) => ({ tokenId, amount }));
-    this.log('getUserOwnedTokens completed', { count: ownedTokens.length });
+    this.log('=== getUserOwnedTokens COMPLETE ===', {
+      transferredTokensCount: transferredTokens.length,
+      verifiedCount,
+      notOwnedCount,
+      errorCount,
+      finalOwnedTokensCount: ownedTokens.length,
+      ownedTokens,
+      timestamp: new Date().toISOString()
+    });
     return ownedTokens;
   }
 
