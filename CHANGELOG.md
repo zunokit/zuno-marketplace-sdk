@@ -1,3 +1,56 @@
+## [2.1.1-beta.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1-beta.1) (2026-01-25)
+
+### 🐛 Bug Fixes
+
+* **collection:** show all owned tokens in wallet ([#112](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/112)) ([#113](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/113)) ([e9b22d0](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e9b22d0c5dc60ef948ae06981dd75e61456037ca))
+* correct query invalidation in useSetupAllowlist ([#88](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/88)) ([a660f00](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a660f0042beba0024da109d3f1b1834d2f8cb3eb))
+* **exchange:** auto-detect ERC721 vs ERC1155 exchange contracts ([66fc049](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/66fc0492249de3bedd53e11a84bc13eb0d5b70a2))
+* **exchange:** disambiguate ERC1155 buyNFT overload ([#110](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/110)) ([b93f4f1](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b93f4f1a146d158e7325fc3fa2f7800095067d2e))
+* resolve issues [#85](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/85), [#84](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/84), [#83](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/83), [#80](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/80), [#81](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/81) - allowlist cache, ERC1155 listing ([d4c142e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d4c142e8fce9dbcdb19223a5472a948d45a08eb2)), closes [#86](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/86)
+* **sdk:** add missing ErrorCode type import ([c5d57c5](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/c5d57c5984924f6d8abe04affd53b239d796a63c))
+* **sdk:** add USER_REJECTED error code for cancelled transactions ([e2243c7](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e2243c7aa2d858fe210acab2a36b12d3a193fca6)), closes [#109](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/109)
+* **sdk:** resolve all 11 open SDK issues ([#75](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/75)) ([4c89079](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4c89079b60d0503baa2c26ad8f9756ffde548dd7)), closes [#69](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/69) [#74](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/74) [#55-68](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/55-68) [#65](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/65) [#67](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/67) [#58](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/58) [#60](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/60) [zunokit/zuno-marketplace-contracts#51](https://github.com/zunokit/zuno-marketplace-contracts/issues/51) [#47](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/47) [#48](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/48)
+
+## [2.1.0-beta.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0-beta.2...v2.1.0-beta.3) (2026-01-25)
+
+### 🐛 Bug Fixes
+
+* **collection:** show all owned tokens in wallet ([#112](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/112)) ([#113](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/113)) ([e9b22d0](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e9b22d0c5dc60ef948ae06981dd75e61456037ca))
+* **exchange:** disambiguate ERC1155 buyNFT overload ([#110](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/110)) ([b93f4f1](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b93f4f1a146d158e7325fc3fa2f7800095067d2e))
+* **sdk:** add missing ErrorCode type import ([c5d57c5](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/c5d57c5984924f6d8abe04affd53b239d796a63c))
+* **sdk:** add USER_REJECTED error code for cancelled transactions ([e2243c7](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e2243c7aa2d858fe210acab2a36b12d3a193fca6)), closes [#109](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/109)
+
+## [2.1.0-beta.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0-beta.1...v2.1.0-beta.2) (2026-01-24)
+
+### 🐛 Bug Fixes
+
+* **exchange:** auto-detect ERC721 vs ERC1155 exchange contracts ([66fc049](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/66fc0492249de3bedd53e11a84bc13eb0d5b70a2))
+
+## [2.1.1-beta-claude.7](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.6...v2.1.1-beta-claude.7) (2026-01-22)
+
+### 🐛 Bug Fixes
+
+* getListing now queries both ERC721 and ERC1155 exchanges ([4496350](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4496350a04d912cb8e8934bfba722278088e122a))
+
+## [2.1.1-beta-claude.6](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.5...v2.1.1-beta-claude.6) (2026-01-22)
+
+### 🐛 Bug Fixes
+
+* getListingsBySeller now queries both ERC721 and ERC1155 exchanges ([431ad8b](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/431ad8b436eae1b724ef2d701a043e2ece86ed82))
+
+## [2.1.1-beta-claude.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.4...v2.1.1-beta-claude.5) (2026-01-22)
+
+### 🐛 Bug Fixes
+
+* **release:** disable npm auto-publish in betaConfig ([09b1c99](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/09b1c99e7e10799b68dd3e33ad54487c4a7cde54))
+* **release:** enable npm auto-publish for main and develop branches ([#104](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/104)) ([4230c22](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4230c22c37746ca8461026f0c46d030ffa96626a))
+
+## [2.1.1-beta-claude.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.3...v2.1.1-beta-claude.4) (2026-01-22)
+
+### 🐛 Bug Fixes
+
+* **erc1155:** add amount parameter to listNFT for ERC1155 ([#102](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/102)) ([7963001](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/7963001805462b9f299c53ceb160b342aea9b9a3)), closes [#99](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/99)
+
 ## [2.1.1-beta-claude.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1-beta-claude.2...v2.1.1-beta-claude.3) (2026-01-13)
 
 ### 🐛 Bug Fixes

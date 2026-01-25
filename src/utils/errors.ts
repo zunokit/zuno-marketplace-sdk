@@ -28,6 +28,7 @@ export const ErrorCodes = {
 
   // Transaction errors (4xxx)
   TRANSACTION_FAILED: 'TRANSACTION_FAILED',
+  USER_REJECTED: 'USER_REJECTED',
   INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
   GAS_ESTIMATION_FAILED: 'GAS_ESTIMATION_FAILED',
   TRANSACTION_REVERTED: 'TRANSACTION_REVERTED',
@@ -314,6 +315,7 @@ export function validateListNFTParams(params: unknown): asserts params is {
   tokenId: string;
   price: string;
   duration: number;
+  amount?: string;
   options?: Record<string, unknown>;
 } {
   if (!params || typeof params !== 'object') {
@@ -326,6 +328,104 @@ export function validateListNFTParams(params: unknown): asserts params is {
   validateTokenId(p.tokenId as string, 'tokenId');
   validateAmount(p.price as string, 'price');
   validateDuration(p.duration as number, 'duration');
+
+  // Validate amount if provided
+  if (p.amount !== undefined) {
+    try {
+      const amount = BigInt(p.amount as string);
+      if (amount <= 0) {
+        throw new ZunoSDKError(
+          ErrorCodes.INVALID_PARAMETER,
+          'Amount must be greater than 0'
+        );
+      }
+    } catch (error) {
+      if (error instanceof ZunoSDKError) throw error;
+      throw new ZunoSDKError(
+        ErrorCodes.INVALID_PARAMETER,
+        'Invalid amount format'
+      );
+    }
+  }
+}
+
+/**
+ * Runtime type guard for BatchListNFTParams
+ */
+export function validateBatchListNFTParams(params: unknown): asserts params is {
+  collectionAddress: string;
+  tokenIds: string[];
+  prices: string[];
+  duration: number;
+  amounts?: string[];
+  options?: Record<string, unknown>;
+} {
+  if (!params || typeof params !== 'object') {
+    throw new ZunoSDKError(ErrorCodes.INVALID_PARAMETER, 'Params must be an object');
+  }
+
+  const p = params as Record<string, unknown>;
+
+  validateAddress(p.collectionAddress as string, 'collectionAddress');
+
+  if (!Array.isArray(p.tokenIds) || p.tokenIds.length === 0) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_PARAMETER,
+      'Token IDs array cannot be empty'
+    );
+  }
+
+  if (!Array.isArray(p.prices) || p.prices.length === 0) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_PARAMETER,
+      'Prices array cannot be empty'
+    );
+  }
+
+  if (p.tokenIds.length !== p.prices.length) {
+    throw new ZunoSDKError(
+      ErrorCodes.INVALID_PARAMETER,
+      'Token IDs and prices arrays must have the same length'
+    );
+  }
+
+  validateDuration(p.duration as number, 'duration');
+
+  // Validate amounts array if provided
+  if (p.amounts !== undefined) {
+    if (!Array.isArray(p.amounts)) {
+      throw new ZunoSDKError(
+        ErrorCodes.INVALID_PARAMETER,
+        'Amounts must be an array'
+      );
+    }
+
+    if (p.amounts.length !== p.tokenIds.length) {
+      throw new ZunoSDKError(
+        ErrorCodes.INVALID_PARAMETER,
+        'Amounts array must have the same length as token IDs array'
+      );
+    }
+
+    // Validate each amount > 0
+    for (let i = 0; i < p.amounts.length; i++) {
+      try {
+        const amount = BigInt(p.amounts[i] as string);
+        if (amount <= 0) {
+          throw new ZunoSDKError(
+            ErrorCodes.INVALID_PARAMETER,
+            `Amount at index ${i} must be greater than 0`
+          );
+        }
+      } catch (error) {
+        if (error instanceof ZunoSDKError) throw error;
+        throw new ZunoSDKError(
+          ErrorCodes.INVALID_PARAMETER,
+          `Invalid amount format at index ${i}`
+        );
+      }
+    }
+  }
 }
 
 /**

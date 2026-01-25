@@ -48,16 +48,51 @@ export interface ContractEntity {
  * NFT Listing
  */
 export interface Listing {
+  /**
+   * Listing ID (bytes32)
+   */
   id: string;
+  /**
+   * Seller address
+   */
   seller: string;
+  /**
+   * NFT collection address
+   */
   collectionAddress: string;
+  /**
+   * Token ID
+   */
   tokenId: string;
+  /**
+   * Listing price in ETH
+   */
   price: string;
+  /**
+   * Payment token address (ETH = ZeroAddress)
+   */
   paymentToken: string;
+  /**
+   * Listing start timestamp (Unix)
+   */
   startTime: number;
+  /**
+   * Listing end timestamp (Unix)
+   */
   endTime: number;
+  /**
+   * Listing status
+   */
   status: 'pending' | 'active' | 'sold' | 'cancelled' | 'expired';
+  /**
+   * Listing creation timestamp (ISO 8601)
+   */
   createdAt: string;
+  /**
+   * Amount of tokens listed (ERC1155 only)
+   * undefined for ERC721 listings
+   */
+  amount?: string;
 }
 
 /**

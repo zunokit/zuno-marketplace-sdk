@@ -255,7 +255,7 @@ describe('ExchangeModule', () => {
           prices: ['1.0'],
           duration: 86400,
         })
-      ).rejects.toThrow('Token IDs and prices arrays must have same length');
+      ).rejects.toThrow('Token IDs and prices arrays must have the same length');
     });
   });
 });

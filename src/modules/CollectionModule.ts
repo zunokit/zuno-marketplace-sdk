@@ -458,13 +458,15 @@ export class CollectionModule extends BaseModule {
   }
 
   /**
-   * Get tokens minted by a user (internal - doesn't verify current ownership)
+   * Get all tokens transferred to a user (internal - doesn't verify current ownership)
+   * Queries ALL Transfer events where to=user, including mint (from=0) and transfers (from=any)
+   * This ensures we capture tokens from auctions, marketplace purchases, and peer-to-peer transfers.
    */
-  private async getMintedTokens(
+  private async getTransferredTokens(
     collectionAddress: string,
     userAddress: string
   ): Promise<Array<{ tokenId: string; amount: number }>> {
-    this.log('getMintedTokens started', { collectionAddress, userAddress });
+    this.log('getTransferredTokens started', { collectionAddress, userAddress });
     const normalizedCollection = validateAddress(collectionAddress, 'collectionAddress');
     const normalizedUser = validateAddress(userAddress, 'userAddress');
 
@@ -494,15 +496,15 @@ export class CollectionModule extends BaseModule {
       tokensMap.set(tokenId, (tokensMap.get(tokenId) || 0) + amount);
     }
 
-    // 2. Check ERC-1155 TransferSingle events (mint = from zero address to user)
-    // TransferSingle(operator, from, to, id, value) - from=zero means mint
+    // 2. Check ERC-1155 TransferSingle events (ANY from address to user)
+    // TransferSingle(operator, from, to, id, value)
     const transferSingleLogs = await safeCall(
       () => provider.getLogs({
         address: normalizedCollection,
         topics: [
           ethers.id('TransferSingle(address,address,address,uint256,uint256)'),
           null, // operator (any)
-          ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = zero (mint)
+          null, // from (any) - key change: was zero address for mint only
           ethers.zeroPadValue(normalizedUser, 32), // to = user
         ],
         fromBlock: 0,
@@ -510,7 +512,7 @@ export class CollectionModule extends BaseModule {
       }),
       []
     );
-    this.log('TransferSingle (mint) logs found', { count: transferSingleLogs.length });
+    this.log('TransferSingle logs found', { count: transferSingleLogs.length });
 
     for (const log of transferSingleLogs) {
       // data contains: id (uint256), value (uint256)
@@ -520,7 +522,7 @@ export class CollectionModule extends BaseModule {
       tokensMap.set(tokenId, (tokensMap.get(tokenId) || 0) + amount);
     }
 
-    // 3. Check ERC-1155 TransferBatch events (mint = from zero address to user)
+    // 3. Check ERC-1155 TransferBatch events (ANY from address to user)
     // TransferBatch(operator, from, to, ids[], values[])
     const transferBatchLogs = await safeCall(
       () => provider.getLogs({
@@ -528,7 +530,7 @@ export class CollectionModule extends BaseModule {
         topics: [
           ethers.id('TransferBatch(address,address,address,uint256[],uint256[])'),
           null, // operator (any)
-          ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = zero (mint)
+          null, // from (any) - key change: was zero address for mint only
           ethers.zeroPadValue(normalizedUser, 32), // to = user
         ],
         fromBlock: 0,
@@ -536,7 +538,7 @@ export class CollectionModule extends BaseModule {
       }),
       []
     );
-    this.log('TransferBatch (mint) logs found', { count: transferBatchLogs.length });
+    this.log('TransferBatch logs found', { count: transferBatchLogs.length });
 
     for (const log of transferBatchLogs) {
       // data contains: ids (uint256[]), values (uint256[])
@@ -550,13 +552,13 @@ export class CollectionModule extends BaseModule {
       }
     }
 
-    // 4. Check ERC-721 Transfer events (mint = from zero address to user)
+    // 4. Check ERC-721 Transfer events (ANY from address to user)
     const erc721TransferLogs = await safeCall(
       () => provider.getLogs({
         address: normalizedCollection,
         topics: [
           ethers.id('Transfer(address,address,uint256)'),
-          ethers.zeroPadValue(ethers.ZeroAddress, 32), // from = zero (mint)
+          null, // from (any) - key change: was zero address for mint only
           ethers.zeroPadValue(normalizedUser, 32), // to = user
         ],
         fromBlock: 0,
@@ -564,7 +566,7 @@ export class CollectionModule extends BaseModule {
       }),
       []
     );
-    this.log('ERC721 Transfer (mint) logs found', { count: erc721TransferLogs.length });
+    this.log('ERC721 Transfer logs found', { count: erc721TransferLogs.length });
 
     for (const log of erc721TransferLogs) {
       const tokenId = ethers.toBigInt(log.topics[3]).toString();
@@ -572,13 +574,14 @@ export class CollectionModule extends BaseModule {
     }
 
     const tokens = Array.from(tokensMap.entries()).map(([tokenId, amount]) => ({ tokenId, amount }));
-    this.log('getMintedTokens completed', { count: tokens.length, tokens });
+    this.log('getTransferredTokens completed', { count: tokens.length, tokens });
     return tokens;
   }
 
   /**
    * Get tokens currently owned by a user from a specific collection
    * Verifies actual on-chain ownership using ownerOf/balanceOf
+   * Includes tokens from mint, marketplace purchases, auctions, and transfers.
    */
   async getUserOwnedTokens(
     collectionAddress: string,
@@ -590,14 +593,23 @@ export class CollectionModule extends BaseModule {
 
     const { ethers } = await import('ethers');
 
-    // First get minted tokens as candidates
-    const mintedTokens = await this.getMintedTokens(normalizedCollection, normalizedUser);
-    
-    if (mintedTokens.length === 0) {
+    // Get all tokens transferred to user (mint + purchases + transfers)
+    this.log('[getUserOwnedTokens] Fetching transferred tokens...');
+    const transferredTokens = await this.getTransferredTokens(normalizedCollection, normalizedUser);
+    this.log('[getUserOwnedTokens] Transferred tokens found', {
+      count: transferredTokens.length,
+      tokens: transferredTokens
+    });
+
+    if (transferredTokens.length === 0) {
+      this.log('[getUserOwnedTokens] No transferred tokens, returning empty array');
       return [];
     }
 
     const provider = this.ensureProvider();
+    this.log('[getUserOwnedTokens] Provider obtained', {
+      provider: provider.constructor.name
+    });
 
     const ERC721_ABI = ['function ownerOf(uint256 tokenId) view returns (address)'];
     const ERC1155_ABI = ['function balanceOf(address account, uint256 id) view returns (uint256)'];
@@ -605,29 +617,62 @@ export class CollectionModule extends BaseModule {
     const erc721Contract = new ethers.Contract(normalizedCollection, ERC721_ABI, provider);
     const erc1155Contract = new ethers.Contract(normalizedCollection, ERC1155_ABI, provider);
 
-    const ownedTokens: Array<{ tokenId: string; amount: number }> = [];
+    const ownedTokensMap = new Map<string, number>();
+    let verifiedCount = 0;
+    let notOwnedCount = 0;
+    let errorCount = 0;
 
-    for (const token of mintedTokens) {
+    this.log('[getUserOwnedTokens] Verifying ownership for each token...');
+    for (const token of transferredTokens) {
       try {
         // Try ERC721 ownerOf first
+        this.log(`[getUserOwnedTokens] Checking ERC721 ownerOf for token ${token.tokenId}...`);
         const owner = await erc721Contract.ownerOf(token.tokenId);
+        this.log(`[getUserOwnedTokens] Token ${token.tokenId} owner:`, {
+          owner,
+          isUser: owner.toLowerCase() === normalizedUser.toLowerCase()
+        });
         if (owner.toLowerCase() === normalizedUser.toLowerCase()) {
-          ownedTokens.push({ tokenId: token.tokenId, amount: 1 });
+          ownedTokensMap.set(token.tokenId, 1);
+          verifiedCount++;
+        } else {
+          notOwnedCount++;
         }
-      } catch {
+      } catch (e721Error) {
+        this.log(`[getUserOwnedTokens] ERC721 ownerOf failed for token ${token.tokenId}, trying ERC1155...`, {
+          error: (e721Error as Error).message
+        });
         // Fallback to ERC1155 balanceOf
         try {
           const balance = await erc1155Contract.balanceOf(normalizedUser, token.tokenId);
+          this.log(`[getUserOwnedTokens] Token ${token.tokenId} ERC1155 balance:`, {
+            balance: balance.toString()
+          });
           if (balance > 0n) {
-            ownedTokens.push({ tokenId: token.tokenId, amount: Number(balance) });
+            ownedTokensMap.set(token.tokenId, Number(balance));
+            verifiedCount++;
+          } else {
+            notOwnedCount++;
           }
-        } catch {
-          // Token not owned or invalid - skip
+        } catch (e1155Error) {
+          this.log(`[getUserOwnedTokens] ERC1155 balanceOf failed for token ${token.tokenId}`, {
+            error: (e1155Error as Error).message
+          });
+          errorCount++;
         }
       }
     }
 
-    this.log('getUserOwnedTokens completed', { count: ownedTokens.length });
+    const ownedTokens = Array.from(ownedTokensMap.entries()).map(([tokenId, amount]) => ({ tokenId, amount }));
+    this.log('=== getUserOwnedTokens COMPLETE ===', {
+      transferredTokensCount: transferredTokens.length,
+      verifiedCount,
+      notOwnedCount,
+      errorCount,
+      finalOwnedTokensCount: ownedTokens.length,
+      ownedTokens,
+      timestamp: new Date().toISOString()
+    });
     return ownedTokens;
   }
 

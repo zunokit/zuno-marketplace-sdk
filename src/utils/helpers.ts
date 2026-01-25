@@ -4,7 +4,7 @@
 
 import { ethers } from 'ethers';
 import type { TransactionReceipt } from '../types/entities';
-import { ZunoSDKError, ErrorCodes } from './errors';
+import { ZunoSDKError, ErrorCodes, type ErrorCode } from './errors';
 
 /**
  * Retry configuration
@@ -131,56 +131,27 @@ export function formatTransactionReceipt(
 
 /**
  * Parse transaction error and convert to ZunoSDKError
+ *
+ * Error patterns are checked in order, with more specific patterns
+ * checked before general ones (e.g., 'nonce too low' before 'nonce').
  */
 export function parseTransactionError(error: Error): ZunoSDKError {
+  // Error pattern mapping: pattern -> [errorCode, errorMessage]
+  const errorPatterns: Array<[string, [ErrorCode, string]]> = [
+    ['user rejected', [ErrorCodes.USER_REJECTED, 'Transaction cancelled by user']],
+    ['insufficient funds', [ErrorCodes.INSUFFICIENT_FUNDS, 'Insufficient funds for transaction']],
+    ['nonce too low', [ErrorCodes.NONCE_TOO_LOW, 'Transaction nonce too low']],
+    ['nonce too high', [ErrorCodes.NONCE_TOO_LOW, 'Transaction nonce too high']],
+    ['reverted', [ErrorCodes.TRANSACTION_REVERTED, 'Transaction was reverted by the contract']],
+    ['gas', [ErrorCodes.GAS_ESTIMATION_FAILED, 'Gas estimation failed or gas limit too low']],
+  ];
+
   const message = error.message.toLowerCase();
 
-  if (message.includes('insufficient funds')) {
-    return new ZunoSDKError(
-      ErrorCodes.INSUFFICIENT_FUNDS,
-      'Insufficient funds for transaction',
-      error
-    );
-  }
-
-  if (message.includes('gas')) {
-    return new ZunoSDKError(
-      ErrorCodes.GAS_ESTIMATION_FAILED,
-      'Gas estimation failed or gas limit too low',
-      error
-    );
-  }
-
-  if (message.includes('nonce too low')) {
-    return new ZunoSDKError(
-      ErrorCodes.NONCE_TOO_LOW,
-      'Transaction nonce too low',
-      error
-    );
-  }
-
-  if (message.includes('nonce too high')) {
-    return new ZunoSDKError(
-      ErrorCodes.NONCE_TOO_LOW,
-      'Transaction nonce too high',
-      error
-    );
-  }
-
-  if (message.includes('reverted')) {
-    return new ZunoSDKError(
-      ErrorCodes.TRANSACTION_REVERTED,
-      'Transaction was reverted by the contract',
-      error
-    );
-  }
-
-  if (message.includes('user rejected')) {
-    return new ZunoSDKError(
-      ErrorCodes.TRANSACTION_FAILED,
-      'User rejected the transaction',
-      error
-    );
+  for (const [pattern, [code, errorMessage]] of errorPatterns) {
+    if (message.includes(pattern)) {
+      return new ZunoSDKError(code, errorMessage, error);
+    }
   }
 
   return new ZunoSDKError(
