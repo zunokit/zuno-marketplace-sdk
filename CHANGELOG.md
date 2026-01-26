@@ -1,3 +1,10 @@
+## [2.2.0-beta.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.1...v2.2.0-beta.2) (2026-01-26)
+
+### 🐛 Bug Fixes
+
+* replace JSX.Element with React.ReactElement in test type annotations ([#124](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/124)) ([76b8407](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/76b840758077363ce69645c963ba1f330e6ae6c9))
+* upgrade SDK to React 19 for type compatibility ([#120](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/120)) ([d82b03d](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d82b03d0552b25de743c4a3b7ea9abb1b49ee897)), closes [#119](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/119)
+
 ## [2.1.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1) (2026-01-26)
 
 ### 🐛 Bug Fixes
