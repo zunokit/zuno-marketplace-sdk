@@ -1,15 +1,16 @@
 /**
  * WagmiProviderSync - Syncs wagmi wallet connection with SDK provider/signer
- * 
+ *
  * Features:
  * - Automatically syncs wallet provider/signer with SDK when connected
  * - Handles reconnection on page reload with delay
  * - Clears provider/signer on disconnect
- * 
+ * - SSR-safe: only renders on client side
+ *
  * @example
  * ```tsx
  * import { ZunoContextProvider, WagmiProviderSync } from "zuno-marketplace-sdk/react";
- * 
+ *
  * <ZunoContextProvider config={config}>
  *   <WagmiProviderSync />
  *   {children}
@@ -30,18 +31,18 @@ export interface WagmiProviderSyncProps {
    * @default 500
    */
   reconnectDelay?: number;
-  
+
   /**
    * Whether to clear provider/signer on disconnect
    * @default true
    */
   clearOnDisconnect?: boolean;
-  
+
   /**
    * Callback when provider/signer is synced
    */
   onSync?: () => void;
-  
+
   /**
    * Callback when provider/signer sync fails
    */
@@ -51,6 +52,8 @@ export interface WagmiProviderSyncProps {
 /**
  * Component that syncs wagmi wallet connection with SDK provider/signer.
  * Required when using ZunoContextProvider with custom wagmi setup.
+ *
+ * SSR-safe: Returns null during server-side rendering to prevent wagmi hook errors.
  */
 export function WagmiProviderSync({
   reconnectDelay = 500,
@@ -58,7 +61,20 @@ export function WagmiProviderSync({
   onSync,
   onError,
 }: WagmiProviderSyncProps = {}) {
+  const [isClient, setIsClient] = useState(false);
   const sdk = useZuno();
+
+  // Ensure we only run on client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Early return during SSR - prevents wagmi hook errors
+  if (!isClient) {
+    return null;
+  }
+
+  // Now safe to call wagmi hooks (only on client)
   const { isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
   const [isInitialized, setIsInitialized] = useState(false);
