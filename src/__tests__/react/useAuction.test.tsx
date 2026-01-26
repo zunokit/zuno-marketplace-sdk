@@ -29,7 +29,7 @@ jest.mock('../../react/provider/ZunoContextProvider', () => ({
 
 describe('useAuction', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
