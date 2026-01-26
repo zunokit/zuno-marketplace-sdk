@@ -9,7 +9,7 @@ import React, { createContext, useContext, useMemo, type ReactNode } from 'react
 import { ZunoSDK } from '../../core/ZunoSDK';
 import type { ZunoSDKConfig } from '../../types/config';
 import { QueryClient } from '@tanstack/react-query';
-import { isBrowser } from '../utils/connectors';
+import { isBrowser } from '../utils/browser';
 
 export interface ZunoContextValue {
   sdk: ZunoSDK;

@@ -65,9 +65,9 @@ export type { CustomChainConfig } from './utils/chains';
 export { 
   createDefaultConnectors,
   createSSRSafeConnectors,
-  isBrowser,
 } from './utils/connectors';
 export type { CreateDefaultConnectorsOptions } from './utils/connectors';
+export { isBrowser } from './utils/browser';
 
 // DevTools
 export { ZunoDevTools } from './components/ZunoDevTools';
