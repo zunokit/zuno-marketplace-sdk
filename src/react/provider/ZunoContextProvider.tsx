@@ -9,6 +9,7 @@ import React, { createContext, useContext, useMemo, type ReactNode } from 'react
 import { ZunoSDK } from '../../core/ZunoSDK';
 import type { ZunoSDKConfig } from '../../types/config';
 import { QueryClient } from '@tanstack/react-query';
+import { isBrowser } from '../utils/connectors';
 
 export interface ZunoContextValue {
   sdk: ZunoSDK;
@@ -60,13 +61,62 @@ export function ZunoContextProvider({
 
 /**
  * Hook to access Zuno SDK
+ * Returns a no-op SDK during SSR to prevent build errors
  */
 export function useZuno(): ZunoSDK {
   const context = useContext(ZunoContext);
 
   if (!context) {
+    // During SSR, return a no-op SDK instead of throwing
+    if (!isBrowser()) {
+      return createNoOpZunoSDK();
+    }
     throw new Error('useZuno must be used within ZunoContextProvider or ZunoProvider');
   }
 
   return context.sdk;
+}
+
+/**
+ * Creates a no-op SDK instance for SSR
+ * Methods will throw helpful errors when called on the server
+ */
+function createNoOpZunoSDK(): ZunoSDK {
+  return {
+    get exchange() {
+      throw new Error('[SDK] Exchange module not available during SSR. This method should only be called on the client side.');
+    },
+    get collection() {
+      throw new Error('[SDK] Collection module not available during SSR. This method should only be called on the client side.');
+    },
+    get auction() {
+      throw new Error('[SDK] Auction module not available during SSR. This method should only be called on the client side.');
+    },
+    get offers() {
+      throw new Error('[SDK] Offers module not available during SSR. This method should only be called on the client side.');
+    },
+    get bundles() {
+      throw new Error('[SDK] Bundles module not available during SSR. This method should only be called on the client side.');
+    },
+    get provider() {
+      return undefined;
+    },
+    get signer() {
+      return undefined;
+    },
+    get logger() {
+      return {
+        debug: () => {},
+        info: () => {},
+        warn: () => {},
+        error: () => {},
+      };
+    },
+    contractRegistry: null as any,
+    getProvider: () => undefined,
+    setProvider: () => {},
+    getSigner: () => undefined,
+    setSigner: () => {},
+    disconnect: () => {},
+  } as unknown as ZunoSDK;
 }
