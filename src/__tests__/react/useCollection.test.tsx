@@ -34,7 +34,7 @@ jest.mock('../../react/provider/ZunoContextProvider', () => ({
 
 describe('useCollection', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -111,7 +111,7 @@ describe('useCollection', () => {
 
 describe('useCollectionInfo', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -150,7 +150,7 @@ describe('useCollectionInfo', () => {
 
 describe('useCreatedCollections', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -182,7 +182,7 @@ describe('useCreatedCollections', () => {
 
 describe('useIsInAllowlist', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -215,7 +215,7 @@ describe('useIsInAllowlist', () => {
 
 describe('useIsAllowlistOnly', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -248,7 +248,7 @@ describe('useIsAllowlistOnly', () => {
 
 describe('useCollection - ERC1155 operations', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -284,7 +284,7 @@ describe('useCollection - ERC1155 operations', () => {
 
 describe('useCollection - Allowlist operations', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({

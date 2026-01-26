@@ -20,7 +20,7 @@ import { ZunoSDKError, ErrorCodes } from '../utils/errors';
 /**
  * Default API URL
  */
-const DEFAULT_API_URL = 'https://zuno-marketplace-abis.vercel.app/api';
+const DEFAULT_API_URL = 'https://abis.qdang46.xyz/api';
 
 /**
  * Supported network names mapped to chain IDs
