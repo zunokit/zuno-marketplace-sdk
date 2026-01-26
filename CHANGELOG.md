@@ -7,6 +7,13 @@
 ### 🐛 Bug Fixes
 
 * **react:** separate isBrowser utility to fix Jest ESM parsing errors ([b6125e5](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b6125e50c556bb2bb85b728f6cc44628aa28c3f4))
+## [2.1.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1) (2026-01-25)
+
+### 🐛 Bug Fixes
+
+* correct query invalidation in useSetupAllowlist ([#88](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/88)) ([a660f00](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a660f0042beba0024da109d3f1b1834d2f8cb3eb))
+* resolve issues [#85](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/85), [#84](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/84), [#83](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/83), [#80](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/80), [#81](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/81) - allowlist cache, ERC1155 listing ([d4c142e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d4c142e8fce9dbcdb19223a5472a948d45a08eb2)), closes [#86](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/86)
+* **sdk:** resolve all 11 open SDK issues ([#75](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/75)) ([4c89079](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4c89079b60d0503baa2c26ad8f9756ffde548dd7)), closes [#69](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/69) [#74](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/74) [#55-68](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/55-68) [#65](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/65) [#67](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/67) [#58](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/58) [#60](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/60) [zunokit/zuno-marketplace-contracts#51](https://github.com/zunokit/zuno-marketplace-contracts/issues/51) [#47](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/47) [#48](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/48)
 
 ## [2.1.1-beta.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1-beta.1) (2026-01-25)
 
