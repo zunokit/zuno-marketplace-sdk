@@ -4,6 +4,7 @@
 
 import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors';
 import type { CreateConnectorFn } from 'wagmi';
+import { isBrowser } from './browser';
 
 /**
  * Options for creating default connectors
@@ -97,13 +98,6 @@ export function createDefaultConnectors(
   }
 
   return connectors;
-}
-
-/**
- * Check if we're in a browser environment (for SSR safety)
- */
-export function isBrowser(): boolean {
-  return typeof window !== 'undefined';
 }
 
 /**

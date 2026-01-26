@@ -11,6 +11,7 @@ export {
 export { 
   createDefaultConnectors,
   createSSRSafeConnectors,
-  isBrowser,
   type CreateDefaultConnectorsOptions,
 } from './connectors';
+
+export { isBrowser } from './browser';

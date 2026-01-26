@@ -1,3 +1,12 @@
+## [2.2.0-beta.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1...v2.2.0-beta.1) (2026-01-26)
+
+### ✨ Features
+
+* make SDK hooks SSR-safe with no-op fallback ([#116](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/116)) ([e5e89ce](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e5e89cea2880d5efa57ae18b028d5bcd98fa3551)), closes [#115](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/115) [#115](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/115)
+
+### 🐛 Bug Fixes
+
+* **react:** separate isBrowser utility to fix Jest ESM parsing errors ([b6125e5](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b6125e50c556bb2bb85b728f6cc44628aa28c3f4))
 ## [2.1.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1) (2026-01-25)
 
 ### 🐛 Bug Fixes
