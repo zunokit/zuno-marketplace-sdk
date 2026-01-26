@@ -29,7 +29,7 @@ jest.mock('../../react/provider/ZunoContextProvider', () => ({
 
 describe('useExchange', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -110,7 +110,7 @@ describe('useExchange', () => {
 
 describe('useListing', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -143,7 +143,7 @@ describe('useListing', () => {
 
 describe('useListings', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -177,7 +177,7 @@ describe('useListings', () => {
 
 describe('useListingsBySeller', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.ReactElement;
 
   beforeEach(() => {
     queryClient = new QueryClient({
