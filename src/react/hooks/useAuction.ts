@@ -14,6 +14,12 @@ import type {
   TransactionOptions,
 } from '../../types/contracts';
 import { useZuno } from '../provider/ZunoContextProvider';
+import {
+  auctionDetailsQueryOptions,
+  dutchAuctionPriceQueryOptions,
+  pendingRefundQueryOptions,
+  auctionsListQueryOptions,
+} from '../../lib/query/auction';
 
 /**
  * Settle auction parameters
@@ -34,7 +40,7 @@ export function useAuction() {
     mutationFn: (params: CreateEnglishAuctionParams) =>
       sdk.auction.createEnglishAuction(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
     },
   });
 
@@ -42,7 +48,7 @@ export function useAuction() {
     mutationFn: (params: CreateDutchAuctionParams) =>
       sdk.auction.createDutchAuction(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
     },
   });
 
@@ -50,7 +56,7 @@ export function useAuction() {
     mutationFn: (params: BatchCreateEnglishAuctionParams) =>
       sdk.auction.batchCreateEnglishAuction(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
     },
   });
 
@@ -58,15 +64,17 @@ export function useAuction() {
     mutationFn: (params: BatchCreateDutchAuctionParams) =>
       sdk.auction.batchCreateDutchAuction(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
     },
   });
 
   const placeBid = useMutation({
     mutationFn: (params: PlaceBidParams) => sdk.auction.placeBid(params),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ 
+        queryKey: auctionDetailsQueryOptions(sdk, variables.auctionId).queryKey 
+      });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
     },
   });
 
@@ -74,8 +82,10 @@ export function useAuction() {
     mutationFn: ({ auctionId, options }: SettleAuctionParams) =>
       sdk.auction.settleAuction(auctionId, options),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ 
+        queryKey: auctionDetailsQueryOptions(sdk, variables.auctionId).queryKey 
+      });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
     },
   });
 
@@ -83,8 +93,10 @@ export function useAuction() {
     mutationFn: ({ auctionId, options }: SettleAuctionParams) =>
       sdk.auction.buyNow(auctionId, options),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ 
+        queryKey: auctionDetailsQueryOptions(sdk, variables.auctionId).queryKey 
+      });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
     },
   });
 
@@ -92,8 +104,13 @@ export function useAuction() {
     mutationFn: ({ auctionId, options }: SettleAuctionParams) =>
       sdk.auction.withdrawBid(auctionId, options),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
-      queryClient.invalidateQueries({ queryKey: ['pendingRefund', variables.auctionId] });
+      queryClient.invalidateQueries({ 
+        queryKey: auctionDetailsQueryOptions(sdk, variables.auctionId).queryKey 
+      });
+      // Invalidate pending refund queries for this auction (all bidders)
+      queryClient.invalidateQueries({ 
+        queryKey: ['pendingRefund', variables.auctionId] 
+      });
     },
   });
 
@@ -101,8 +118,10 @@ export function useAuction() {
     mutationFn: ({ auctionId, options }: SettleAuctionParams) =>
       sdk.auction.cancelAuction(auctionId, options),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['auction', variables.auctionId] });
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ 
+        queryKey: auctionDetailsQueryOptions(sdk, variables.auctionId).queryKey 
+      });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
     },
   });
 
@@ -110,7 +129,7 @@ export function useAuction() {
     mutationFn: (auctionIds: string[]) =>
       sdk.auction.batchCancelAuction(auctionIds),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['auctions'] });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
     },
   });
 
@@ -133,12 +152,7 @@ export function useAuction() {
  */
 export function useAuctionDetails(auctionId?: string) {
   const sdk = useZuno();
-
-  return useQuery({
-    queryKey: ['auction', auctionId],
-    queryFn: () => sdk.auction.getAuctionFromFactory(auctionId!),
-    enabled: !!auctionId,
-  });
+  return useQuery(auctionDetailsQueryOptions(sdk, auctionId));
 }
 
 /**
@@ -146,13 +160,7 @@ export function useAuctionDetails(auctionId?: string) {
  */
 export function useDutchAuctionPrice(auctionId?: string) {
   const sdk = useZuno();
-
-  return useQuery({
-    queryKey: ['dutchAuctionPrice', auctionId],
-    queryFn: () => sdk.auction.getCurrentPrice(auctionId!),
-    enabled: !!auctionId,
-    refetchInterval: 10000,
-  });
+  return useQuery(dutchAuctionPriceQueryOptions(sdk, auctionId));
 }
 
 /**
@@ -160,10 +168,5 @@ export function useDutchAuctionPrice(auctionId?: string) {
  */
 export function usePendingRefund(auctionId?: string, bidder?: string) {
   const sdk = useZuno();
-
-  return useQuery({
-    queryKey: ['pendingRefund', auctionId, bidder],
-    queryFn: () => sdk.auction.getPendingRefund(auctionId!, bidder!),
-    enabled: !!auctionId && !!bidder,
-  });
+  return useQuery(pendingRefundQueryOptions(sdk, auctionId, bidder));
 }
