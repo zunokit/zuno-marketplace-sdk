@@ -62,13 +62,13 @@ export function abiByIdQueryOptions(
  */
 export function contractInfoQueryOptions(
   client: ZunoAPIClient,
-  address: string,
-  network: string,
+  address?: string,
+  network?: string,
   cacheConfig?: CacheConfig
 ) {
   return queryOptions({
     queryKey: ['contracts', address, network] as const,
-    queryFn: () => client.getContractInfo(address, network),
+    queryFn: () => client.getContractInfo(address!, network!),
     enabled: !!address && !!network,
     staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
     gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
