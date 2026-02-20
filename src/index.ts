@@ -35,12 +35,6 @@ export { transactionStore } from './utils/transactionStore';
 export type { TransactionEntry, RetryConfig, PreviousAttempt } from './utils/transactionStore';
 
 // Query options (for advanced usage)
-export {
-  abiQueryOptions,
-  abiByIdQueryOptions,
-  contractInfoQueryOptions,
-  networksQueryOptions,
-} from './lib/query/abi';
 export * from './lib/query';
 
 // Network utilities & constants

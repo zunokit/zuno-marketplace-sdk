@@ -8,19 +8,15 @@ import type { ZunoSDK } from '../../core/ZunoSDK';
 /**
  * Query options for all collections
  */
-export function collectionsQueryOptions() {
-  return queryOptions({
-    queryKey: ['collections'] as const,
-  });
+export function collectionsQueryKey() {
+  return ['collections'] as const;
 }
 
 /**
- * Query options for all NFTs
+ * Query key for all NFTs
  */
-export function nftsQueryOptions() {
-  return queryOptions({
-    queryKey: ['nfts'] as const,
-  });
+export function nftsQueryKey() {
+  return ['nfts'] as const;
 }
 
 /**

@@ -42,8 +42,6 @@ export function pendingRefundQueryOptions(sdk: ZunoSDK, auctionId?: string, bidd
 /**
  * Query options for listing all auctions
  */
-export function auctionsListQueryOptions() {
-  return queryOptions({
-    queryKey: ['auctions'] as const,
-  });
+export function auctionsListQueryKey() {
+  return ['auctions'] as const;
 }

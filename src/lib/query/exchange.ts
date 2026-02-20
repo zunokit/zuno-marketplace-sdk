@@ -8,10 +8,8 @@ import type { ZunoSDK } from '../../core/ZunoSDK';
 /**
  * Query options for all listings
  */
-export function listingsQueryOptions() {
-  return queryOptions({
-    queryKey: ['listings'] as const,
-  });
+export function listingsQueryKey() {
+  return ['listings'] as const;
 }
 
 /**

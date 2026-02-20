@@ -14,8 +14,8 @@ import type {
 } from "../../types/contracts";
 import { useZuno } from "../provider/ZunoContextProvider";
 import {
-  collectionsQueryOptions,
-  nftsQueryOptions,
+  collectionsQueryKey,
+  nftsQueryKey,
   collectionInfoQueryOptions,
   createdCollectionsQueryOptions,
   userOwnedTokensQueryOptions,
@@ -34,7 +34,7 @@ export function useCollection() {
     mutationFn: (params: CreateERC721CollectionParams) =>
       sdk.collection.createERC721Collection(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: collectionsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: collectionsQueryKey() });
     },
   });
 
@@ -42,14 +42,14 @@ export function useCollection() {
     mutationFn: (params: CreateERC1155CollectionParams) =>
       sdk.collection.createERC1155Collection(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: collectionsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: collectionsQueryKey() });
     },
   });
 
   const mintERC721 = useMutation({
     mutationFn: (params: MintERC721Params) => sdk.collection.mintERC721(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: nftsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: nftsQueryKey() });
     },
   });
 
@@ -57,7 +57,7 @@ export function useCollection() {
     mutationFn: (params: BatchMintERC721Params) =>
       sdk.collection.batchMintERC721(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: nftsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: nftsQueryKey() });
     },
   });
 
@@ -65,7 +65,7 @@ export function useCollection() {
     mutationFn: (params: MintERC1155Params) =>
       sdk.collection.mintERC1155(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: nftsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: nftsQueryKey() });
     },
   });
 
@@ -73,7 +73,7 @@ export function useCollection() {
     mutationFn: (params: MintERC1155Params) =>
       sdk.collection.batchMintERC1155(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: nftsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: nftsQueryKey() });
     },
   });
 
@@ -287,8 +287,8 @@ export function useOwnerMint() {
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: nftsQueryOptions().queryKey });
-      queryClient.invalidateQueries({ queryKey: collectionsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: nftsQueryKey() });
+      queryClient.invalidateQueries({ queryKey: collectionsQueryKey() });
     },
   });
 

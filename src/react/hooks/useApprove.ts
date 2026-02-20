@@ -7,7 +7,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useWallet } from './useWallet';
 import { useZuno } from '../provider/ZunoContextProvider';
-import { approvalsQueryOptions } from '../../lib/query/approval';
+import { approvalsQueryKey } from '../../lib/query/approval';
 
 /**
  * Hook for ERC721/ERC1155 approval operations
@@ -50,7 +50,7 @@ export function useApprove() {
     },
     onSuccess: () => {
       if (address) {
-        queryClient.invalidateQueries({ queryKey: approvalsQueryOptions(address).queryKey });
+        queryClient.invalidateQueries({ queryKey: approvalsQueryKey(address) });
       }
     },
   });
@@ -88,7 +88,7 @@ export function useApprove() {
     },
     onSuccess: () => {
       if (address) {
-        queryClient.invalidateQueries({ queryKey: approvalsQueryOptions(address).queryKey });
+        queryClient.invalidateQueries({ queryKey: approvalsQueryKey(address) });
       }
     },
   });

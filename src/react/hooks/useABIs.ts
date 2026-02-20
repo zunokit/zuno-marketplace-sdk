@@ -27,7 +27,7 @@ export function useContractInfo(address?: string, networkId?: string) {
   const sdk = useZuno();
   const apiClient = sdk.getAPIClient();
 
-  return useQuery(contractInfoQueryOptions(apiClient, address!, networkId!));
+  return useQuery(contractInfoQueryOptions(apiClient, address, networkId));
 }
 
 /**

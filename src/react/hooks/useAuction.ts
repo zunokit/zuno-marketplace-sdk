@@ -18,7 +18,7 @@ import {
   auctionDetailsQueryOptions,
   dutchAuctionPriceQueryOptions,
   pendingRefundQueryOptions,
-  auctionsListQueryOptions,
+  auctionsListQueryKey,
 } from '../../lib/query/auction';
 
 /**
@@ -40,7 +40,7 @@ export function useAuction() {
     mutationFn: (params: CreateEnglishAuctionParams) =>
       sdk.auction.createEnglishAuction(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
 
@@ -48,7 +48,7 @@ export function useAuction() {
     mutationFn: (params: CreateDutchAuctionParams) =>
       sdk.auction.createDutchAuction(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
 
@@ -56,7 +56,7 @@ export function useAuction() {
     mutationFn: (params: BatchCreateEnglishAuctionParams) =>
       sdk.auction.batchCreateEnglishAuction(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
 
@@ -64,7 +64,7 @@ export function useAuction() {
     mutationFn: (params: BatchCreateDutchAuctionParams) =>
       sdk.auction.batchCreateDutchAuction(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
 
@@ -74,7 +74,7 @@ export function useAuction() {
       queryClient.invalidateQueries({ 
         queryKey: auctionDetailsQueryOptions(sdk, variables.auctionId).queryKey 
       });
-      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
 
@@ -85,7 +85,7 @@ export function useAuction() {
       queryClient.invalidateQueries({ 
         queryKey: auctionDetailsQueryOptions(sdk, variables.auctionId).queryKey 
       });
-      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
 
@@ -96,7 +96,7 @@ export function useAuction() {
       queryClient.invalidateQueries({ 
         queryKey: auctionDetailsQueryOptions(sdk, variables.auctionId).queryKey 
       });
-      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
 
@@ -121,7 +121,7 @@ export function useAuction() {
       queryClient.invalidateQueries({ 
         queryKey: auctionDetailsQueryOptions(sdk, variables.auctionId).queryKey 
       });
-      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
 
@@ -129,7 +129,7 @@ export function useAuction() {
     mutationFn: (auctionIds: string[]) =>
       sdk.auction.batchCancelAuction(auctionIds),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: auctionsListQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
 

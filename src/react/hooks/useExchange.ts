@@ -14,7 +14,7 @@ import type {
 } from '../../types/contracts';
 import { useZuno } from '../provider/ZunoContextProvider';
 import {
-  listingsQueryOptions,
+  listingsQueryKey,
   listingsByCollectionQueryOptions,
   listingsBySellerQueryOptions,
   listingQueryOptions,
@@ -40,28 +40,28 @@ export function useExchange() {
   const listNFT = useMutation({
     mutationFn: (params: ListNFTParams) => sdk.exchange.listNFT(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: listingsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
   const batchListNFT = useMutation({
     mutationFn: (params: BatchListNFTParams) => sdk.exchange.batchListNFT(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: listingsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
   const buyNFT = useMutation({
     mutationFn: (params: BuyNFTParams) => sdk.exchange.buyNFT(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: listingsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
   const batchBuyNFT = useMutation({
     mutationFn: (params: BatchBuyNFTParams) => sdk.exchange.batchBuyNFT(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: listingsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
@@ -69,7 +69,7 @@ export function useExchange() {
     mutationFn: ({ listingId, options }: CancelListingParams) =>
       sdk.exchange.cancelListing(listingId, options),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: listingsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
@@ -77,7 +77,7 @@ export function useExchange() {
     mutationFn: ({ listingIds, options }: BatchCancelListingParams) =>
       sdk.exchange.batchCancelListing({ listingIds, options }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: listingsQueryOptions().queryKey });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
