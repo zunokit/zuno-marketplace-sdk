@@ -69,6 +69,7 @@ export function contractInfoQueryOptions(
   return queryOptions({
     queryKey: ['contracts', address, network] as const,
     queryFn: () => client.getContractInfo(address!, network!),
+    enabled: !!address && !!network,
     staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
     gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
     retry: 3,
