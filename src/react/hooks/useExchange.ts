@@ -13,6 +13,12 @@ import type {
   TransactionOptions 
 } from '../../types/contracts';
 import { useZuno } from '../provider/ZunoContextProvider';
+import {
+  listingsQueryKey,
+  listingsByCollectionQueryOptions,
+  listingsBySellerQueryOptions,
+  listingQueryOptions,
+} from '../../lib/query/exchange';
 
 export interface CancelListingParams {
   listingId: string;
@@ -34,28 +40,28 @@ export function useExchange() {
   const listNFT = useMutation({
     mutationFn: (params: ListNFTParams) => sdk.exchange.listNFT(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
   const batchListNFT = useMutation({
     mutationFn: (params: BatchListNFTParams) => sdk.exchange.batchListNFT(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
   const buyNFT = useMutation({
     mutationFn: (params: BuyNFTParams) => sdk.exchange.buyNFT(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
   const batchBuyNFT = useMutation({
     mutationFn: (params: BatchBuyNFTParams) => sdk.exchange.batchBuyNFT(params),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
@@ -63,7 +69,7 @@ export function useExchange() {
     mutationFn: ({ listingId, options }: CancelListingParams) =>
       sdk.exchange.cancelListing(listingId, options),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
@@ -71,7 +77,7 @@ export function useExchange() {
     mutationFn: ({ listingIds, options }: BatchCancelListingParams) =>
       sdk.exchange.batchCancelListing({ listingIds, options }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: listingsQueryKey() });
     },
   });
 
@@ -90,12 +96,7 @@ export function useExchange() {
  */
 export function useListings(collectionAddress?: string) {
   const sdk = useZuno();
-
-  return useQuery({
-    queryKey: ['listings', collectionAddress],
-    queryFn: () => sdk.exchange.getListings(collectionAddress!),
-    enabled: !!collectionAddress,
-  });
+  return useQuery(listingsByCollectionQueryOptions(sdk, collectionAddress));
 }
 
 /**
@@ -103,12 +104,7 @@ export function useListings(collectionAddress?: string) {
  */
 export function useListingsBySeller(seller?: string) {
   const sdk = useZuno();
-
-  return useQuery({
-    queryKey: ['listings', 'seller', seller],
-    queryFn: () => sdk.exchange.getListingsBySeller(seller!),
-    enabled: !!seller,
-  });
+  return useQuery(listingsBySellerQueryOptions(sdk, seller));
 }
 
 /**
@@ -116,12 +112,7 @@ export function useListingsBySeller(seller?: string) {
  */
 export function useListing(listingId?: string) {
   const sdk = useZuno();
-
-  return useQuery({
-    queryKey: ['listing', listingId],
-    queryFn: () => sdk.exchange.getListing(listingId!),
-    enabled: !!listingId,
-  });
+  return useQuery(listingQueryOptions(sdk, listingId));
 }
 
 

@@ -34,14 +34,8 @@ export type { LogEntry, LogStoreConfig } from './utils/logStore';
 export { transactionStore } from './utils/transactionStore';
 export type { TransactionEntry, RetryConfig, PreviousAttempt } from './utils/transactionStore';
 
-// Query factories (for advanced usage)
-export {
-  abiQueryKeys,
-  createABIQueryOptions,
-  createABIByIdQueryOptions,
-  createContractInfoQueryOptions,
-  createNetworksQueryOptions,
-} from './core/ZunoAPIClient';
+// Query options (for advanced usage)
+export * from './lib/query';
 
 // Network utilities & constants
 export {

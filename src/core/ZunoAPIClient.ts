@@ -14,7 +14,6 @@ import type {
   GetContractInfoResponse,
   GetNetworksResponse,
 } from '../types/api';
-import { DEFAULT_CACHE_TIMES, type CacheConfig } from '../types/config';
 import { ZunoSDKError, ErrorCodes } from '../utils/errors';
 
 /**
@@ -61,21 +60,6 @@ export function isSupportedNetwork(network: string): network is SupportedNetwork
   return network.toLowerCase() in SUPPORTED_NETWORKS;
 }
 
-/**
- * Query keys factory for TanStack Query
- */
-export const abiQueryKeys = {
-  all: ['abis'] as const,
-  lists: () => [...abiQueryKeys.all, 'list'] as const,
-  list: (filters: string) => [...abiQueryKeys.lists(), { filters }] as const,
-  details: () => [...abiQueryKeys.all, 'detail'] as const,
-  detail: (contractName: string, network: string) =>
-    [...abiQueryKeys.details(), contractName, network] as const,
-  byId: (abiId: string) => [...abiQueryKeys.details(), 'byId', abiId] as const,
-  contracts: (address: string, network: string) =>
-    ['contracts', address, network] as const,
-  networks: () => ['networks'] as const,
-};
 
 /**
  * Zuno API Client
@@ -334,97 +318,3 @@ export class ZunoAPIClient {
   }
 }
 
-/**
- * Query options factory for TanStack Query
- */
-
-/**
- * Create query options for fetching ABI
- *
- * @param client - ZunoAPIClient instance
- * @param contractName - Contract name
- * @param network - Network identifier
- * @param cacheConfig - Optional cache configuration to override defaults
- */
-export function createABIQueryOptions(
-  client: ZunoAPIClient,
-  contractName: string,
-  network: string,
-  cacheConfig?: CacheConfig
-) {
-  return {
-    queryKey: abiQueryKeys.detail(contractName, network),
-    queryFn: () => client.getABI(contractName, network),
-    staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
-    gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
-    retry: 3,
-    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  };
-}
-
-/**
- * Create query options for fetching ABI by ID
- *
- * @param client - ZunoAPIClient instance
- * @param abiId - ABI identifier
- * @param cacheConfig - Optional cache configuration to override defaults
- */
-export function createABIByIdQueryOptions(
-  client: ZunoAPIClient,
-  abiId: string,
-  cacheConfig?: CacheConfig
-) {
-  return {
-    queryKey: abiQueryKeys.byId(abiId),
-    queryFn: () => client.getABIById(abiId),
-    staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
-    gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
-    retry: 3,
-    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  };
-}
-
-/**
- * Create query options for fetching contract info
- *
- * @param client - ZunoAPIClient instance
- * @param address - Contract address
- * @param network - Network identifier
- * @param cacheConfig - Optional cache configuration to override defaults
- */
-export function createContractInfoQueryOptions(
-  client: ZunoAPIClient,
-  address: string,
-  network: string,
-  cacheConfig?: CacheConfig
-) {
-  return {
-    queryKey: abiQueryKeys.contracts(address, network),
-    queryFn: () => client.getContractInfo(address, network),
-    staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME,
-    gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME,
-    retry: 3,
-    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  };
-}
-
-/**
- * Create query options for fetching networks
- * Uses extended cache times since network data rarely changes
- *
- * @param client - ZunoAPIClient instance
- * @param cacheConfig - Optional cache configuration to override defaults
- */
-export function createNetworksQueryOptions(
-  client: ZunoAPIClient,
-  cacheConfig?: CacheConfig
-) {
-  return {
-    queryKey: abiQueryKeys.networks(),
-    queryFn: () => client.getNetworks(),
-    staleTime: cacheConfig?.ttl ?? DEFAULT_CACHE_TIMES.STALE_TIME_EXTENDED,
-    gcTime: cacheConfig?.gcTime ?? DEFAULT_CACHE_TIMES.GC_TIME_EXTENDED,
-    retry: 3,
-    retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  };
-}
