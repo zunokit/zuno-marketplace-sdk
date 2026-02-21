@@ -1,3 +1,9 @@
+## [2.2.0-beta.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.2...v2.2.0-beta.3) (2026-02-21)
+
+### ♻️ Code Refactoring
+
+* update query options and remove deprecated functions ([#126](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/126)) ([e98badf](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e98badf18147e2a371056cc98c0c0e9d0225159e))
+
 ## [2.2.0-beta.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.1...v2.2.0-beta.2) (2026-01-26)
 
 ### 🐛 Bug Fixes
