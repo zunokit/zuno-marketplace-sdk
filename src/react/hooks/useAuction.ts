@@ -128,7 +128,12 @@ export function useAuction() {
   const batchCancelAuction = useMutation({
     mutationFn: (auctionIds: string[]) =>
       sdk.auction.batchCancelAuction(auctionIds),
-    onSuccess: () => {
+    onSuccess: (_, auctionIds) => {
+      auctionIds.forEach((auctionId) => {
+        queryClient.invalidateQueries({
+          queryKey: auctionDetailsQueryOptions(sdk, auctionId).queryKey,
+        });
+      });
       queryClient.invalidateQueries({ queryKey: auctionsListQueryKey() });
     },
   });
