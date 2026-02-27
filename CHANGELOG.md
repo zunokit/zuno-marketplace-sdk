@@ -1,3 +1,9 @@
+## [2.2.0-beta.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.3...v2.2.0-beta.4) (2026-02-27)
+
+### 🐛 Bug Fixes
+
+* correct misleading JSDoc on `auctionsListQueryKey` ([#129](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/129)) ([61fa0e5](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/61fa0e5f6e4274f51afbc162df8af0cba91e22bd))
+
 ## [2.2.0-beta.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.2...v2.2.0-beta.3) (2026-02-21)
 
 ### ♻️ Code Refactoring
