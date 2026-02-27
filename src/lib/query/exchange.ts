@@ -39,7 +39,7 @@ export function listingsBySellerQueryOptions(sdk: ZunoSDK, seller?: string) {
  */
 export function listingQueryOptions(sdk: ZunoSDK, listingId?: string) {
   return queryOptions({
-    queryKey: ['listing', listingId] as const,
+    queryKey: ['listings', listingId] as const,
     queryFn: () => sdk.exchange.getListing(listingId!),
     enabled: !!listingId,
   });
