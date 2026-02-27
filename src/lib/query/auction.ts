@@ -40,7 +40,7 @@ export function pendingRefundQueryOptions(sdk: ZunoSDK, auctionId?: string, bidd
 }
 
 /**
- * Query options for listing all auctions
+ * Cache key for listing all auctions (used for cache invalidation)
  */
 export function auctionsListQueryKey() {
   return ['auctions'] as const;
