@@ -1,3 +1,9 @@
+## [2.2.0-beta.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.4...v2.2.0-beta.5) (2026-02-27)
+
+### 🐛 Bug Fixes
+
+* invalidate individual auction detail caches in batchCancelAuction ([#131](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/131)) ([b60fce6](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b60fce6d169d2bc2d1880895ba6090ca6257340f))
+
 ## [2.2.0-beta.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.3...v2.2.0-beta.4) (2026-02-27)
 
 ### 🐛 Bug Fixes
