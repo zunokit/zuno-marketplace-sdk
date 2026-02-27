@@ -1,3 +1,36 @@
+## [2.2.0-beta.6](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.5...v2.2.0-beta.6) (2026-02-27)
+
+### 🐛 Bug Fixes
+
+* align `listingQueryOptions` cache key under `listings` root to prevent stale data ([#130](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/130)) ([96d30df](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/96d30df8f3f18f932661433a1c33ea72cde61823))
+* make `address` and `network` required in `contractInfoQueryOptions` ([#128](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/128)) ([766e1c6](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/766e1c6c0ffc3ab1c26ebe2f477dac8a16d2ca21))
+* resolve lint, typecheck, and build errors ([#132](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/132)) ([a1184ff](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a1184ffde2f8c8749bf06c503e71e44f87be66f1))
+
+## [2.2.0-beta.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.4...v2.2.0-beta.5) (2026-02-27)
+
+### 🐛 Bug Fixes
+
+* invalidate individual auction detail caches in batchCancelAuction ([#131](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/131)) ([b60fce6](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b60fce6d169d2bc2d1880895ba6090ca6257340f))
+
+## [2.2.0-beta.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.3...v2.2.0-beta.4) (2026-02-27)
+
+### 🐛 Bug Fixes
+
+* correct misleading JSDoc on `auctionsListQueryKey` ([#129](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/129)) ([61fa0e5](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/61fa0e5f6e4274f51afbc162df8af0cba91e22bd))
+
+## [2.2.0-beta.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.2...v2.2.0-beta.3) (2026-02-21)
+
+### ♻️ Code Refactoring
+
+* update query options and remove deprecated functions ([#126](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/126)) ([e98badf](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e98badf18147e2a371056cc98c0c0e9d0225159e))
+
+## [2.2.0-beta.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.1...v2.2.0-beta.2) (2026-01-26)
+
+### 🐛 Bug Fixes
+
+* replace JSX.Element with React.ReactElement in test type annotations ([#124](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/124)) ([76b8407](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/76b840758077363ce69645c963ba1f330e6ae6c9))
+* upgrade SDK to React 19 for type compatibility ([#120](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/120)) ([d82b03d](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d82b03d0552b25de743c4a3b7ea9abb1b49ee897)), closes [#119](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/119)
+
 ## [2.1.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1) (2026-01-26)
 
 ### 🐛 Bug Fixes

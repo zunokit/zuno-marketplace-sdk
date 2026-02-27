@@ -3,7 +3,8 @@
  */
 
 import axios from 'axios';
-import { ZunoAPIClient, createABIQueryOptions, createContractInfoQueryOptions } from '../../../src/core/ZunoAPIClient';
+import { ZunoAPIClient } from '../../../src/core/ZunoAPIClient';
+import { abiQueryOptions, contractInfoQueryOptions } from '../../../src/lib/query/abi';
 import { ZunoSDKError } from '../../../src/utils/errors';
 
 // Mock axios
@@ -180,9 +181,9 @@ describe('ZunoAPIClient', () => {
     });
   });
 
-  describe('query factory methods', () => {
+  describe('query options methods', () => {
     it('should create ABI query options', () => {
-      const options = createABIQueryOptions(client, 'ERC721', 'mainnet');
+      const options = abiQueryOptions(client, 'ERC721', 'mainnet');
 
       expect(options).toHaveProperty('queryKey');
       expect(options).toHaveProperty('queryFn');
@@ -192,7 +193,7 @@ describe('ZunoAPIClient', () => {
     });
 
     it('should create contract info query options', () => {
-      const options = createContractInfoQueryOptions(client, '0x123', 'polygon');
+      const options = contractInfoQueryOptions(client, '0x123', 'polygon');
 
       expect(options).toHaveProperty('queryKey');
       expect(options).toHaveProperty('queryFn');

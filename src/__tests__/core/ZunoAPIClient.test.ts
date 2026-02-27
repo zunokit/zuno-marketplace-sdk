@@ -7,12 +7,13 @@ import {
   SUPPORTED_NETWORKS,
   getSupportedNetworkNames,
   isSupportedNetwork,
-  abiQueryKeys,
-  createABIQueryOptions,
-  createABIByIdQueryOptions,
-  createContractInfoQueryOptions,
-  createNetworksQueryOptions,
 } from '../../core/ZunoAPIClient';
+import {
+  abiQueryOptions,
+  abiByIdQueryOptions,
+  contractInfoQueryOptions,
+  networksQueryOptions,
+} from '../../lib/query/abi';
 import { ZunoSDKError } from '../../utils/errors';
 
 // Mock axios
@@ -82,32 +83,11 @@ describe('ZunoAPIClient', () => {
     });
   });
 
-  describe('abiQueryKeys', () => {
-    it('should generate correct query keys', () => {
-      expect(abiQueryKeys.all).toEqual(['abis']);
-      expect(abiQueryKeys.lists()).toEqual(['abis', 'list']);
-      expect(abiQueryKeys.list('test')).toEqual(['abis', 'list', { filters: 'test' }]);
-      expect(abiQueryKeys.details()).toEqual(['abis', 'detail']);
-      expect(abiQueryKeys.detail('Contract', 'sepolia')).toEqual([
-        'abis',
-        'detail',
-        'Contract',
-        'sepolia',
-      ]);
-      expect(abiQueryKeys.byId('abc123')).toEqual(['abis', 'detail', 'byId', 'abc123']);
-      expect(abiQueryKeys.contracts('0x123', 'sepolia')).toEqual([
-        'contracts',
-        '0x123',
-        'sepolia',
-      ]);
-      expect(abiQueryKeys.networks()).toEqual(['networks']);
-    });
-  });
 
-  describe('createABIQueryOptions', () => {
+  describe('abiQueryOptions', () => {
     it('should create query options with correct structure', () => {
       const client = new ZunoAPIClient('test-key');
-      const options = createABIQueryOptions(client, 'TestContract', 'sepolia');
+      const options = abiQueryOptions(client, 'TestContract', 'sepolia');
 
       expect(options.queryKey).toEqual(['abis', 'detail', 'TestContract', 'sepolia']);
       expect(typeof options.queryFn).toBe('function');
@@ -118,7 +98,7 @@ describe('ZunoAPIClient', () => {
 
     it('should use custom cache config when provided', () => {
       const client = new ZunoAPIClient('test-key');
-      const options = createABIQueryOptions(client, 'TestContract', 'sepolia', {
+      const options = abiQueryOptions(client, 'TestContract', 'sepolia', {
         ttl: 60000,
         gcTime: 120000,
       });
@@ -129,29 +109,33 @@ describe('ZunoAPIClient', () => {
 
     it('should have exponential backoff for retry delay', () => {
       const client = new ZunoAPIClient('test-key');
-      const options = createABIQueryOptions(client, 'TestContract', 'sepolia');
+      const options = abiQueryOptions(client, 'TestContract', 'sepolia');
+      const mockError = new Error('test');
 
-      expect(options.retryDelay(0)).toBe(1000);
-      expect(options.retryDelay(1)).toBe(2000);
-      expect(options.retryDelay(2)).toBe(4000);
-      expect(options.retryDelay(10)).toBeLessThanOrEqual(30000);
+      expect(typeof options.retryDelay).toBe('function');
+      if (typeof options.retryDelay === 'function') {
+        expect(options.retryDelay(0, mockError)).toBe(1000);
+        expect(options.retryDelay(1, mockError)).toBe(2000);
+        expect(options.retryDelay(2, mockError)).toBe(4000);
+        expect(options.retryDelay(10, mockError)).toBeLessThanOrEqual(30000);
+      }
     });
   });
 
-  describe('createABIByIdQueryOptions', () => {
+  describe('abiByIdQueryOptions', () => {
     it('should create query options for ABI by ID', () => {
       const client = new ZunoAPIClient('test-key');
-      const options = createABIByIdQueryOptions(client, 'abi-123');
+      const options = abiByIdQueryOptions(client, 'abi-123');
 
       expect(options.queryKey).toEqual(['abis', 'detail', 'byId', 'abi-123']);
       expect(typeof options.queryFn).toBe('function');
     });
   });
 
-  describe('createContractInfoQueryOptions', () => {
+  describe('contractInfoQueryOptions', () => {
     it('should create query options for contract info', () => {
       const client = new ZunoAPIClient('test-key');
-      const options = createContractInfoQueryOptions(
+      const options = contractInfoQueryOptions(
         client,
         '0x1234567890123456789012345678901234567890',
         'sepolia'
@@ -166,10 +150,10 @@ describe('ZunoAPIClient', () => {
     });
   });
 
-  describe('createNetworksQueryOptions', () => {
+  describe('networksQueryOptions', () => {
     it('should create query options for networks', () => {
       const client = new ZunoAPIClient('test-key');
-      const options = createNetworksQueryOptions(client);
+      const options = networksQueryOptions(client);
 
       expect(options.queryKey).toEqual(['networks']);
       expect(typeof options.queryFn).toBe('function');
@@ -177,10 +161,14 @@ describe('ZunoAPIClient', () => {
 
     it('should use extended cache times for networks', () => {
       const client = new ZunoAPIClient('test-key');
-      const abiOptions = createABIQueryOptions(client, 'Test', 'sepolia');
-      const networkOptions = createNetworksQueryOptions(client);
+      const abiOptions = abiQueryOptions(client, 'Test', 'sepolia');
+      const networkOptions = networksQueryOptions(client);
 
-      expect(networkOptions.staleTime).toBeGreaterThan(abiOptions.staleTime);
+      expect(typeof networkOptions.staleTime).toBe('number');
+      expect(typeof abiOptions.staleTime).toBe('number');
+      if (typeof networkOptions.staleTime === 'number' && typeof abiOptions.staleTime === 'number') {
+        expect(networkOptions.staleTime).toBeGreaterThan(abiOptions.staleTime);
+      }
     });
   });
 });

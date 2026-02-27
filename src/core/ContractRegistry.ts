@@ -6,9 +6,9 @@ import { QueryClient } from '@tanstack/react-query';
 import { ethers } from 'ethers';
 import type { ZunoAPIClient } from './ZunoAPIClient';
 import {
-  createABIQueryOptions,
-  createContractInfoQueryOptions,
-} from './ZunoAPIClient';
+  abiQueryOptions,
+  contractInfoQueryOptions,
+} from '../lib/query/abi';
 import type { ContractType, TokenStandard } from '../types/contracts';
 import { ZunoSDKError, ErrorCodes, validateAddress } from '../utils/errors';
 
@@ -91,15 +91,11 @@ export class ContractRegistry {
     contractType: ContractType,
     network: string
   ): Promise<unknown[]> {
-    const queryOptions = createABIQueryOptions(
-      this.apiClient,
-      contractType,
-      network
-    );
-
     try {
       // Fetch data using QueryClient
-      const abiEntity = await this.queryClient.fetchQuery(queryOptions);
+      const abiEntity = await this.queryClient.fetchQuery(
+        abiQueryOptions(this.apiClient, contractType, network)
+      );
 
       return abiEntity.abi;
     } catch (error) {
@@ -116,14 +112,10 @@ export class ContractRegistry {
   ): Promise<unknown[]> {
     validateAddress(address);
 
-    const queryOptions = createContractInfoQueryOptions(
-      this.apiClient,
-      address,
-      networkId
-    );
-
     try {
-      const contractInfo = await this.queryClient.fetchQuery(queryOptions);
+      const contractInfo = await this.queryClient.fetchQuery(
+        contractInfoQueryOptions(this.apiClient, address, networkId)
+      );
       const abiEntity = await this.apiClient.getABIById(contractInfo.abiId);
 
       return abiEntity.abi;
@@ -139,15 +131,11 @@ export class ContractRegistry {
     contractTypes: ContractType[],
     network: string
   ): Promise<void> {
-    const prefetchPromises = contractTypes.map((contractType) => {
-      const queryOptions = createABIQueryOptions(
-        this.apiClient,
-        contractType,
-        network
-      );
-
-      return this.queryClient.prefetchQuery(queryOptions);
-    });
+    const prefetchPromises = contractTypes.map((contractType) =>
+      this.queryClient.prefetchQuery(
+        abiQueryOptions(this.apiClient, contractType, network)
+      )
+    );
 
     await Promise.all(prefetchPromises);
   }
@@ -156,13 +144,8 @@ export class ContractRegistry {
    * Check if ABI is cached
    */
   isABICached(contractType: ContractType, network: string): boolean {
-    const queryOptions = createABIQueryOptions(
-      this.apiClient,
-      contractType,
-      network
-    );
-
-    const data = this.queryClient.getQueryData(queryOptions.queryKey);
+    const options = abiQueryOptions(this.apiClient, contractType, network);
+    const data = this.queryClient.getQueryData(options.queryKey);
 
     return data !== undefined;
   }

@@ -7,7 +7,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useCallback, useMemo } from 'react';
 import type { ContractType } from '../../types/contracts';
-import { createABIQueryOptions } from '../../core/ZunoAPIClient';
+import { abiQueryOptions, contractInfoQueryOptions } from '../../lib/query/abi';
 import { useZuno } from '../provider/ZunoContextProvider';
 
 /**
@@ -17,7 +17,7 @@ export function useABI(contractType: ContractType, network: string) {
   const sdk = useZuno();
   const apiClient = sdk.getAPIClient();
 
-  return useQuery(createABIQueryOptions(apiClient, contractType, network));
+  return useQuery(abiQueryOptions(apiClient, contractType, network));
 }
 
 /**
@@ -27,11 +27,7 @@ export function useContractInfo(address?: string, networkId?: string) {
   const sdk = useZuno();
   const apiClient = sdk.getAPIClient();
 
-  return useQuery({
-    queryKey: ['contracts', address, networkId],
-    queryFn: () => apiClient.getContractInfo(address!, networkId!),
-    enabled: !!address && !!networkId,
-  });
+  return useQuery(contractInfoQueryOptions(apiClient, address, networkId));
 }
 
 /**
@@ -46,8 +42,7 @@ export function usePrefetchABIs() {
     async (contractTypes: ContractType[], network: string) => {
       await Promise.all(
         contractTypes.map((type) => {
-          const queryOptions = createABIQueryOptions(apiClient, type, network);
-          return queryClient.prefetchQuery(queryOptions);
+          return queryClient.prefetchQuery(abiQueryOptions(apiClient, type, network));
         })
       );
     },
@@ -68,8 +63,8 @@ export function useABIsCached(contractTypes: ContractType[], network: string) {
   const cached = useMemo(
     () =>
       contractTypes.map((type) => {
-        const queryOptions = createABIQueryOptions(apiClient, type, network);
-        const data = queryClient.getQueryData(queryOptions.queryKey);
+        const options = abiQueryOptions(apiClient, type, network);
+        const data = queryClient.getQueryData(options.queryKey);
         return { type, cached: data !== undefined };
       }),
     [contractTypes, network, apiClient, queryClient]

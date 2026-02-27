@@ -10,6 +10,7 @@ import {
   validateBatchListNFTParams,
   ZunoSDKError,
 } from '../../utils/errors';
+import { TransactionManager } from '../../utils/transactions';
 
 // Mock contract registry
 jest.mock('../../core/ContractRegistry', () => {
@@ -82,8 +83,7 @@ describe('ExchangeModule - ERC1155 Listing', () => {
   let mockSigner: any;
 
   beforeEach(() => {
-    const { TransactionManager } = require('../../utils/transactions');
-    mockTxManager = new TransactionManager();
+    mockTxManager = new (TransactionManager as unknown as jest.Mock)();
 
     // Create mock provider
     mockProvider = {
