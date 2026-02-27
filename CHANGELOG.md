@@ -1,3 +1,11 @@
+## [2.2.0-beta.6](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.5...v2.2.0-beta.6) (2026-02-27)
+
+### 🐛 Bug Fixes
+
+* align `listingQueryOptions` cache key under `listings` root to prevent stale data ([#130](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/130)) ([96d30df](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/96d30df8f3f18f932661433a1c33ea72cde61823))
+* make `address` and `network` required in `contractInfoQueryOptions` ([#128](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/128)) ([766e1c6](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/766e1c6c0ffc3ab1c26ebe2f477dac8a16d2ca21))
+* resolve lint, typecheck, and build errors ([#132](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/132)) ([a1184ff](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a1184ffde2f8c8749bf06c503e71e44f87be66f1))
+
 ## [2.2.0-beta.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.4...v2.2.0-beta.5) (2026-02-27)
 
 ### 🐛 Bug Fixes
