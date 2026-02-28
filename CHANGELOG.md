@@ -1,3 +1,9 @@
+## [2.2.0-beta.7](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.6...v2.2.0-beta.7) (2026-02-28)
+
+### ✨ Features
+
+* add Zuno Marketplace SDK documentation ([#133](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/133)) ([4cbd8b7](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4cbd8b7b56e0d7b067e915ba24d1159f6f34f3ca))
+
 ## [2.2.0-beta.6](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.5...v2.2.0-beta.6) (2026-02-27)
 
 ### 🐛 Bug Fixes
