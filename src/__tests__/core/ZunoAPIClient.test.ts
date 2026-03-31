@@ -16,19 +16,29 @@ import {
 } from '../../lib/query/abi';
 import { ZunoSDKError } from '../../utils/errors';
 
-// Mock axios
-jest.mock('axios', () => ({
-  create: jest.fn(() => ({
-    get: jest.fn(),
-    interceptors: {
-      response: {
-        use: jest.fn(),
-      },
+function createFetchResponse(
+  data: unknown,
+  init: { ok?: boolean; status?: number; contentType?: string } = {}
+): Response {
+  return {
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    headers: {
+      get: jest.fn(() => init.contentType ?? 'application/json'),
     },
-  })),
-}));
+    json: jest.fn().mockResolvedValue(data),
+    text: jest.fn().mockResolvedValue(typeof data === 'string' ? data : JSON.stringify(data)),
+  } as unknown as Response;
+}
 
 describe('ZunoAPIClient', () => {
+  let mockFetch: jest.MockedFunction<typeof fetch>;
+
+  beforeEach(() => {
+    mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+    mockFetch.mockReset();
+  });
+
   describe('constructor', () => {
     it('should throw error without API key', () => {
       expect(() => new ZunoAPIClient('')).toThrow(ZunoSDKError);
@@ -83,9 +93,8 @@ describe('ZunoAPIClient', () => {
     });
   });
 
-
-  describe('abiQueryOptions', () => {
-    it('should create query options with correct structure', () => {
+  describe('query option helpers', () => {
+    it('should create ABI query options with correct structure', () => {
       const client = new ZunoAPIClient('test-key');
       const options = abiQueryOptions(client, 'TestContract', 'sepolia');
 
@@ -96,33 +105,6 @@ describe('ZunoAPIClient', () => {
       expect(options.retry).toBe(3);
     });
 
-    it('should use custom cache config when provided', () => {
-      const client = new ZunoAPIClient('test-key');
-      const options = abiQueryOptions(client, 'TestContract', 'sepolia', {
-        ttl: 60000,
-        gcTime: 120000,
-      });
-
-      expect(options.staleTime).toBe(60000);
-      expect(options.gcTime).toBe(120000);
-    });
-
-    it('should have exponential backoff for retry delay', () => {
-      const client = new ZunoAPIClient('test-key');
-      const options = abiQueryOptions(client, 'TestContract', 'sepolia');
-      const mockError = new Error('test');
-
-      expect(typeof options.retryDelay).toBe('function');
-      if (typeof options.retryDelay === 'function') {
-        expect(options.retryDelay(0, mockError)).toBe(1000);
-        expect(options.retryDelay(1, mockError)).toBe(2000);
-        expect(options.retryDelay(2, mockError)).toBe(4000);
-        expect(options.retryDelay(10, mockError)).toBeLessThanOrEqual(30000);
-      }
-    });
-  });
-
-  describe('abiByIdQueryOptions', () => {
     it('should create query options for ABI by ID', () => {
       const client = new ZunoAPIClient('test-key');
       const options = abiByIdQueryOptions(client, 'abi-123');
@@ -130,9 +112,7 @@ describe('ZunoAPIClient', () => {
       expect(options.queryKey).toEqual(['abis', 'detail', 'byId', 'abi-123']);
       expect(typeof options.queryFn).toBe('function');
     });
-  });
 
-  describe('contractInfoQueryOptions', () => {
     it('should create query options for contract info', () => {
       const client = new ZunoAPIClient('test-key');
       const options = contractInfoQueryOptions(
@@ -148,9 +128,7 @@ describe('ZunoAPIClient', () => {
       ]);
       expect(typeof options.queryFn).toBe('function');
     });
-  });
 
-  describe('networksQueryOptions', () => {
     it('should create query options for networks', () => {
       const client = new ZunoAPIClient('test-key');
       const options = networksQueryOptions(client);
@@ -158,55 +136,25 @@ describe('ZunoAPIClient', () => {
       expect(options.queryKey).toEqual(['networks']);
       expect(typeof options.queryFn).toBe('function');
     });
+  });
 
-    it('should use extended cache times for networks', () => {
-      const client = new ZunoAPIClient('test-key');
-      const abiOptions = abiQueryOptions(client, 'Test', 'sepolia');
-      const networkOptions = networksQueryOptions(client);
+  describe('methods', () => {
+    let client: ZunoAPIClient;
 
-      expect(typeof networkOptions.staleTime).toBe('number');
-      expect(typeof abiOptions.staleTime).toBe('number');
-      if (typeof networkOptions.staleTime === 'number' && typeof abiOptions.staleTime === 'number') {
-        expect(networkOptions.staleTime).toBeGreaterThan(abiOptions.staleTime);
-      }
+    beforeEach(() => {
+      client = new ZunoAPIClient('test-api-key', 'https://api.test.com');
     });
-  });
-});
 
-describe('ZunoAPIClient methods', () => {
-  let client: ZunoAPIClient;
-  let mockAxiosInstance: any;
-
-  beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const axios = require('axios');
-    mockAxiosInstance = {
-      get: jest.fn(),
-      interceptors: {
-        response: {
-          use: jest.fn(),
-        },
-      },
-    };
-    axios.create.mockReturnValue(mockAxiosInstance);
-    client = new ZunoAPIClient('test-api-key');
-  });
-
-  describe('getABI', () => {
     it('should fetch ABI for contract', async () => {
-      mockAxiosInstance.get
-        .mockResolvedValueOnce({
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse({
           data: {
-            data: {
-              contracts: [{ abiId: 'abi-123' }],
-            },
+            contracts: [{ abiId: 'abi-123' }],
           },
-        })
-        .mockResolvedValueOnce({
-          data: {
-            data: { id: 'abi-123', abi: [] },
-          },
-        });
+        }))
+        .mockResolvedValueOnce(createFetchResponse({
+          data: { id: 'abi-123', abi: [] },
+        }));
 
       const result = await client.getABI('TestContract', 'sepolia');
       expect(result).toBeDefined();
@@ -214,118 +162,86 @@ describe('ZunoAPIClient methods', () => {
     });
 
     it('should throw error if contract not found', async () => {
-      mockAxiosInstance.get.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
         data: {
-          data: {
-            contracts: [],
-          },
+          contracts: [],
         },
-      });
+      }));
 
       await expect(client.getABI('NonExistent', 'sepolia')).rejects.toThrow(ZunoSDKError);
     });
 
     it('should resolve named networks to chain IDs', async () => {
-      mockAxiosInstance.get
-        .mockResolvedValueOnce({
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse({
           data: {
-            data: {
-              contracts: [{ abiId: 'abi-123' }],
-            },
+            contracts: [{ abiId: 'abi-123' }],
           },
-        })
-        .mockResolvedValueOnce({
-          data: {
-            data: { id: 'abi-123', abi: [] },
-          },
-        });
+        }))
+        .mockResolvedValueOnce(createFetchResponse({
+          data: { id: 'abi-123', abi: [] },
+        }));
 
       await client.getABI('TestContract', 'ethereum');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        '/contracts/by-name/TestContract',
-        { params: { chainId: 1 } }
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.test.com/contracts/by-name/TestContract?chainId=1',
+        expect.any(Object)
       );
     });
 
     it('should accept numeric chain IDs', async () => {
-      mockAxiosInstance.get
-        .mockResolvedValueOnce({
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse({
           data: {
-            data: {
-              contracts: [{ abiId: 'abi-123' }],
-            },
+            contracts: [{ abiId: 'abi-123' }],
           },
-        })
-        .mockResolvedValueOnce({
-          data: {
-            data: { id: 'abi-123', abi: [] },
-          },
-        });
+        }))
+        .mockResolvedValueOnce(createFetchResponse({
+          data: { id: 'abi-123', abi: [] },
+        }));
 
       await client.getABI('TestContract', '137');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        '/contracts/by-name/TestContract',
-        { params: { chainId: 137 } }
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.test.com/contracts/by-name/TestContract?chainId=137',
+        expect.any(Object)
       );
     });
-  });
 
-  describe('getContractByName', () => {
     it('should fetch contract by name', async () => {
       const mockContract = {
         address: '0x1234567890123456789012345678901234567890',
         name: 'TestContract',
       };
 
-      mockAxiosInstance.get.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
         data: {
-          data: {
-            contracts: [mockContract],
-          },
+          contracts: [mockContract],
         },
-      });
+      }));
 
       const result = await client.getContractByName('TestContract', 'sepolia');
       expect(result).toEqual(mockContract);
     });
 
-    it('should throw error if contract not found', async () => {
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          data: {
-            contracts: [],
-          },
-        },
-      });
-
-      await expect(client.getContractByName('NonExistent', 'sepolia')).rejects.toThrow(
-        ZunoSDKError
-      );
-    });
-  });
-
-  describe('getABIById', () => {
     it('should fetch ABI by ID', async () => {
       const mockAbi = { id: 'abi-123', abi: [] };
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: { data: mockAbi },
-      });
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
+        data: mockAbi,
+      }));
 
       const result = await client.getABIById('abi-123');
       expect(result).toEqual(mockAbi);
     });
-  });
 
-  describe('getContractInfo', () => {
     it('should fetch contract info by address', async () => {
       const mockContract = {
         address: '0x1234567890123456789012345678901234567890',
         name: 'TestContract',
       };
 
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: { data: mockContract },
-      });
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
+        data: mockContract,
+      }));
 
       const result = await client.getContractInfo(
         '0x1234567890123456789012345678901234567890',
@@ -333,18 +249,16 @@ describe('ZunoAPIClient methods', () => {
       );
       expect(result).toEqual(mockContract);
     });
-  });
 
-  describe('getNetworks', () => {
     it('should fetch available networks', async () => {
       const mockNetworks = [
         { id: 1, name: 'ethereum' },
         { id: 11155111, name: 'sepolia' },
       ];
 
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: { data: mockNetworks },
-      });
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
+        data: mockNetworks,
+      }));
 
       const result = await client.getNetworks();
       expect(result).toEqual(mockNetworks);

@@ -10,38 +10,14 @@ global.TextDecoder = TextDecoder;
 // Add custom matchers from @testing-library/jest-dom
 require('@testing-library/jest-dom');
 
-// Mock axios globally
-jest.mock('axios', () => {
-  const mockAxiosInstance = {
-    get: jest.fn().mockResolvedValue({ data: {} }),
-    post: jest.fn().mockResolvedValue({ data: {} }),
-    put: jest.fn().mockResolvedValue({ data: {} }),
-    delete: jest.fn().mockResolvedValue({ data: {} }),
-    patch: jest.fn().mockResolvedValue({ data: {} }),
-    interceptors: {
-      request: { use: jest.fn(), eject: jest.fn() },
-      response: { use: jest.fn(), eject: jest.fn() },
-    },
-    defaults: {
-      headers: {
-        common: {},
-      },
-    },
-  };
-
-  return {
-    __esModule: true,
-    default: {
-      create: jest.fn(() => mockAxiosInstance),
-      get: jest.fn().mockResolvedValue({ data: {} }),
-      post: jest.fn().mockResolvedValue({ data: {} }),
-      isAxiosError: jest.fn().mockReturnValue(false),
-    },
-    create: jest.fn(() => mockAxiosInstance),
-    get: jest.fn().mockResolvedValue({ data: {} }),
-    post: jest.fn().mockResolvedValue({ data: {} }),
-    isAxiosError: jest.fn().mockReturnValue(false),
-  };
+global.fetch = jest.fn().mockResolvedValue({
+  ok: true,
+  status: 200,
+  headers: {
+    get: jest.fn(() => 'application/json'),
+  },
+  json: jest.fn().mockResolvedValue({}),
+  text: jest.fn().mockResolvedValue(''),
 });
 
 // Mock window.matchMedia

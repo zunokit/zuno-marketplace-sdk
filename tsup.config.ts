@@ -5,7 +5,6 @@ const commonExternal = [
   'react',
   'react-dom',
   'ethers',
-  'axios',
   '@tanstack/react-query',
   '@tanstack/react-query-devtools',
   '@tanstack/query-core',
