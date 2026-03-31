@@ -3,7 +3,6 @@
  */
 
 import { QueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 
 /**
  * Create a fresh QueryClient for testing
@@ -23,25 +22,22 @@ export function createTestQueryClient(): QueryClient {
 }
 
 /**
- * Setup axios mock with proper structure
+ * Setup fetch mock with proper structure
  */
-export function setupAxiosMock() {
-  const mockedAxios = axios as jest.Mocked<typeof axios>;
-  const mockAxiosInstance = {
-    get: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    delete: jest.fn(),
-    patch: jest.fn(),
-    interceptors: {
-      request: { use: jest.fn(), eject: jest.fn() },
-      response: { use: jest.fn(), eject: jest.fn() },
+export function setupFetchMock() {
+  const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+  mockFetch.mockReset();
+  mockFetch.mockResolvedValue({
+    ok: true,
+    status: 200,
+    headers: {
+      get: () => 'application/json',
     },
-  };
+    json: async () => ({}),
+    text: async () => '',
+  } as Response);
 
-  mockedAxios.create.mockReturnValue(mockAxiosInstance as any);
-
-  return { mockedAxios, mockAxiosInstance };
+  return { mockFetch };
 }
 
 /**

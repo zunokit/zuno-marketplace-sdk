@@ -7,30 +7,29 @@ import { ContractRegistry } from '../../../src/core/ContractRegistry';
 import { ZunoAPIClient } from '../../../src/core/ZunoAPIClient';
 import { ZunoSDKError } from '../../../src/utils/errors';
 import { ethers } from 'ethers';
-import axios from 'axios';
 
-// Mock axios
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+function createFetchResponse(data: unknown): Response {
+  return {
+    ok: true,
+    status: 200,
+    headers: {
+      get: jest.fn(() => 'application/json'),
+    },
+    json: jest.fn().mockResolvedValue(data),
+    text: jest.fn().mockResolvedValue(JSON.stringify(data)),
+  } as unknown as Response;
+}
 
 describe('ContractRegistry', () => {
   let registry: ContractRegistry;
   let apiClient: ZunoAPIClient;
   let queryClient: QueryClient;
   let mockProvider: ethers.Provider;
-  let mockAxiosInstance: any;
+  let mockFetch: jest.MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    // Setup axios mock
-    mockAxiosInstance = {
-      get: jest.fn(),
-      post: jest.fn(),
-      interceptors: {
-        request: { use: jest.fn(), eject: jest.fn() },
-        response: { use: jest.fn(), eject: jest.fn() },
-      },
-    };
-    mockedAxios.create.mockReturnValue(mockAxiosInstance);
+    mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+    mockFetch.mockReset();
 
     queryClient = new QueryClient({
       defaultOptions: {
@@ -69,53 +68,31 @@ describe('ContractRegistry', () => {
       updatedAt: new Date().toISOString(),
     };
 
-    it('should create and cache contract instance', async () => {
-      // Mock 1st call: get contract by name (for getABI) - includes address
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721NFTExchange',
-                abiId: 'abi-123',
-                chainId: 11155111,
-                address: '0x1234567890123456789012345678901234567890',
-              },
-            ],
+    const mockContractResponse = {
+      success: true,
+      data: {
+        contracts: [
+          {
+            id: 'contract-123',
+            name: 'ERC721NFTExchange',
+            abiId: 'abi-123',
+            chainId: 11155111,
+            address: '0x1234567890123456789012345678901234567890',
           },
-          timestamp: Date.now(),
-        },
-      });
+        ],
+      },
+      timestamp: Date.now(),
+    };
 
-      // Mock 2nd call: get ABI by ID
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
+    it('should create and cache contract instance', async () => {
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse(mockContractResponse))
+        .mockResolvedValueOnce(createFetchResponse({
           success: true,
           data: mockAbiEntity,
           timestamp: Date.now(),
-        },
-      });
-
-      // Mock 3rd call: get contract by name again (for getContractByName to get address)
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721NFTExchange',
-                abiId: 'abi-123',
-                chainId: 11155111,
-                address: '0x1234567890123456789012345678901234567890',
-              },
-            ],
-          },
-          timestamp: Date.now(),
-        },
-      });
+        }))
+        .mockResolvedValueOnce(createFetchResponse(mockContractResponse));
 
       const contract = await registry.getContract(
         'ERC721NFTExchange',
@@ -128,52 +105,14 @@ describe('ContractRegistry', () => {
     });
 
     it('should return cached contract on subsequent calls', async () => {
-      // Mock 1st call: get contract by name (for getABI) - includes address
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721NFTExchange',
-                abiId: 'abi-123',
-                chainId: 11155111,
-                address: '0x1234567890123456789012345678901234567890',
-              },
-            ],
-          },
-          timestamp: Date.now(),
-        },
-      });
-
-      // Mock 2nd call: get ABI by ID
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse(mockContractResponse))
+        .mockResolvedValueOnce(createFetchResponse({
           success: true,
           data: mockAbiEntity,
           timestamp: Date.now(),
-        },
-      });
-
-      // Mock 3rd call: get contract by name again (for getContractByName to get address)
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721NFTExchange',
-                abiId: 'abi-123',
-                chainId: 11155111,
-                address: '0x1234567890123456789012345678901234567890',
-              },
-            ],
-          },
-          timestamp: Date.now(),
-        },
-      });
+        }))
+        .mockResolvedValueOnce(createFetchResponse(mockContractResponse));
 
       const contract1 = await registry.getContract(
         'ERC721NFTExchange',
@@ -187,41 +126,19 @@ describe('ContractRegistry', () => {
       );
 
       expect(contract1).toBe(contract2);
-      // Should only call API for first contract creation (3 calls: contracts-by-name, abi-by-id, contract-info)
-      // Second call uses cache, so total is 3
-      expect(mockAxiosInstance.get).toHaveBeenCalledTimes(3);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
     it('should use provided address instead of fetching', async () => {
       const customAddress = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd';
 
-      // Mock 1st call: get contract by name (for getABI) - includes address
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721NFTExchange',
-                abiId: 'abi-123',
-                chainId: 11155111,
-                address: '0x1234567890123456789012345678901234567890',
-              },
-            ],
-          },
-          timestamp: Date.now(),
-        },
-      });
-
-      // Mock 2nd call: get ABI by ID
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse(mockContractResponse))
+        .mockResolvedValueOnce(createFetchResponse({
           success: true,
           data: mockAbiEntity,
           timestamp: Date.now(),
-        },
-      });
+        }));
 
       const contract = await registry.getContract(
         'ERC721NFTExchange',
@@ -232,41 +149,20 @@ describe('ContractRegistry', () => {
 
       expect(contract).toBeDefined();
       expect(contract.target).toBe(customAddress);
-      // Should call twice for ABI (contracts-by-name + abi-by-id), but not for contract info
-      expect(mockAxiosInstance.get).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it('should throw error for invalid ABI', async () => {
-      // Mock 1st call: get contract by name - includes address
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721NFTExchange',
-                abiId: 'abi-123',
-                chainId: 11155111,
-                address: '0x1234567890123456789012345678901234567890',
-              },
-            ],
-          },
-          timestamp: Date.now(),
-        },
-      });
-
-      // Mock 2nd call: get ABI by ID (with invalid ABI)
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse(mockContractResponse))
+        .mockResolvedValueOnce(createFetchResponse({
           success: true,
           data: {
             ...mockAbiEntity,
             abi: null,
           },
           timestamp: Date.now(),
-        },
-      });
+        }));
 
       await expect(
         registry.getContract('ERC721NFTExchange', 'sepolia', mockProvider)
@@ -274,33 +170,13 @@ describe('ContractRegistry', () => {
     });
 
     it('should throw error for invalid address', async () => {
-      // Mock 1st call: get contract by name - includes address
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721NFTExchange',
-                abiId: 'abi-123',
-                chainId: 11155111,
-                address: '0x1234567890123456789012345678901234567890',
-              },
-            ],
-          },
-          timestamp: Date.now(),
-        },
-      });
-
-      // Mock 2nd call: get ABI by ID
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse(mockContractResponse))
+        .mockResolvedValueOnce(createFetchResponse({
           success: true,
           data: mockAbiEntity,
           timestamp: Date.now(),
-        },
-      });
+        }));
 
       await expect(
         registry.getContract('ERC721NFTExchange', 'sepolia', mockProvider, 'invalid-address')
@@ -313,52 +189,14 @@ describe('ContractRegistry', () => {
         mockProvider
       );
 
-      // Mock 1st call: get contract by name (for getABI) - includes address
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721NFTExchange',
-                abiId: 'abi-123',
-                chainId: 11155111,
-                address: '0x1234567890123456789012345678901234567890',
-              },
-            ],
-          },
-          timestamp: Date.now(),
-        },
-      });
-
-      // Mock 2nd call: get ABI by ID
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
+      mockFetch
+        .mockResolvedValueOnce(createFetchResponse(mockContractResponse))
+        .mockResolvedValueOnce(createFetchResponse({
           success: true,
           data: mockAbiEntity,
           timestamp: Date.now(),
-        },
-      });
-
-      // Mock 3rd call: get contract by name again (for getContractByName to get address)
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721NFTExchange',
-                abiId: 'abi-123',
-                chainId: 11155111,
-                address: '0x1234567890123456789012345678901234567890',
-              },
-            ],
-          },
-          timestamp: Date.now(),
-        },
-      });
+        }))
+        .mockResolvedValueOnce(createFetchResponse(mockContractResponse));
 
       const contract = await registry.getContract(
         'ERC721NFTExchange',
@@ -386,7 +224,6 @@ describe('ContractRegistry', () => {
         updatedAt: new Date().toISOString(),
       };
 
-      // Mock the apiClient.getABI directly
       jest.spyOn(apiClient, 'getABI')
         .mockResolvedValueOnce(mockAbiEntity)
         .mockResolvedValueOnce({ ...mockAbiEntity, contractName: 'ERC1155NFTExchange' });
@@ -401,15 +238,11 @@ describe('ContractRegistry', () => {
 
   describe('clearCache', () => {
     it('should clear contract cache', async () => {
-      // Simply test that clearCache and clearContractCache methods work
-      // without throwing errors
       await registry.clearCache();
       expect(registry['contractCache'].size).toBe(0);
-      
+
       registry.clearContractCache();
       expect(registry['contractCache'].size).toBe(0);
-      
-      // Verify queryClient cache is cleared
       expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
     });
   });
