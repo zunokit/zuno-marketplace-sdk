@@ -1,82 +1,23 @@
-## [2.2.0-beta.7](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.6...v2.2.0-beta.7) (2026-02-28)
-
-### ✨ Features
-
-* add Zuno Marketplace SDK documentation ([#133](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/133)) ([4cbd8b7](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4cbd8b7b56e0d7b067e915ba24d1159f6f34f3ca))
-
-## [2.2.0-beta.6](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.5...v2.2.0-beta.6) (2026-02-27)
+## [2.2.0](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1...v2.2.0) (2026-02-28)
 
 ### 🐛 Bug Fixes
 
 * align `listingQueryOptions` cache key under `listings` root to prevent stale data ([#130](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/130)) ([96d30df](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/96d30df8f3f18f932661433a1c33ea72cde61823))
 * make `address` and `network` required in `contractInfoQueryOptions` ([#128](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/128)) ([766e1c6](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/766e1c6c0ffc3ab1c26ebe2f477dac8a16d2ca21))
 * resolve lint, typecheck, and build errors ([#132](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/132)) ([a1184ff](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a1184ffde2f8c8749bf06c503e71e44f87be66f1))
-
-## [2.2.0-beta.5](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.4...v2.2.0-beta.5) (2026-02-27)
-
-### 🐛 Bug Fixes
-
 * invalidate individual auction detail caches in batchCancelAuction ([#131](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/131)) ([b60fce6](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b60fce6d169d2bc2d1880895ba6090ca6257340f))
-
-## [2.2.0-beta.4](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.3...v2.2.0-beta.4) (2026-02-27)
-
-### 🐛 Bug Fixes
-
 * correct misleading JSDoc on `auctionsListQueryKey` ([#129](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/129)) ([61fa0e5](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/61fa0e5f6e4274f51afbc162df8af0cba91e22bd))
-
-## [2.2.0-beta.3](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.2...v2.2.0-beta.3) (2026-02-21)
 
 ### ♻️ Code Refactoring
 
-* update query options and remove deprecated functions ([#126](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/126)) ([e98badf](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e98badf18147e2a371056cc98c0c0e9d0225159e))
-
-## [2.2.0-beta.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.1...v2.2.0-beta.2) (2026-01-26)
-
-### 🐛 Bug Fixes
-
-* replace JSX.Element with React.ReactElement in test type annotations ([#124](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/124)) ([76b8407](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/76b840758077363ce69645c963ba1f330e6ae6c9))
-* upgrade SDK to React 19 for type compatibility ([#120](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/120)) ([d82b03d](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d82b03d0552b25de743c4a3b7ea9abb1b49ee897)), closes [#119](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/119)
-
-## [2.1.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1) (2026-01-26)
-
-### 🐛 Bug Fixes
-
-* correct query invalidation in useSetupAllowlist ([#88](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/88)) ([a660f00](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a660f0042beba0024da109d3f1b1834d2f8cb3eb))
-* resolve issues [#85](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/85), [#84](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/84), [#83](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/83), [#80](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/80), [#81](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/81) - allowlist cache, ERC1155 listing ([d4c142e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d4c142e8fce9dbcdb19223a5472a948d45a08eb2)), closes [#86](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/86)
-* **sdk:** resolve all 11 open SDK issues ([#75](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/75)) ([4c89079](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4c89079b60d0503baa2c26ad8f9756ffde548dd7)), closes [#69](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/69) [#74](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/74) [#55-68](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/55-68) [#65](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/65) [#67](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/67) [#58](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/58) [#60](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/60) [zunokit/zuno-marketplace-contracts#51](https://github.com/zunokit/zuno-marketplace-contracts/issues/51) [#47](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/47) [#48](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/48)
-
-## [2.1.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1) (2026-01-26)
-
-### 🐛 Bug Fixes
-
-* correct query invalidation in useSetupAllowlist ([#88](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/88)) ([a660f00](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a660f0042beba0024da109d3f1b1834d2f8cb3eb))
-* resolve issues [#85](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/85), [#84](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/84), [#83](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/83), [#80](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/80), [#81](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/81) - allowlist cache, ERC1155 listing ([d4c142e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d4c142e8fce9dbcdb19223a5472a948d45a08eb2)), closes [#86](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/86)
-* **sdk:** resolve all 11 open SDK issues ([#75](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/75)) ([4c89079](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4c89079b60d0503baa2c26ad8f9756ffde548dd7)), closes [#69](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/69) [#74](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/74) [#55-68](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/55-68) [#65](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/65) [#67](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/67) [#58](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/58) [#60](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/60) [zunokit/zuno-marketplace-contracts#51](https://github.com/zunokit/zuno-marketplace-contracts/issues/51) [#47](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/47) [#48](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/48)
-
-## [2.2.0-beta.2](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.1...v2.2.0-beta.2) (2026-01-26)
-
-### 🐛 Bug Fixes
-
-* replace JSX.Element with React.ReactElement in test type annotations ([#124](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/124)) ([76b8407](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/76b840758077363ce69645c963ba1f330e6ae6c9))
-* upgrade SDK to React 19 for type compatibility ([#120](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/120)) ([d82b03d](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d82b03d0552b25de743c4a3b7ea9abb1b49ee897)), closes [#119](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/119)
-
-## [2.1.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1) (2026-01-26)
-
-### 🐛 Bug Fixes
-
-* correct query invalidation in useSetupAllowlist ([#88](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/88)) ([a660f00](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/a660f0042beba0024da109d3f1b1834d2f8cb3eb))
-* resolve issues [#85](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/85), [#84](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/84), [#83](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/83), [#80](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/80), [#81](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/81) - allowlist cache, ERC1155 listing ([d4c142e](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d4c142e8fce9dbcdb19223a5472a948d45a08eb2)), closes [#86](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/86)
-* **sdk:** resolve all 11 open SDK issues ([#75](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/75)) ([4c89079](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/4c89079b60d0503baa2c26ad8f9756ffde548dd7)), closes [#69](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/69) [#74](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/74) [#55-68](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/55-68) [#65](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/65) [#67](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/67) [#58](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/58) [#60](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/60) [zunokit/zuno-marketplace-contracts#51](https://github.com/zunokit/zuno-marketplace-contracts/issues/51) [#47](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/47) [#48](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/48)
-
-## [2.2.0-beta.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.1...v2.2.0-beta.1) (2026-01-26)
+* remove default value from `useCollection` query options and update documentation ([#122](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/122)) ([e334d32](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e334d32c8c35fc89bad22d0d2038759c92f99721))
 
 ### ✨ Features
 
-* make SDK hooks SSR-safe with no-op fallback ([#116](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/116)) ([e5e89ce](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/e5e89cea2880d5efa57ae18b028d5bcd98fa3551)), closes [#115](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/115) [#115](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/115)
+* add standalone `getSdkConfig` utility function with documentation and tests ([#126](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/126)) ([bbcb7f1](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/bbcb7f1d8b57d0559f48ff359de33515f4b42b12))
+* **logger:** add logger exports with documentation ([#124](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/124)) ([d7b0794](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/d7b079470210a67adc25c2f4d8fa6bad30e2a28a))
+* **testing:** add mock wallet provider and update documentation ([#125](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/125)) ([f5e65bd](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/f5e65bd23983141c0081bf03019bc3e24e7e353a))
 
-### 🐛 Bug Fixes
-
-* **react:** separate isBrowser utility to fix Jest ESM parsing errors ([b6125e5](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/b6125e50c556bb2bb85b728f6cc44628aa28c3f4))
 ## [2.1.1](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.1.0...v2.1.1) (2026-01-25)
 
 ### 🐛 Bug Fixes
