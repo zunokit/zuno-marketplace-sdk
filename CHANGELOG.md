@@ -1,3 +1,9 @@
+## [2.2.0-beta.8](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.7...v2.2.0-beta.8) (2026-03-31)
+
+### 🐛 Bug Fixes
+
+* **api:** replace axios with fetch ([#136](https://github.com/ZunoKit/zuno-marketplace-sdk/issues/136)) ([2210c32](https://github.com/ZunoKit/zuno-marketplace-sdk/commit/2210c3249293338b1dd6255022dbd5199465ebc6))
+
 ## [2.2.0-beta.7](https://github.com/ZunoKit/zuno-marketplace-sdk/compare/v2.2.0-beta.6...v2.2.0-beta.7) (2026-02-28)
 
 ### ✨ Features
