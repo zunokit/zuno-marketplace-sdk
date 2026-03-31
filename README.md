@@ -34,7 +34,19 @@ A comprehensive, type-safe SDK for building NFT marketplace applications on Ethe
 | Testnet (Sepolia) |   ⚠️   | 11155111  | Planned for Q1 2026            |
 | Ethereum Mainnet  |   ⚠️   |     1     | Planned for Q2 2026            |
 
-## 🆕 What's New in v2.1.1
+## 🆕 What's New in v2.2.1
+
+### 🐛 v2.2.1 Fixes
+
+- **Raw Fetch Transport** - Replaced the internal `axios` client with a lightweight `fetch` wrapper
+- **Smaller Dependency Surface** - Removed `axios` from the runtime dependency graph
+- **Same SDK Behavior** - Preserves request timeout handling, query params, credentials, and normalized SDK errors
+
+### ✨ v2.2.0 Features
+
+- **Standalone SDK Helpers** - Added `getSdkConfig` and expanded tree-shakeable module exports
+- **Logger & Testing Modules** - Added dedicated logger/testing exports and utilities
+- **Query API Improvements** - Improved query option ergonomics and cache handling across the SDK
 
 ### ✨ v2.1.1 Features
 
