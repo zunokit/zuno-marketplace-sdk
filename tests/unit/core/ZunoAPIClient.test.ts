@@ -2,34 +2,32 @@
  * ZunoAPIClient Unit Tests
  */
 
-import axios from 'axios';
 import { ZunoAPIClient } from '../../../src/core/ZunoAPIClient';
 import { abiQueryOptions, contractInfoQueryOptions } from '../../../src/lib/query/abi';
 import { ZunoSDKError } from '../../../src/utils/errors';
 
-// Mock axios
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+function createFetchResponse(
+  data: unknown,
+  init: { ok?: boolean; status?: number; contentType?: string } = {}
+): Response {
+  return {
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    headers: {
+      get: jest.fn(() => init.contentType ?? 'application/json'),
+    },
+    json: jest.fn().mockResolvedValue(data),
+    text: jest.fn().mockResolvedValue(typeof data === 'string' ? data : JSON.stringify(data)),
+  } as unknown as Response;
+}
 
 describe('ZunoAPIClient', () => {
   let client: ZunoAPIClient;
-  let mockAxiosInstance: any;
+  let mockFetch: jest.MockedFunction<typeof fetch>;
 
   beforeEach(() => {
-    // Create mock axios instance
-    mockAxiosInstance = {
-      get: jest.fn(),
-      post: jest.fn(),
-      put: jest.fn(),
-      delete: jest.fn(),
-      interceptors: {
-        request: { use: jest.fn(), eject: jest.fn() },
-        response: { use: jest.fn(), eject: jest.fn() },
-      },
-    };
-
-    mockedAxios.create.mockReturnValue(mockAxiosInstance);
-
+    mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+    mockFetch.mockReset();
     client = new ZunoAPIClient('test-api-key', 'https://api.test.com');
   });
 
@@ -40,7 +38,7 @@ describe('ZunoAPIClient', () => {
   describe('initialization', () => {
     it('should initialize with valid config', () => {
       expect(client).toBeDefined();
-      expect(mockedAxios.create).toHaveBeenCalledTimes(1);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
 
     it('should throw error without API key', () => {
@@ -68,59 +66,59 @@ describe('ZunoAPIClient', () => {
         updatedAt: new Date().toISOString(),
       };
 
-      // Mock first call: get contract by name
-      mockAxiosInstance.get.mockResolvedValueOnce({
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
+        success: true,
         data: {
-          success: true,
-          data: {
-            contracts: [
-              {
-                id: 'contract-123',
-                name: 'ERC721',
-                abiId: 'abi-123',
-                chainId: 11155111,
-              },
-            ],
-          },
-          timestamp: Date.now(),
+          contracts: [
+            {
+              id: 'contract-123',
+              name: 'ERC721',
+              abiId: 'abi-123',
+              chainId: 11155111,
+            },
+          ],
         },
-      });
+        timestamp: Date.now(),
+      }));
 
-      // Mock second call: get ABI by ID
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: mockAbiEntity,
-          timestamp: Date.now(),
-        },
-      });
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
+        success: true,
+        data: mockAbiEntity,
+        timestamp: Date.now(),
+      }));
 
       const result = await client.getABI('ERC721', 'sepolia');
 
       expect(result).toEqual(mockAbiEntity);
       expect(result.abi).toEqual(mockABI);
-      expect(mockAxiosInstance.get).toHaveBeenCalledTimes(2);
-      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenNthCalledWith(
         1,
-        expect.stringContaining('/contracts/by-name/ERC721'),
+        'https://api.test.com/contracts/by-name/ERC721?chainId=11155111',
         expect.objectContaining({
-          params: { chainId: 11155111 },
+          method: 'GET',
+          credentials: 'include',
+          headers: expect.objectContaining({
+            'X-API-Key': 'test-api-key',
+          }),
         })
       );
-      expect(mockAxiosInstance.get).toHaveBeenNthCalledWith(
+      expect(mockFetch).toHaveBeenNthCalledWith(
         2,
-        expect.stringContaining('/abis/abi-123')
+        'https://api.test.com/abis/abi-123',
+        expect.any(Object)
       );
     });
 
     it('should throw error on failed fetch', async () => {
-      mockAxiosInstance.get.mockRejectedValueOnce({
-        response: {
-          status: 404,
-          statusText: 'Not Found',
-        },
-        isAxiosError: true,
-      });
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
+        success: false,
+        message: 'Resource not found',
+        timestamp: Date.now(),
+      }, {
+        ok: false,
+        status: 404,
+      }));
 
       await expect(client.getABI('InvalidContract', 'sepolia')).rejects.toThrow(
         ZunoSDKError
@@ -128,7 +126,7 @@ describe('ZunoAPIClient', () => {
     });
 
     it('should handle network errors', async () => {
-      mockAxiosInstance.get.mockRejectedValueOnce(new Error('Network error'));
+      mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(client.getABI('ERC721', 'sepolia')).rejects.toThrow();
     });
@@ -147,33 +145,35 @@ describe('ZunoAPIClient', () => {
         updatedAt: new Date().toISOString(),
       };
 
-      mockAxiosInstance.get.mockResolvedValueOnce({
-        data: {
-          success: true,
-          data: mockContractEntity,
-          timestamp: Date.now(),
-        },
-      });
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
+        success: true,
+        data: mockContractEntity,
+        timestamp: Date.now(),
+      }));
 
-      const info = await client.getContractInfo('0x1234567890123456789012345678901234567890', 'sepolia');
+      const info = await client.getContractInfo(
+        '0x1234567890123456789012345678901234567890',
+        'sepolia'
+      );
 
       expect(info).toEqual(mockContractEntity);
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
-        expect.stringContaining('/contracts/0x1234567890123456789012345678901234567890'),
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.test.com/contracts/0x1234567890123456789012345678901234567890?chainId=11155111',
         expect.objectContaining({
-          params: { chainId: 11155111 }, // Sepolia chainId
+          method: 'GET',
         })
       );
     });
 
     it('should throw error on invalid contract type', async () => {
-      mockAxiosInstance.get.mockRejectedValueOnce({
-        response: {
-          status: 400,
-          statusText: 'Bad Request',
-        },
-        isAxiosError: true,
-      });
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
+        success: false,
+        message: 'Bad Request',
+        timestamp: Date.now(),
+      }, {
+        ok: false,
+        status: 400,
+      }));
 
       await expect(
         client.getContractInfo('0xinvalid', 'sepolia')
@@ -204,14 +204,13 @@ describe('ZunoAPIClient', () => {
 
   describe('error handling', () => {
     it('should include error context in exceptions', async () => {
-      mockAxiosInstance.get.mockRejectedValueOnce({
-        response: {
-          status: 500,
-          statusText: 'Internal Server Error',
-          data: { error: 'Database connection failed' },
-        },
-        isAxiosError: true,
-      });
+      mockFetch.mockResolvedValueOnce(createFetchResponse({
+        error: { message: 'Database connection failed' },
+        timestamp: Date.now(),
+      }, {
+        ok: false,
+        status: 500,
+      }));
 
       try {
         await client.getABI('ERC721', 'sepolia');
@@ -225,7 +224,7 @@ describe('ZunoAPIClient', () => {
     });
 
     it('should handle malformed JSON responses', async () => {
-      mockAxiosInstance.get.mockRejectedValueOnce(new SyntaxError('Unexpected token'));
+      mockFetch.mockRejectedValueOnce(new SyntaxError('Unexpected token'));
 
       await expect(client.getABI('ERC721', 'sepolia')).rejects.toThrow();
     });

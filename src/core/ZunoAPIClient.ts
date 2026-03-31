@@ -2,7 +2,6 @@
  * API Client for Zuno Registry with TanStack Query integration
  */
 
-import axios, { type AxiosInstance, type AxiosError } from 'axios';
 import type {
   AbiEntity,
   NetworkEntity,
@@ -60,14 +59,24 @@ export function isSupportedNetwork(network: string): network is SupportedNetwork
   return network.toLowerCase() in SUPPORTED_NETWORKS;
 }
 
+type RequestParams = Record<string, string | number | boolean | null | undefined>;
+
+interface HTTPError {
+  status: number;
+  data?: unknown;
+}
+
+function isHTTPError(error: unknown): error is HTTPError {
+  return typeof error === 'object' && error !== null && 'status' in error;
+}
 
 /**
  * Zuno API Client
  */
 export class ZunoAPIClient {
-  private readonly axios: AxiosInstance;
   private readonly apiKey: string;
   private readonly baseUrl: string;
+  private readonly timeoutMs: number;
 
   constructor(apiKey: string, apiUrl?: string) {
     if (!apiKey) {
@@ -79,25 +88,7 @@ export class ZunoAPIClient {
 
     this.apiKey = apiKey;
     this.baseUrl = apiUrl || DEFAULT_API_URL;
-
-    // Unified API axios instance
-    this.axios = axios.create({
-      baseURL: this.baseUrl,
-      timeout: 30000,
-      withCredentials: true, // Enable CORS credentials
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': this.apiKey,
-      },
-    });
-
-    // Add response interceptor for error handling
-    this.axios.interceptors.response.use(
-      (response) => response,
-      (error: AxiosError) => {
-        return Promise.reject(this.handleError(error));
-      }
-    );
+    this.timeoutMs = 30000;
   }
 
   /**
@@ -113,15 +104,13 @@ export class ZunoAPIClient {
       const chainId = this.resolveChainId(network);
 
       // Step 1: Get contract by name filtered by chainId
-      const contractsResponse = await this.axios.get(
+      const contractsResponse = await this.get<{ contracts: ContractEntity[] }>(
         `/contracts/by-name/${contractName}`,
-        {
-          params: { chainId },
-        }
+        { chainId }
       );
 
       // Extract contracts array from response
-      const contracts = contractsResponse.data.data.contracts;
+      const contracts = contractsResponse.data.contracts;
       if (!contracts || contracts.length === 0) {
         throw new ZunoSDKError(
           ErrorCodes.ABI_NOT_FOUND,
@@ -141,9 +130,9 @@ export class ZunoAPIClient {
       }
 
       // Step 2: Get ABI by ID
-      const abiResponse = await this.axios.get(`/abis/${abiId}`);
+      const abiResponse = await this.get<AbiEntity>(`/abis/${abiId}`);
 
-      return abiResponse.data.data;
+      return abiResponse.data;
     } catch (error) {
       throw ZunoSDKError.from(error, ErrorCodes.ABI_NOT_FOUND);
     }
@@ -165,15 +154,13 @@ export class ZunoAPIClient {
       const chainId = this.resolveChainId(network);
 
       // Get contract by name filtered by chainId
-      const contractsResponse = await this.axios.get(
+      const contractsResponse = await this.get<{ contracts: ContractEntity[] }>(
         `/contracts/by-name/${contractName}`,
-        {
-          params: { chainId },
-        }
+        { chainId }
       );
 
       // Extract contracts array from response
-      const contracts = contractsResponse.data.data.contracts;
+      const contracts = contractsResponse.data.contracts;
       if (!contracts || contracts.length === 0) {
         throw new ZunoSDKError(
           ErrorCodes.CONTRACT_NOT_FOUND,
@@ -219,11 +206,11 @@ export class ZunoAPIClient {
    */
   async getABIById(abiId: string): Promise<AbiEntity> {
     try {
-      const response = await this.axios.get<GetABIByIdResponse>(
+      const response = await this.get<GetABIByIdResponse['data']>(
         `/abis/id/${abiId}`
       );
 
-      return response.data.data;
+      return response.data;
     } catch (error) {
       throw ZunoSDKError.from(error, ErrorCodes.ABI_NOT_FOUND);
     }
@@ -244,14 +231,12 @@ export class ZunoAPIClient {
       // Convert network to chainId if it's a named network
       const chainId = this.resolveChainId(network);
 
-      const response = await this.axios.get<GetContractInfoResponse>(
+      const response = await this.get<GetContractInfoResponse['data']>(
         `/contracts/${address}`,
-        {
-          params: { chainId },
-        }
+        { chainId }
       );
 
-      return response.data.data;
+      return response.data;
     } catch (error) {
       throw ZunoSDKError.from(error, ErrorCodes.CONTRACT_NOT_FOUND);
     }
@@ -262,21 +247,132 @@ export class ZunoAPIClient {
    */
   async getNetworks(): Promise<NetworkEntity[]> {
     try {
-      const response = await this.axios.get<GetNetworksResponse>('/networks');
+      const response = await this.get<GetNetworksResponse['data']>('/networks');
 
-      return response.data.data;
+      return response.data;
     } catch (error) {
       throw ZunoSDKError.from(error, ErrorCodes.API_REQUEST_FAILED);
+    }
+  }
+
+  private async get<T>(path: string, params?: RequestParams): Promise<APIResponse<T>> {
+    return this.request<T>(path, { method: 'GET', params });
+  }
+
+  private async request<T>(
+    path: string,
+    options: { method: string; params?: RequestParams }
+  ): Promise<APIResponse<T>> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+
+    try {
+      const response = await fetch(this.buildUrl(path, options.params), {
+        method: options.method,
+        credentials: 'include',
+        signal: controller.signal,
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-API-Key': this.apiKey,
+        },
+      });
+
+      const data = await this.parseResponseBody<APIResponse<T>>(response);
+
+      if (!response.ok) {
+        throw this.handleError({
+          status: response.status,
+          data,
+        });
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof ZunoSDKError) {
+        throw error;
+      }
+
+      throw this.handleError(error);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private buildUrl(path: string, params?: RequestParams): string {
+    const requestPath = path.startsWith('/') ? path : `/${path}`;
+
+    try {
+      const baseUrl = new URL(this.baseUrl);
+      const basePath = baseUrl.pathname === '/' ? '' : baseUrl.pathname.replace(/\/$/, '');
+      baseUrl.pathname = `${basePath}${requestPath}`;
+
+      this.appendParams(baseUrl.searchParams, params);
+
+      return baseUrl.toString();
+    } catch {
+      const normalizedBase = this.baseUrl.endsWith('/')
+        ? this.baseUrl.slice(0, -1)
+        : this.baseUrl;
+      const url = `${normalizedBase}${requestPath}`;
+      const searchParams = new URLSearchParams();
+
+      this.appendParams(searchParams, params);
+
+      const queryString = searchParams.toString();
+      if (!queryString) {
+        return url;
+      }
+
+      return `${url}${url.includes('?') ? '&' : '?'}${queryString}`;
+    }
+  }
+
+  private appendParams(
+    searchParams: URLSearchParams,
+    params?: RequestParams
+  ): void {
+    if (!params) {
+      return;
+    }
+
+    for (const [key, value] of Object.entries(params)) {
+      if (value === undefined || value === null) {
+        continue;
+      }
+
+      searchParams.set(key, String(value));
+    }
+  }
+
+  private async parseResponseBody<T>(response: Response): Promise<T> {
+    const contentType = response.headers?.get?.('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+      return response.json() as Promise<T>;
+    }
+
+    const text = await response.text();
+
+    if (!text) {
+      return {} as T;
+    }
+
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return { message: text } as T;
     }
   }
 
   /**
    * Handle API errors
    */
-  private handleError(error: AxiosError): ZunoSDKError {
-    if (error.response) {
-      const status = error.response.status;
-      const data = error.response.data as APIResponse;
+  private handleError(error: unknown): ZunoSDKError {
+    if (isHTTPError(error)) {
+      const status = error.status;
+      const data = error.data as Partial<APIResponse> | undefined;
+      const message = this.extractErrorMessage(data);
 
       switch (status) {
         case 401:
@@ -300,13 +396,13 @@ export class ZunoAPIClient {
         default:
           return new ZunoSDKError(
             ErrorCodes.API_REQUEST_FAILED,
-            data.message || 'API request failed',
+            message || 'API request failed',
             data
           );
       }
     }
 
-    if (error.code === 'ECONNABORTED') {
+    if (error instanceof Error && error.name === 'AbortError') {
       return new ZunoSDKError(
         ErrorCodes.API_TIMEOUT,
         'Request timeout',
@@ -316,5 +412,21 @@ export class ZunoAPIClient {
 
     return ZunoSDKError.from(error, ErrorCodes.API_REQUEST_FAILED);
   }
-}
 
+  private extractErrorMessage(data?: Partial<APIResponse>): string | undefined {
+    if (!data || typeof data !== 'object') {
+      return undefined;
+    }
+
+    if (typeof data.message === 'string') {
+      return data.message;
+    }
+
+    const nestedError = (data as { error?: { message?: unknown } }).error;
+    if (nestedError && typeof nestedError.message === 'string') {
+      return nestedError.message;
+    }
+
+    return undefined;
+  }
+}

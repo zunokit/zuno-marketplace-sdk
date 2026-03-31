@@ -10,9 +10,6 @@ import { ZunoLogger } from '../utils/logger';
 import { logStore } from '../utils/logStore';
 import { ethers } from 'ethers';
 
-// Mock axios for API tests
-jest.mock('axios');
-
 describe('Edge Cases - SDK Configuration', () => {
   describe('Invalid API Keys', () => {
     it('should throw error with empty API key', () => {
