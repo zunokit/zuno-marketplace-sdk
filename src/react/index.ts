@@ -20,6 +20,8 @@ export { useZunoLogger } from './hooks/useZunoLogger';
 
 // Hooks - Exchange
 export { useExchange, useListings, useListingsBySeller, useListing } from './hooks/useExchange';
+export { useFloorPrice } from './hooks/useFloorPrice';
+export type { UseFloorPriceOptions, UseFloorPriceResult } from './hooks/useFloorPrice';
 
 // Hooks - Collection
 export { 
