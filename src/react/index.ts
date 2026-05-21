@@ -54,6 +54,11 @@ export { useBalance } from './hooks/useBalance';
 export { useApprove } from './hooks/useApprove';
 export { useProviderSync } from './hooks/useProviderSync';
 export type { UseProviderSyncOptions, UseProviderSyncReturn } from './hooks/useProviderSync';
+export { useClipboard } from './hooks/useClipboard';
+export type {
+  UseClipboardOptions,
+  UseClipboardReturn,
+} from './hooks/useClipboard';
 
 // Utilities - Chains & Connectors
 export { 
