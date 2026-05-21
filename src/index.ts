@@ -24,6 +24,12 @@ export type * from './types/api';
 export type * from './types/contracts';
 
 // Utils
+export {
+  parseTokenAmount,
+  formatTokenAmount,
+  formatTokenAmountCompact,
+} from './utils/token-amount';
+export type { FormatTokenAmountOptions } from './utils/token-amount';
 export { ZunoSDKError, ErrorCodes } from './utils/errors';
 export type { ErrorContext, ErrorCode } from './utils/errors';
 export { TransactionManager } from './utils/transactions';
