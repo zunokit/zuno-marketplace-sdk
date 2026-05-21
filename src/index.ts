@@ -24,6 +24,8 @@ export type * from './types/api';
 export type * from './types/contracts';
 
 // Utils
+export { computeFloorPrice } from './utils/floor-price';
+export type { FloorPriceOptions, FloorPriceResult } from './utils/floor-price';
 export { ZunoSDKError, ErrorCodes } from './utils/errors';
 export type { ErrorContext, ErrorCode } from './utils/errors';
 export { TransactionManager } from './utils/transactions';
